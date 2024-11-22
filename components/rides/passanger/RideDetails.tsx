@@ -33,7 +33,7 @@ interface RideDetailsProps {
   rideId: string;
 }
 
-interface Driver {
+interface Driver {  
   uid: string;
   fullName: string;
   phoneNumber?: string;
