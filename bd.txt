@@ -1,0 +1,61 @@
+erDiagram
+    Users ||--o{ Rides : "propose/réserve"
+    Users ||--o{ Vehicles : "possède"
+    Rides ||--|{ Bookings : "contient"
+    Church ||--o{ Rides : "rattaché"
+
+    Users {
+        string uid "ID Firebase Auth"
+        string email
+        string fullName
+        string phoneNumber
+        boolean isDriver
+        timestamp createdAt
+        array churchIds
+        string profilePicture
+    }
+
+    Vehicles {
+        string id
+        string userId
+        string brand
+        string model
+        string color
+        number seats
+        string licensePlate
+        boolean isActive
+    }
+
+    Rides {
+        string id
+        string driverId
+        string churchId
+        string departureAddress
+        string arrivalAddress
+        timestamp departureTime
+        number availableSeats
+        boolean isRecurring
+        string frequency "weekly/monthly"
+        string status "active/cancelled"
+        number price "optionnel"
+        array waypoints "points de passage"
+    }
+
+    Bookings {
+        string id
+        string rideId
+        string passengerId
+        timestamp bookingDate
+        string status "pending/confirmed/cancelled"
+        number seatsBooked
+        string specialNotes
+    }
+
+    Church {
+        string id
+        string name
+        string address
+        array adminUserIds
+        string contactEmail
+        string contactPhone
+    }
