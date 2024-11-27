@@ -8,6 +8,7 @@ import { fr } from "date-fns/locale";
 interface RideSummaryProps {
   formData: {
     churchId: string;
+    churchName: string;
     departureAddress: string;
     arrivalAddress: string;
     departureTime: Date;
@@ -22,33 +23,50 @@ const RideSummary = ({ formData }: RideSummaryProps) => {
       <Card className="p-4">
         <div className="grid gap-4">
           <div>
-            <h3 className="text-sm font-medium text-slate-500">Date et heure de départ</h3>
+            <h3 className="text-sm font-medium text-slate-500">
+              Date et heure de départ
+            </h3>
             <p className="text-lg">
-              {format(formData.departureTime, "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+              {format(formData.departureTime, "EEEE d MMMM yyyy 'à' HH:mm", {
+                locale: fr,
+              })}
             </p>
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-slate-500">Adresse de départ</h3>
+            <h3 className="text-sm font-medium text-slate-500">
+              Adresse de départ
+            </h3>
             <p className="text-lg">{formData.departureAddress}</p>
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-slate-500">Adresse d'arrivée</h3>
+            <h3 className="text-sm font-medium text-slate-500">
+              Adresse d'arrivée
+            </h3>
             <p className="text-lg">{formData.arrivalAddress}</p>
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-slate-500">Places disponibles</h3>
+            <h3 className="text-sm font-medium text-slate-500">
+              Places disponibles
+            </h3>
             <p className="text-lg">{formData.availableSeats}</p>
           </div>
 
-          {formData.price && (
+          <div>
+            <h3 className="text-sm font-medium text-slate-500">Église</h3>
+            <p className="text-lg">{formData.churchName}</p>
+          </div>
+
+          {/* {formData.price && (
             <div>
-              <h3 className="text-sm font-medium text-slate-500">Prix par personne</h3>
+              <h3 className="text-sm font-medium text-slate-500">
+                Prix par personne
+              </h3>
               <p className="text-lg">{formData.price}€</p>
             </div>
-          )}
+          )} */}
         </div>
       </Card>
     </div>

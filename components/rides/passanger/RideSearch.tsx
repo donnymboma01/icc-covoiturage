@@ -50,48 +50,48 @@ const RideSearch = () => {
   const [rides, setRides] = useState<Array<Ride & { driver: Driver }>>([]);
   const [loading, setLoading] = useState(false);
 
-  //   const handleSearch = async () => {
-  //     setLoading(true);
-  //     try {
-  //       // Create a query against the rides collection
-  //       const ridesRef = collection(db, "rides");
-  //       const q = query(
-  //         ridesRef,
-  //         where("status", "==", "active"),
-  //         where("availableSeats", ">=", searchParams.seats)
-  //         // Add more query constraints based on departure/arrival if needed
-  //       );
+  // const handleSearch = async () => {
+  //   setLoading(true);
+  //   try {
+  //     console.log("Search Params:", searchParams);
+  //     const startOfDay = new Date(searchParams.date);
+  //     startOfDay.setHours(0, 0, 0, 0);
 
-  //       const querySnapshot = await getDocs(q);
-  //       const ridesData: Array<Ride & { driver: Driver }> = [];
+  //     const endOfDay = new Date(searchParams.date);
+  //     endOfDay.setHours(23, 59, 59, 999);
 
-  //       for (const doc of querySnapshot.docs) {
+  //     const ridesRef = collection(db, "rides");
+  //     const q = query(
+  //       ridesRef,
+  //       where("status", "==", "active"),
+  //       where("availableSeats", ">=", searchParams.seats),
+  //       where("departureTime", ">=", startOfDay),
+  //       where("departureTime", "<=", endOfDay)
+  //     );
+
+  //     const querySnapshot = await getDocs(q);
+  //     const ridesData = await Promise.all(
+  //       querySnapshot.docs.map(async (doc) => {
   //         const rideData = doc.data() as Ride;
-
-  //         // Fetch driver information
-  //         const driverDoc = await getDocs(
-  //           query(collection(db, "users"), where("uid", "==", rideData.driverId))
+  //         const driverSnap = await getDocs(
+  //           query(
+  //             collection(db, "users"),
+  //             where("uid", "==", rideData.driverId)
+  //           )
   //         );
+  //         const driverData = driverSnap.docs[0]?.data() as Driver;
+  //         return { ...rideData, id: doc.id, driver: driverData };
+  //       })
+  //     );
 
-  //         const driverData = driverDoc.docs[0]?.data() as Driver;
-
-  //         ridesData.push({
-  //           ...rideData,
-  //           id: doc.id,
-  //           driver: {
-  //             fullName: driverData.fullName,
-  //             profilePicture: driverData.profilePicture,
-  //           },
-  //         });
-  //       }
-
-  //       setRides(ridesData);
-  //     } catch (error) {
-  //       console.error("Error fetching rides:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+  //     setRides(ridesData as Array<Ride & { driver: Driver }>);
+  //   } catch (error) {
+  //     console.error("Error fetching rides:", error);
+  //     console.error("Détails de l'erreur:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleSearch = async () => {
     setLoading(true);
     try {
@@ -103,18 +103,37 @@ const RideSearch = () => {
       endOfDay.setHours(23, 59, 59, 999);
 
       const ridesRef = collection(db, "rides");
-      const q = query(
-        ridesRef,
+
+      const conditions = [
         where("status", "==", "active"),
         where("availableSeats", ">=", searchParams.seats),
         where("departureTime", ">=", startOfDay),
-        where("departureTime", "<=", endOfDay)
-      );
+        where("departureTime", "<=", endOfDay),
+      ];
 
+      const q = query(ridesRef, ...conditions);
       const querySnapshot = await getDocs(q);
+
       const ridesData = await Promise.all(
         querySnapshot.docs.map(async (doc) => {
           const rideData = doc.data() as Ride;
+
+          const departureMatch =
+            !searchParams.departure ||
+            rideData.departureAddress
+              .toLowerCase()
+              .includes(searchParams.departure.toLowerCase());
+
+          const arrivalMatch =
+            !searchParams.arrival ||
+            rideData.arrivalAddress
+              .toLowerCase()
+              .includes(searchParams.arrival.toLowerCase());
+
+          if (!departureMatch || !arrivalMatch) {
+            return null;
+          }
+
           const driverSnap = await getDocs(
             query(
               collection(db, "users"),
@@ -122,11 +141,20 @@ const RideSearch = () => {
             )
           );
           const driverData = driverSnap.docs[0]?.data() as Driver;
-          return { ...rideData, id: doc.id, driver: driverData };
+
+          return {
+            ...rideData,
+            id: doc.id,
+            driver: driverData,
+          };
         })
       );
 
-      setRides(ridesData as Array<Ride & { driver: Driver }>);
+      const filteredRides = ridesData.filter(
+        (ride): ride is Ride & { driver: Driver } => ride !== null
+      );
+
+      setRides(filteredRides);
     } catch (error) {
       console.error("Error fetching rides:", error);
       console.error("Détails de l'erreur:", error);

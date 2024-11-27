@@ -11,6 +11,8 @@ import {
   doc,
   Timestamp,
   getDoc,
+  getDocs,
+  QuerySnapshot,
 } from "firebase/firestore";
 import { useAuth } from "@/app/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -80,30 +82,77 @@ const DriverBookings = () => {
     </div>
   );
 
+  //   useEffect(() => {
+  //     if (!user) return;
+
+  //     const db = getFirestore();
+  //     let q = query(collection(db, "bookings"));
+
+  //     // Ajout du filtre dans la requête
+  //     if (filter !== "all") {
+  //       q = query(collection(db, "bookings"), where("status", "==", filter));
+  //     }
+
+  //     const unsubscribe = onSnapshot(q, (snapshot) => {
+  //       const bookingsData = snapshot.docs.map(
+  //         (doc) =>
+  //           ({
+  //             id: doc.id,
+  //             ...doc.data(),
+  //           } as Booking)
+  //       );
+  //       setBookings(bookingsData);
+  //       setLoading(false);
+  //     });
+
+  //     return () => unsubscribe();
+  //   }, [user, filter]);
   useEffect(() => {
     if (!user) return;
 
     const db = getFirestore();
-    let q = query(collection(db, "bookings"));
 
-    // Ajout du filtre dans la requête
-    if (filter !== "all") {
-      q = query(collection(db, "bookings"), where("status", "==", filter));
-    }
+    const ridesQuery = query(
+      collection(db, "rides"),
+      where("driverId", "==", user.uid)
+    );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const bookingsData = snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          } as Booking)
+    getDocs(ridesQuery).then((ridesSnapshot: QuerySnapshot) => {
+      const rideIds = ridesSnapshot.docs.map((doc) => doc.id);
+
+      if (rideIds.length === 0) {
+        setBookings([]);
+        setLoading(false);
+        return;
+      }
+
+      let bookingsQuery = query(
+        collection(db, "bookings"),
+        where("rideId", "in", rideIds)
       );
-      setBookings(bookingsData);
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
+      if (filter !== "all") {
+        bookingsQuery = query(
+          collection(db, "bookings"),
+          where("rideId", "in", rideIds),
+          where("status", "==", filter)
+        );
+      }
+
+      const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+        const bookingsData = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            } as Booking)
+        );
+        setBookings(bookingsData);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    });
   }, [user, filter]);
 
   useEffect(() => {
@@ -111,7 +160,7 @@ const DriverBookings = () => {
 
     const db = getFirestore();
     bookings.forEach(async (booking) => {
-      // Récupérer les infos du passager
+     
       const passengerDoc = await getDoc(doc(db, "users", booking.passengerId));
       if (passengerDoc.exists()) {
         setPassengerDetails((prev) => ({
@@ -120,7 +169,7 @@ const DriverBookings = () => {
         }));
       }
 
-      // Récupérer les infos du trajet
+     
       const rideDoc = await getDoc(doc(db, "rides", booking.rideId));
       if (rideDoc.exists()) {
         setRideDetails((prev) => ({
@@ -175,13 +224,12 @@ const DriverBookings = () => {
   ) => {
     const db = getFirestore();
     try {
-      // Mise à jour du statut de la réservation
+     
       await updateDoc(doc(db, "bookings", booking.id), {
         status,
         updatedAt: Timestamp.now(),
       });
 
-      // Si la réservation est acceptée, mettre à jour les places disponibles
       if (status === "accepted") {
         const rideRef = doc(db, "rides", booking.rideId);
         const rideDoc = await getDoc(rideRef);

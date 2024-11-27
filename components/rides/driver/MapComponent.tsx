@@ -5,6 +5,14 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+const customIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/128/2098/2098567.png",
+  iconSize: [38, 38],
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -38],
+});
 
 interface Location {
   lat: number;
@@ -17,34 +25,94 @@ interface MapComponentProps {
   onArrivalSelect: (address: string) => void;
 }
 
-const MapComponent = ({ onDepartureSelect, onArrivalSelect }: MapComponentProps) => {
+const MapComponent = ({
+  onDepartureSelect,
+  onArrivalSelect,
+}: MapComponentProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
-  const markersRef = useRef<{
-    departure: L.Marker | null;
-    arrival: L.Marker | null;
-    route: L.Polyline | null;
-  }>({
-    departure: null,
-    arrival: null,
-    route: null,
-  });
 
-  const [departure, setDeparture] = useState<Location | null>(null);
-  const [arrival, setArrival] = useState<Location | null>(null);
-  const [userLocation, setUserLocation] = useState<[number, number]>([48.8566, 2.3522]);
+  const [departureAddress, setDepartureAddress] = useState<string>("");
+  const [arrivalAddress, setArrivalAddress] = useState<string>("");
+  const [departureMarker, setDepartureMarker] = useState<L.Marker | null>(null);
+  const [arrivalMarker, setArrivalMarker] = useState<L.Marker | null>(null);
 
-  // Initialisation de la carte
+  const [userLocation, setUserLocation] = useState<[number, number]>([
+    50.85,
+    4.35, // Bruxelles par défaut
+  ]);
+
+  const updateMarker = (location: Location, type: "departure" | "arrival") => {
+    if (!leafletMap.current) return;
+
+    const marker = L.marker([location.lat, location.lng], {
+      icon: customIcon,
+    }).addTo(leafletMap.current);
+
+    marker
+      .bindPopup(
+        `<div>
+          <strong>${type === "departure" ? "Départ" : "Arrivée"}</strong><br />
+          ${location.address}
+        </div>`
+      )
+      .openPopup();
+
+    if (type === "departure") {
+      departureMarker?.remove();
+      setDepartureMarker(marker);
+      setDepartureAddress(location.address);
+      onDepartureSelect(location.address);
+    } else {
+      arrivalMarker?.remove();
+      setArrivalMarker(marker);
+      setArrivalAddress(location.address);
+      onArrivalSelect(location.address);
+    }
+  };
+
+  const searchAddress = async (
+    address: string,
+    type: "departure" | "arrival"
+  ) => {
+    if (!address.trim()) return;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          address
+        )}`
+      );
+
+      const data = await response.json();
+
+      if (data && data[0]) {
+        const location = {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+          address: data[0].display_name,
+        };
+
+        updateMarker(location, type);
+        leafletMap.current?.setView([location.lat, location.lng], 13);
+      } else {
+        alert("Aucune adresse trouvée pour votre recherche.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche :", error);
+    }
+  };
+
   useEffect(() => {
     if (!mapRef.current || leafletMap.current) return;
 
     leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution:
+        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(leafletMap.current);
 
-    // Géolocalisation
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const newLocation: [number, number] = [
@@ -55,157 +123,61 @@ const MapComponent = ({ onDepartureSelect, onArrivalSelect }: MapComponentProps)
         leafletMap.current?.setView(newLocation, 13);
       },
       (error) => {
-        console.error("Erreur de géolocalisation:", error);
+        console.warn("Erreur de géolocalisation :", error);
       }
     );
 
     return () => {
-      if (leafletMap.current) {
-        leafletMap.current.remove();
-        leafletMap.current = null;
-      }
+      leafletMap.current?.remove();
+      leafletMap.current = null;
     };
   }, []);
 
-
-  const updateMarker = (
-    location: Location,
-    type: "departure" | "arrival"
-  ) => {
-    if (!leafletMap.current) return;
-
-    // Supprimer l'ancien marqueur s'il existe
-    if (markersRef.current[type]) {
-      markersRef.current[type]?.remove();
-    }
-
-    // Créer le nouveau marqueur
-    const marker = L.marker([location.lat, location.lng]).addTo(leafletMap.current);
-    markersRef.current[type] = marker;
-
-    // Ajuster la vue pour inclure tous les marqueurs
-
-    const bounds = L.latLngBounds([]);
-    if (markersRef.current.departure) {
-      bounds.extend(markersRef.current.departure.getLatLng());
-    }
-    if (markersRef.current.arrival) {
-      bounds.extend(markersRef.current.arrival.getLatLng());
-    }
-
-    if (bounds.isValid()) {
-      leafletMap.current.fitBounds(bounds, { padding: [50, 50] });
-    }
-  };
-  // Fonction pour mettre à jour l'itinéraire
-  const updateRoute = async (start: Location, end: Location) => {
-    try {
-      const response = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`
-      );
-      const data = await response.json();
-
-      if (data.routes && data.routes[0] && leafletMap.current) {
-        // Supprimer l'ancien itinéraire s'il existe
-        if (markersRef.current.route) {
-          markersRef.current.route.remove();
-        }
-
-        // Créer le nouvel itinéraire
-        const coordinates = data.routes[0].geometry.coordinates.map(
-          (coord: number[]) => [coord[1], coord[0]]
-        );
-        const polyline = L.polyline(coordinates, {
-          color: "blue",
-          weight: 3,
-          opacity: 0.7,
-        }).addTo(leafletMap.current);
-
-        markersRef.current.route = polyline;
-        leafletMap.current.fitBounds(polyline.getBounds(), { padding: [50, 50] });
-      }
-    } catch (error) {
-      console.error("Erreur lors du calcul de l'itinéraire:", error);
-    }
-  };
-
-  // Fonction de recherche d'adresse
-  const searchAddress = async (address: string, isDeparture: boolean) => {
-    if (!address.trim()) return;
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          address
-        )}`
-      );
-      const data = await response.json();
-
-      if (data && data[0]) {
-        const location = {
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon),
-          address: data[0].display_name,
-        };
-
-        if (isDeparture) {
-          setDeparture(location);
-          onDepartureSelect(location.address);
-          updateMarker(location, "departure");
-        } else {
-          setArrival(location);
-          onArrivalSelect(location.address);
-          updateMarker(location, "arrival");
-        }
-
-        // Mettre à jour l'itinéraire si les deux points sont définis
-        if (isDeparture && arrival) {
-          updateRoute(location, arrival);
-        } else if (!isDeparture && departure) {
-          updateRoute(departure, location);
-        }
-      }
-    } catch (error) {
-      console.error("Erreur de recherche d'adresse:", error);
-    }
-  };
-
   return (
-    <div className="space-y-4">
-      <div ref={mapRef} className="h-[400px] rounded-lg overflow-hidden" />
-
+    <Card className="p-4">
       <div className="space-y-4">
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            placeholder="Adresse de départ"
-            onChange={(e) => searchAddress(e.target.value, true)}
-          />
-          <Button
-            onClick={() => {
-              const location = {
-                lat: userLocation[0],
-                lng: userLocation[1],
-                address: "Ma position actuelle",
-              };
-              setDeparture(location);
-              onDepartureSelect(location.address);
-              updateMarker(location, "departure");
-              if (arrival) {
-                updateRoute(location, arrival);
-              }
-            }}
-          >
-            Ma position
-          </Button>
-        </div>
-        <Input
-          type="text"
-          placeholder="Adresse d'arrivée"
-          onChange={(e) => searchAddress(e.target.value, false)}
+        <div
+          ref={mapRef}
+          className="h-[400px] sm:h-[300px] md:h-[450px] w-full rounded-lg shadow-lg"
         />
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <Input
+                type="text"
+                placeholder="Adresse de départ"
+                value={departureAddress}
+                onChange={(e) => setDepartureAddress(e.target.value)}
+                className="w-full"
+              />
+              <Button
+                onClick={() => searchAddress(departureAddress, "departure")}
+                className="w-full sm:w-auto"
+              >
+                Chercher
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Input
+                type="text"
+                placeholder="Adresse d'arrivée"
+                value={arrivalAddress}
+                onChange={(e) => setArrivalAddress(e.target.value)}
+                className="w-full"
+              />
+              <Button
+                onClick={() => searchAddress(arrivalAddress, "arrival")}
+                className="w-full sm:w-auto"
+              >
+                Chercher
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

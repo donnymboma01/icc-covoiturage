@@ -24,7 +24,6 @@ import { toast } from "sonner";
 import ChurchSelector from "./ChrurchSelector";
 import RideSummary from "./RidesSummary";
 
-// Import dynamique du MapComponent avec une condition "ssr: false"
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
   loading: () => <div>Chargement de la carte...</div>,
@@ -32,6 +31,7 @@ const MapComponent = dynamic(() => import("./MapComponent"), {
 
 interface RideFormData {
   churchId: string;
+  churchName: string;
   departureAddress: string;
   arrivalAddress: string;
   departureTime: Date;
@@ -49,6 +49,7 @@ const CreateRideForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RideFormData>({
     churchId: "",
+    churchName: "",
     departureAddress: "",
     arrivalAddress: "",
     departureTime: new Date(),
@@ -104,6 +105,7 @@ const CreateRideForm = () => {
       const rideData = {
         driverId: user.uid,
         churchId: formData.churchId,
+        churchName: formData.churchName,
         departureAddress: formData.departureAddress,
         arrivalAddress: formData.arrivalAddress,
         departureTime: formData.departureTime,
@@ -137,7 +139,8 @@ const CreateRideForm = () => {
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Sélection de l'église</h2>
       <ChurchSelector
-        onChurchSelect={(churchId) => setFormData({ ...formData, churchId })}
+        onChurchSelect={(churchId, churchName) => 
+          setFormData({ ...formData, churchId, churchName })}
       />
     </div>
   );

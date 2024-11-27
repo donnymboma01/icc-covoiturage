@@ -96,20 +96,18 @@ const BookingForm = ({
   //     setLoading(false);
   //   }
   // };
- 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setLoading(true);
     try {
-     
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (!userDoc.exists()) {
         throw new Error("Le profil de l'utilisateur n'existe pas.");
       }
 
-   
       const bookingRef = await addDoc(collection(db, "bookings"), {
         rideId: ride.id,
         passengerId: user.uid,
@@ -126,7 +124,7 @@ const BookingForm = ({
 
       onSuccess();
     } catch (error) {
-      console.error("Error creating booking:", error);
+      console.error("Erreur lors de la création de la réservation:", error);
     } finally {
       setLoading(false);
     }

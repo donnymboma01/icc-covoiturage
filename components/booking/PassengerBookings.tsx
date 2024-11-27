@@ -1,8 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   getFirestore,
   collection,
@@ -110,28 +109,6 @@ const PassengerBookings = () => {
     return () => unsubscribe();
   }, [user]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "accepted":
-        return "text-green-600";
-      case "rejected":
-        return "text-red-600";
-      default:
-        return "text-yellow-600";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "accepted":
-        return "Acceptée";
-      case "rejected":
-        return "Refusée";
-      default:
-        return "En attente";
-    }
-  };
-
   const handleCancelBooking = async (bookingId: string) => {
     const db = getFirestore();
     try {
@@ -151,134 +128,107 @@ const PassengerBookings = () => {
       <h2 className="text-xl sm:text-2xl font-bold mb-4">Mes Réservations</h2>
       {bookings.length === 0 ? (
         <p className="text-sm sm:text-base">
-          Vous n'avez pas encore de réservations
+          <strong> Vous n'avez pas encore de réservations</strong>
         </p>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {bookings.map((booking) => (
-            <Card key={booking.id} className="p-3 sm:p-4">
-              <div className="space-y-2 text-sm sm:text-base">
-                <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
-                  <p>Places réservées : {booking.seatsBooked}</p>
-                  <StatusBadge status={booking.status} />
-                </div>
+          {bookings.map((booking) => {
+            const ride = rideDetails[booking.rideId];
+            const driver = ride ? driverDetails[ride.driverId] : null;
 
-                {rideDetails[booking.rideId] && (
-                  <div className="space-y-1">
-                    <p className="truncate">
-                      <span className="font-medium">De :</span>{" "}
-                      {rideDetails[booking.rideId].departureAddress}
-                    </p>
-                    <p className="truncate">
-                      <span className="font-medium">À :</span>{" "}
-                      {rideDetails[booking.rideId].arrivalAddress}
-                    </p>
-                    <p className="break-words">
-                      <span className="font-medium">Départ :</span>{" "}
-                      {rideDetails[booking.rideId].departureTime
-                        .toDate()
-                        .toLocaleString("fr-FR")}
+            return (
+              <Card key={booking.id} className="p-3 sm:p-4">
+                <div className="space-y-2 text-sm sm:text-base">
+                  <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
+                    <StatusBadge status={booking.status} />
+                    <p>
+                      <strong>Places réservées : </strong>
+                      {booking.seatsBooked}
                     </p>
                   </div>
-                )}
 
-                <p className="text-sm">
-                  <span className="font-medium">Réservé le :</span>{" "}
-                  {booking.bookingDate.toDate().toLocaleDateString("fr-FR")}
-                </p>
+                  {ride && (
+                    <div className="space-y-1">
+                      <p className="truncate">
+                        <span className="font-medium">
+                          <strong>De :</strong>
+                        </span>{" "}
+                        {ride.departureAddress}
+                      </p>
+                      <p className="truncate">
+                        <span className="font-medium">
+                          <strong>À : </strong>
+                        </span>{" "}
+                        {ride.arrivalAddress}
+                      </p>
+                      <p className="break-words">
+                        <span className="font-medium">
+                          <strong>Départ :</strong>
+                        </span>{" "}
+                        {ride.departureTime.toDate().toLocaleString("fr-FR")}
+                      </p>
+                      {/* <p>
+                        <span className="font-medium">Prix :</span> {ride.price}
+                        €
+                      </p> */}
+                    </div>
+                  )}
 
-                {booking.specialNotes && (
-                  <p className="text-sm break-words">
-                    <span className="font-medium">Notes :</span>{" "}
-                    {booking.specialNotes}
+                  {driver && (
+                    <div className="space-y-1 mt-2 border-t pt-2">
+                      <p className="font-medium text-gray-700">
+                        <strong>Informations conducteur :</strong>
+                      </p>
+                      <p>{driver.fullName}</p>
+                      {driver.phoneNumber && (
+                        <p className="text-sm">
+                          <span className="font-medium">Tél :</span>{" "}
+                          {driver.phoneNumber}
+                        </p>
+                      )}
+                      {driver.profilePicture && (
+                        <Image
+                          src={driver.profilePicture}
+                          alt={`Photo de ${driver.fullName}`}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-sm">
+                    <span className="font-medium">
+                      <strong>Réservé le :</strong>
+                    </span>{" "}
+                    {booking.bookingDate.toDate().toLocaleDateString("fr-FR")}
                   </p>
-                )}
 
-                {booking.status === "pending" && (
-                  <Badge
-                    onClick={() => handleCancelBooking(booking.id)}
-                    variant="destructive"
-                    className="mt-2 w-full sm:w-auto text-center cursor-pointer"
-                  >
-                    Annuler la réservation
-                  </Badge>
-                )}
-              </div>
-            </Card>
-          ))}
+                  {booking.specialNotes && (
+                    <p className="text-sm break-words">
+                      <span className="font-medium">
+                        <strong>Le message que vous avez laissé :</strong>
+                      </span>{" "}
+                      {booking.specialNotes}
+                    </p>
+                  )}
+
+                  {booking.status === "pending" && (
+                    <Badge
+                      onClick={() => handleCancelBooking(booking.id)}
+                      variant="destructive"
+                      className="mt-2 w-full sm:w-auto text-center cursor-pointer"
+                    >
+                      Annuler la réservation
+                    </Badge>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
   );
-
-  //   return (
-  //     <div className="space-y-4">
-  //       <h2 className="text-2xl font-bold">Mes Réservations</h2>
-  //       {bookings.length === 0 ? (
-  //         <p>Vous n'avez pas encore de réservations</p>
-  //       ) : (
-  //         bookings.map((booking) => (
-  //           //   <Card key={booking.id} className="p-4">
-  //           //     <div className="space-y-2">
-  //           //       <p>
-  //           //         {" "}
-  //           //         <strong>Nombre de places réservées :</strong>{" "}
-  //           //         {booking.seatsBooked}
-  //           //       </p>
-  //           //       <p className={getStatusColor(booking.status)}>
-  //           //         <strong>Statut :</strong> {getStatusText(booking.status)}
-  //           //       </p>
-  //           //       <p>
-  //           //         <strong>Date de réservation :</strong>{" "}
-  //           //         {booking.bookingDate.toDate().toLocaleDateString("fr-FR")}
-  //           //       </p>
-  //           //       {booking.specialNotes && (
-  //           //         <p>
-  //           //           {" "}
-  //           //           <strong>Message envoyé : </strong> {booking.specialNotes}
-  //           //         </p>
-  //           //       )}
-  //           //     </div>
-  //           //   </Card>
-  //           <Card key={booking.id} className="p-4">
-  //             <div className="space-y-2">
-  //               <p>Places réservées : {booking.seatsBooked}</p>
-  //               <StatusBadge status={booking.status} />
-
-  //               {rideDetails[booking.rideId] && (
-  //                 <>
-  //                   <p>De : {rideDetails[booking.rideId].departureAddress}</p>
-  //                   <p>À : {rideDetails[booking.rideId].arrivalAddress}</p>
-  //                   <p>
-  //                     Départ :{" "}
-  //                     {rideDetails[booking.rideId].departureTime
-  //                       .toDate()
-  //                       .toLocaleString("fr-FR")}
-  //                   </p>
-  //                 </>
-  //               )}
-
-  //               <p>
-  //                 Date de réservation :{" "}
-  //                 {booking.bookingDate.toDate().toLocaleDateString("fr-FR")}
-  //               </p>
-  //               {booking.specialNotes && <p>Notes : {booking.specialNotes}</p>}
-  //             </div>
-
-  //             {booking.status === "pending" && (
-  //               <Badge
-  //                 onClick={() => handleCancelBooking(booking.id)}
-  //                 variant="destructive"
-  //                 className="mt-2"
-  //               >
-  //                 Annuler la réservation
-  //               </Badge>
-  //             )}
-  //           </Card>
-  //         ))
-  //       )}
-  //     </div>
-  //   );
 };
 
 export default PassengerBookings;
