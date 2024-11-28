@@ -131,7 +131,7 @@ const MapComponent = ({
       leafletMap.current?.remove();
       leafletMap.current = null;
     };
-  }, []);
+  }, [userLocation]);
 
   return (
     <Card className="p-4">
