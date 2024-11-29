@@ -15,9 +15,15 @@ import {
   MdBookmarkAdd,
   MdClose,
 } from "react-icons/md";
+import NotificationBadge from "./NotificationBadge";
 
 const NavBar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [notifications, setNotifications] = useState({
+    reservations: 2,
+    demandesTrajets: 3,
+  });
+
   const router = useRouter();
   const { user, loading } = useAuth();
   const auth = getAuth(app);
@@ -30,6 +36,23 @@ const NavBar = () => {
     setIsDrawerOpen(false);
   };
 
+  // const DriverNavigation = () => (
+  //   <div className="flex flex-col lg:flex-row gap-4">
+  //     <Link href="/dashboard/driver" onClick={() => setIsDrawerOpen(false)}>
+  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
+  //         <MdAddRoad /> Créer un trajet
+  //       </Button>
+  //     </Link>
+  //     <Link
+  //       href="/dashboard/driver/bookings"
+  //       onClick={() => setIsDrawerOpen(false)}
+  //     >
+  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
+  //         <MdOutlineDirectionsCar /> Les demandes de trajet
+  //       </Button>
+  //     </Link>
+  //   </div>
+  // );
   const DriverNavigation = () => (
     <div className="flex flex-col lg:flex-row gap-4">
       <Link href="/dashboard/driver" onClick={() => setIsDrawerOpen(false)}>
@@ -41,8 +64,12 @@ const NavBar = () => {
         href="/dashboard/driver/bookings"
         onClick={() => setIsDrawerOpen(false)}
       >
-        <Button variant="ghost" className="flex items-center gap-2 w-full">
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 w-full relative"
+        >
           <MdOutlineDirectionsCar /> Les demandes de trajet
+          <NotificationBadge count={notifications.demandesTrajets} />
         </Button>
       </Link>
     </div>
@@ -59,12 +86,31 @@ const NavBar = () => {
         href="/dashboard/passanger/bookings"
         onClick={() => setIsDrawerOpen(false)}
       >
-        <Button variant="ghost" className="flex items-center gap-2 w-full">
+        <Button variant="ghost" className="flex items-center gap-2 w-full relative">
           <MdPerson /> Mes réservations
+          <NotificationBadge count={notifications.reservations} />
         </Button>
       </Link>
     </div>
   );
+
+  // const PassengerNavigation = () => (
+  //   <div className="flex flex-col lg:flex-row gap-4">
+  //     <Link href="/dashboard/passanger" onClick={() => setIsDrawerOpen(false)}>
+  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
+  //         <MdBookmarkAdd /> Trouver un trajet
+  //       </Button>
+  //     </Link>
+  //     <Link
+  //       href="/dashboard/passanger/bookings"
+  //       onClick={() => setIsDrawerOpen(false)}
+  //     >
+  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
+  //         <MdPerson /> Mes réservations
+  //       </Button>
+  //     </Link>
+  //   </div>
+  // );
 
   const MobileDrawer = () => (
     <div

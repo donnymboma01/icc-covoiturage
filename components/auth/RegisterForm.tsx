@@ -2,7 +2,8 @@
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+// import fs from "fs/promises";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,7 +20,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { MdAddAPhoto, MdPhotoCamera } from "react-icons/md";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {createUserWithEmailAndPassword, onAuthStateChanged} from "firebase/auth";
 import { app } from "../../app/config/firebase-config";
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -30,7 +31,7 @@ import {
   doc,
   setDoc,
   collection,
-  addDoc,
+  addDoc, getDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -74,7 +75,23 @@ const RegisterForm = () => {
 
   const isDriver = form.watch("isDriver");
 
-  const handleProfilePicture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* const saveImagesLocally = async (file : File, userId : string) =>{
+
+    const basePath = "public/uploads/profile-pictures";
+
+    const fileName = `${userId}-${Date.now()}-${file.name}`;
+    const fullPath = `${basePath}/${fileName}`;
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    await fs.mkdir(basePath, { recursive: true });
+
+    await fs.writeFile(fullPath, buffer);
+
+    return `/uploads/profile-pictures/${fileName}`;
+  } */
+
+  /*const handleProfilePicture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
     if (file) {
@@ -85,7 +102,54 @@ const RegisterForm = () => {
       };
       reader.readAsDataURL(file);
     }
+  }; */
+  const handleProfilePicture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (file) {
+      // Vérifier la taille du fichier (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("L'image ne doit pas dépasser 10MB");
+        return;
+      }
+
+      // Créer l'URL locale pour la prévisualisation
+      const localUrl = URL.createObjectURL(file);
+      setProfilePreview(localUrl);
+      form.setValue("profilePicture", file);
+
+      // Nettoyer l'URL lors du démontage du composant
+      return () => URL.revokeObjectURL(localUrl);
+    }
   };
+
+  const uploadImage = async (file: File, userId: string) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('userId', userId)
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    })
+
+    const data = await response.json()
+    return data.filepath
+  }
+
+  /*useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid)
+        const userDoc = await getDoc(userRef)
+        const userData = userDoc.data()
+
+        router.push(userData?.isDriver ? '/dashboard/driver' : '/dashboard/passenger')
+      }
+    })
+
+    return () => unsubscribe()
+  }, [auth, db, router]) */
 
   // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
   //   try {
@@ -186,13 +250,19 @@ const RegisterForm = () => {
 
       // 2. Handle profile picture upload if exists
       let profilePictureUrl = "";
-      if (values.profilePicture) {
+      /*if (values.profilePicture) {
         const storageRef = ref(
           storage,
           `profile-pictures/${userCredential.user.uid}/${values.profilePicture.name}`
         );
         const snapshot = await uploadBytes(storageRef, values.profilePicture);
         profilePictureUrl = await getDownloadURL(snapshot.ref);
+      }*/
+      /*if(values.profilePicture){
+        profilePictureUrl = await saveImagesLocally(values.profilePicture, userCredential.user.uid);
+      }*/
+      if (values.profilePicture) {
+        profilePictureUrl = await uploadImage(values.profilePicture, userCredential.user.uid);
       }
 
       // 3. Create church document
@@ -228,6 +298,7 @@ const RegisterForm = () => {
         await addDoc(collection(db, "vehicles"), vehicleDoc);
       }
 
+      await auth.signOut();
       toast.success("Inscription réussie");
       router.push("/auth/login");
     } catch (error: any) {

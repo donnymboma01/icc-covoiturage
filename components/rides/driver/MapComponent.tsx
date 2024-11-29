@@ -38,8 +38,7 @@ const MapComponent = ({
   const [arrivalMarker, setArrivalMarker] = useState<L.Marker | null>(null);
 
   const [userLocation, setUserLocation] = useState<[number, number]>([
-    50.85,
-    4.35, // Bruxelles par défaut
+    50.85, 4.35,
   ]);
 
   const updateMarker = (location: Location, type: "departure" | "arrival") => {
@@ -132,6 +131,13 @@ const MapComponent = ({
       leafletMap.current = null;
     };
   }, [userLocation]);
+
+  useEffect(() => {
+    return () => {
+      departureMarker?.remove();
+      arrivalMarker?.remove();
+    };
+  }, [arrivalMarker, departureMarker]);
 
   return (
     <Card className="p-4">

@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Form,
   FormControl,
@@ -22,7 +22,7 @@ import { LoginSchema } from "@/lib/schemas";
 import { Button } from "../ui/button";
 
 import { app } from "../../app/config/firebase-config";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import {getAuth, onAuthStateChanged, signInWithEmailAndPassword} from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { getDoc, doc, getFirestore } from "firebase/firestore";
 
@@ -39,6 +39,22 @@ const LoginForm = () => {
       password: "",
     },
   });
+
+  // Pour Djefou et Jason : ce useEffect permet de rediriger l'utilisateur vers le dashboard correspondant après la connexion.
+  // une fois connecté, on ne reviendra plus sur la page de connexion tant qu"on est pas deconnecté.
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid)
+        const userDoc = await getDoc(userRef)
+        const userData = userDoc.data()
+
+        router.push(userData?.isDriver ? '/dashboard/driver' : '/dashboard/passenger')
+      }
+    })
+
+    return () => unsubscribe()
+  }, [auth, db, router])
 
   const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
     try {
