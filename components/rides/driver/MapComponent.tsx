@@ -103,6 +103,49 @@ const MapComponent = ({
   };
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !mapRef.current) return;
+
+    setTimeout(() => {
+      leafletMap.current = L.map(mapRef.current!).setView(userLocation, 13);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(leafletMap.current);
+
+      navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const newLocation: [number, number] = [
+              position.coords.latitude,
+              position.coords.longitude,
+            ];
+            setUserLocation(newLocation);
+            leafletMap.current?.setView(newLocation, 13);
+          },
+          (error) => {
+            console.warn("Erreur de géolocalisation :", error);
+          }
+      );
+    }, 100);
+
+    return () => {
+      leafletMap.current?.remove();
+      leafletMap.current = null;
+    };
+  }, [userLocation]);
+
+
+  /*useEffect(() => {
+    if(typeof window === "undefined" || !mapRef.current || leafletMap.current) return;
+
+    const customIcon = L.icon({
+      iconUrl: "https://cdn-icons-png.flaticon.com/128/2098/2098567.png",
+      iconSize: [38, 38],
+      iconAnchor: [19, 38],
+      popupAnchor: [0, -38],
+    });
+
+
     if (!mapRef.current || leafletMap.current) return;
 
     leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
@@ -130,7 +173,7 @@ const MapComponent = ({
       leafletMap.current?.remove();
       leafletMap.current = null;
     };
-  }, [userLocation]);
+  }, [userLocation]); */
 
   useEffect(() => {
     return () => {
@@ -144,7 +187,7 @@ const MapComponent = ({
       <div className="space-y-4">
         <div
           ref={mapRef}
-          className="h-[400px] sm:h-[300px] md:h-[450px] w-full rounded-lg shadow-lg"
+          className="h-[500px] w-full z-0 rounded-lg"
         />
 
         <div className="space-y-4">

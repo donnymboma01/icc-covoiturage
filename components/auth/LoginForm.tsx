@@ -40,7 +40,7 @@ const LoginForm = () => {
     },
   });
 
-  // Pour Djefou et Jason : ce useEffect permet de rediriger l'utilisateur vers le dashboard correspondant après la connexion.
+  // Pour Djedou et Jason : ce useEffect permet de rediriger l'utilisateur vers le dashboard correspondant après la connexion.
   // une fois connecté, on ne reviendra plus sur la page de connexion tant qu"on est pas deconnecté.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

@@ -23,6 +23,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { toast } from "sonner";
 import ChurchSelector from "./ChrurchSelector";
 import RideSummary from "./RidesSummary";
+import { ErrorBoundary} from "react-error-boundary";
 
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -41,6 +42,19 @@ interface RideFormData {
   isRecurring: boolean;
   frequency?: "weekly" | "monthly";
 }
+
+// @ts-expect-error
+const MapWithErrorBoundary = ({ setFormData, formData }) => {
+  return (
+      <ErrorBoundary fallback={<div>Une erreur est survenue lors du chargement de la carte</div>}>
+        <MapComponent
+            onDepartureSelect={(address) => setFormData({ ...formData, departureAddress: address })}
+            onArrivalSelect={(address) => setFormData({ ...formData, arrivalAddress: address })}
+        />
+      </ErrorBoundary>
+  );
+};
+
 
 const CreateRideForm = () => {
   const { user } = useAuth();
@@ -181,7 +195,7 @@ const CreateRideForm = () => {
     </div>
   );
 
-  const renderStepThree = () => (
+  /*const renderStepThree = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Adresses</h2>
       <div style={{ display: currentStep === 3 ? "block" : "none" }}>
@@ -195,7 +209,17 @@ const CreateRideForm = () => {
         />
       </div>
     </div>
+  ); */
+  const renderStepThree = () => (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Adresses</h2>
+        <div style={{ display: currentStep === 3 ? "block" : "none" }}>
+          <MapWithErrorBoundary setFormData={setFormData} formData={formData} />
+        </div>
+      </div>
   );
+
+
 
   const renderStepFour = () => (
     <div className="space-y-4">
