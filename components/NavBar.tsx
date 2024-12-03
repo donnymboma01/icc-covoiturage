@@ -24,6 +24,7 @@ import {
   getDocs,
   getFirestore,
   Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 // import NotificationBadge from "./NotificationBadge";
 
@@ -49,16 +50,37 @@ const NavBar = () => {
     try {
       await signOut(auth);
       setIsDrawerOpen(false);
-      window.location.href = "/auth/login"; 
+      window.location.href = "/auth/login";
     } catch (error) {
       console.error("Sign out error:", error);
     }
   };
 
+  // useEffect(() => {
+  //   if (user) {
+  //     fetchActiveRidesCount();
+  //   }
+  // }, [user]);
   useEffect(() => {
-    if (user) {
-      fetchActiveRidesCount();
-    }
+    if (!user?.uid) return;
+
+    const ridesRef = collection(db, "rides");
+    const now = new Date();
+    const q = query(
+      ridesRef,
+      where("driverId", "==", user.uid),
+      where("status", "==", "active"),
+      where("departureTime", ">=", Timestamp.fromDate(now))
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const activeRides = snapshot.docs.filter(
+        (doc) => doc.data().availableSeats > 0
+      );
+      setActiveRidesCount(activeRides.length);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const fetchActiveRidesCount = async () => {

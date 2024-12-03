@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -71,12 +72,12 @@ const Home = () => {
           </Link> */}
           <Link
             className="mt-24  max-md:mt-16  underline hover:text-yellow-400 max-md:text-xs"
-            href="/auth/login"
+            href="/auth/register"
           >
             <div className="flex flex-col justify-center items-center">
               <GrUserAdmin className="text-slate-400" size={30} />
 
-              <p>Espace Administrateur</p>
+              <p>S'inscrire</p>
             </div>
           </Link>
         </div>

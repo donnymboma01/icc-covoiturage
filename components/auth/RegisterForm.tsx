@@ -90,15 +90,42 @@ const RegisterForm = () => {
 
   const isDriver = form.watch("isDriver");
 
+  // useEffect(() => {
+  //   const fetchChurches = async () => {
+  //     const churchesCollection = collection(db, "churches");
+  //     const churchesSnapshot = await getDocs(churchesCollection);
+  //     const churchesList = churchesSnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       name: doc.data().name,
+  //     }));
+  //     setChurches(churchesList);
+  //   };
+
+  //   fetchChurches();
+  // }, [db]);
+  // Replace the existing useEffect with this improved version
   useEffect(() => {
     const fetchChurches = async () => {
       const churchesCollection = collection(db, "churches");
       const churchesSnapshot = await getDocs(churchesCollection);
-      const churchesList = churchesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-      }));
-      setChurches(churchesList);
+
+      const churchMap = new Map();
+
+      churchesSnapshot.docs.forEach((doc) => {
+        const church = doc.data();
+        const normalizedName = church.name.trim().toLowerCase();
+
+        if (!churchMap.has(normalizedName)) {
+          churchMap.set(normalizedName, {
+            id: doc.id,
+            name: church.name.trim(),
+          });
+        }
+      });
+
+      const uniqueChurches = Array.from(churchMap.values());
+      uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
+      setChurches(uniqueChurches);
     };
 
     fetchChurches();
@@ -294,7 +321,7 @@ const RegisterForm = () => {
                     <SelectValue placeholder="Sélectionnez une église" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
                   {churches.map((church) => (
                     <SelectItem key={church.id} value={church.id}>
                       {church.name}
@@ -302,6 +329,21 @@ const RegisterForm = () => {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une église" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {churches.map((church) => (
+                    <SelectItem key={church.id} value={church.id}>
+                      {church.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select> */}
               <FormMessage />
             </FormItem>
           )}

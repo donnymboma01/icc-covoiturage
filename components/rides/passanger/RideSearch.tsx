@@ -116,9 +116,10 @@ const RideSearch = () => {
         where("departureTime", "<=", endOfDay),
       ];
 
-      if (selectedChurch) {
+      if (selectedChurch && selectedChurch !== "all") {
         conditions.push(where("churchId", "==", selectedChurch));
       }
+
       if (searchParams.seats > 0) {
         conditions.push(where("availableSeats", ">=", searchParams.seats));
       }
@@ -175,6 +176,83 @@ const RideSearch = () => {
     }
   };
 
+  // const handleSearch = async () => {
+  //   setLoading(true);
+  //   try {
+  //     console.log("Search Params:", searchParams);
+  //     const startOfDay = new Date(searchParams.date);
+  //     startOfDay.setHours(0, 0, 0, 0);
+
+  //     const endOfDay = new Date(searchParams.date);
+  //     endOfDay.setHours(23, 59, 59, 999);
+
+  //     const ridesRef = collection(db, "rides");
+
+  //     const conditions = [
+  //       where("status", "==", "active"),
+  //       where("departureTime", ">=", startOfDay),
+  //       where("departureTime", "<=", endOfDay),
+  //     ];
+
+  //     if (selectedChurch) {
+  //       conditions.push(where("churchId", "==", selectedChurch));
+  //     }
+  //     if (searchParams.seats > 0) {
+  //       conditions.push(where("availableSeats", ">=", searchParams.seats));
+  //     }
+
+  //     const q = query(ridesRef, ...conditions);
+  //     const querySnapshot = await getDocs(q);
+
+  //     const ridesData = await Promise.all(
+  //       querySnapshot.docs.map(async (doc) => {
+  //         const rideData = doc.data() as Ride;
+
+  //         const departureMatch =
+  //           !searchParams.departure ||
+  //           rideData.departureAddress
+  //             .toLowerCase()
+  //             .includes(searchParams.departure.toLowerCase());
+
+  //         const arrivalMatch =
+  //           !searchParams.arrival ||
+  //           rideData.arrivalAddress
+  //             .toLowerCase()
+  //             .includes(searchParams.arrival.toLowerCase());
+
+  //         if (!departureMatch || !arrivalMatch) {
+  //           return null;
+  //         }
+
+  //         const driverSnap = await getDocs(
+  //           query(
+  //             collection(db, "users"),
+  //             where("uid", "==", rideData.driverId)
+  //           )
+  //         );
+  //         const driverData = driverSnap.docs[0]?.data() as Driver;
+
+  //         return {
+  //           ...rideData,
+  //           id: doc.id,
+  //           driver: driverData,
+  //         };
+  //       })
+  //     );
+
+  //     const filteredRides = ridesData.filter(
+  //       (ride): ride is Ride & { driver: Driver } => ride !== null
+  //     );
+
+  //     setRides(filteredRides);
+  //   } catch (error) {
+  //     console.error("Error fetching rides:", error);
+  //     console.error("Détails de l'erreur:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   useEffect(() => {
     handleSearch();
   }, []);
@@ -215,22 +293,6 @@ const RideSearch = () => {
               />
             </div>
 
-            {/* <Select
-              value={selectedChurch || "all"}
-              onValueChange={(value) => setSelectedChurch(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner une église" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les églises</SelectItem>
-                {churches.map((church) => (
-                  <SelectItem key={church.id} value={church.id}>
-                    {church.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select> */}
             <Select
               value={selectedChurch || "all"}
               onValueChange={(value) => setSelectedChurch(value)}
@@ -305,110 +367,38 @@ const RideSearch = () => {
           ))
         ) : (
           <div className="col-span-full text-center py-8 text-gray-500">
-            Aucun trajet disponible
+            {selectedChurch && selectedChurch !== "all"
+              ? `Aucun trajet disponible pour ${
+                  churches.find((c) => c.id === selectedChurch)?.name
+                }`
+              : "Aucun trajet disponible"}
           </div>
         )}
       </div>
+
+      {/* <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {rides.length > 0 ? (
+          rides.map((ride) => (
+            <RideCard
+              key={ride.id}
+              ride={{
+                ...ride,
+                departureTime: ride.departureTime.toDate(),
+              }}
+              driver={ride.driver}
+              onClick={() => {
+                window.location.href = `/rides/${ride.id}`;
+              }}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-8 text-gray-500">
+            Aucun trajet disponible
+          </div>
+        )}
+      </div> */}
     </div>
   );
-
-  // return (
-  //   <div className="space-y-6 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-  //     <Card className="p-4 sm:p-6">
-  //       <form
-  //         onSubmit={(e) => {
-  //           e.preventDefault();
-  //           handleSearch();
-  //         }}
-  //         className="space-y-4"
-  //       >
-  //         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-  //           <div className="space-y-2">
-  //             <Input
-  //               placeholder="Départ"
-  //               value={searchParams.departure}
-  //               onChange={(e) =>
-  //                 setSearchParams({
-  //                   ...searchParams,
-  //                   departure: e.target.value,
-  //                 })
-  //               }
-  //               className="w-full"
-  //             />
-  //           </div>
-
-  //           <div className="space-y-2">
-  //             <Input
-  //               placeholder="Arrivée"
-  //               value={searchParams.arrival}
-  //               onChange={(e) =>
-  //                 setSearchParams({ ...searchParams, arrival: e.target.value })
-  //               }
-  //               className="w-full"
-  //             />
-  //           </div>
-
-  //           <div className="w-full">
-  //             <Calendar
-  //               mode="single"
-  //               selected={searchParams.date}
-  //               onSelect={(date) =>
-  //                 date && setSearchParams({ ...searchParams, date })
-  //               }
-  //               className="rounded-md border w-full"
-  //             />
-  //           </div>
-
-  //           <div className="space-y-2">
-  //             <Input
-  //               type="number"
-  //               min={1}
-  //               placeholder="Nombre de places"
-  //               value={searchParams.seats}
-  //               onChange={(e) =>
-  //                 setSearchParams({
-  //                   ...searchParams,
-  //                   seats: parseInt(e.target.value),
-  //                 })
-  //               }
-  //               className="w-full"
-  //             />
-  //           </div>
-  //         </div>
-
-  //         <Button
-  //           type="submit"
-  //           className="w-full sm:w-auto sm:min-w-[200px] mx-auto block"
-  //           disabled={loading}
-  //         >
-  //           {loading ? "Recherche en cours..." : "Rechercher"}
-  //         </Button>
-  //       </form>
-  //     </Card>
-
-  //     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-  //       {rides.length > 0 ? (
-  //         rides.map((ride) => (
-  //           <RideCard
-  //             key={ride.id}
-  //             ride={{
-  //               ...ride,
-  //               departureTime: ride.departureTime.toDate(),
-  //             }}
-  //             driver={ride.driver}
-  //             onClick={() => {
-  //               window.location.href = `/rides/${ride.id}`;
-  //             }}
-  //           />
-  //         ))
-  //       ) : (
-  //         <div className="col-span-full text-center py-8 text-gray-500">
-  //           Aucun trajet disponible
-  //         </div>
-  //       )}
-  //     </div>
-  //   </div>
-  // );
 };
 
 export default RideSearch;
