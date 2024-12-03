@@ -17,7 +17,14 @@ import {
   MdBookmarkAdd,
   MdClose,
 } from "react-icons/md";
-import { collection, query, where, getDocs, getFirestore, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  getFirestore,
+  Timestamp,
+} from "firebase/firestore";
 // import NotificationBadge from "./NotificationBadge";
 
 const NavBar = () => {
@@ -33,10 +40,19 @@ const NavBar = () => {
   const { user, loading } = useAuth();
   const auth = getAuth(app);
 
+  // const handleSignOut = async () => {
+  //   await signOut(auth);
+  //   router.push("/auth/login");
+  //   setIsDrawerOpen(false);
+  // };
   const handleSignOut = async () => {
-    await signOut(auth);
-    router.push("/auth/login");
-    setIsDrawerOpen(false);
+    try {
+      await signOut(auth);
+      setIsDrawerOpen(false);
+      window.location.href = "/auth/login"; 
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
   };
 
   useEffect(() => {
@@ -47,7 +63,7 @@ const NavBar = () => {
 
   const fetchActiveRidesCount = async () => {
     if (!user?.uid) return;
-    
+
     const ridesRef = collection(db, "rides");
     const now = new Date();
     const q = query(
@@ -56,12 +72,13 @@ const NavBar = () => {
       where("status", "==", "active"),
       where("departureTime", ">=", Timestamp.fromDate(now))
     );
-  
+
     const querySnapshot = await getDocs(q);
-    const activeRides = querySnapshot.docs.filter(doc => doc.data().availableSeats > 0);
+    const activeRides = querySnapshot.docs.filter(
+      (doc) => doc.data().availableSeats > 0
+    );
     setActiveRidesCount(activeRides.length);
   };
-  
 
   const DriverNavigation = () => (
     <div className="flex flex-col lg:flex-row gap-4">
@@ -79,10 +96,11 @@ const NavBar = () => {
         </Button>
       </Link>
       <Link href="/rides/history" onClick={() => setIsDrawerOpen(false)}>
-      <Button variant="ghost" className="flex items-center gap-2 w-full">
-        <MdHistory /> Mes trajets publiés <span className="ml-1">({activeRidesCount})</span>
-      </Button>
-    </Link>
+        <Button variant="ghost" className="flex items-center gap-2 w-full">
+          <MdHistory /> Mes trajets publiés{" "}
+          <span className="ml-1">({activeRidesCount})</span>
+        </Button>
+      </Link>
       <Link href="/dashboard/passanger" onClick={() => setIsDrawerOpen(false)}>
         <Button variant="ghost" className="flex items-center gap-2 w-full">
           <MdBookmarkAdd /> Trouver un trajet

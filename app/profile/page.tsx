@@ -17,20 +17,32 @@ import UserProfile from "../../components/profile/UserProfile";
 import { UserData } from "../../components/profile/UserProfile";
 
 const Profile = () => {
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
   // const handleUpdateUser = async (data: Partial<UserData>) => {
-  //   const userRef = doc(db, "Users", user.uid);
-  //   await updateDoc(userRef, data);
+  //   const user = auth.currentUser;
+  //   if (user) {
+  //     const userRef = doc(db, "users", user.uid);
+  //     await updateDoc(userRef, data);
+  //   }
   // };
   const handleUpdateUser = async (data: Partial<UserData>) => {
     const user = auth.currentUser;
     if (user) {
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, data);
+
+      setUserData((prevData) =>
+        prevData
+          ? {
+              ...prevData,
+              ...data,
+            }
+          : null
+      );
     }
   };
 

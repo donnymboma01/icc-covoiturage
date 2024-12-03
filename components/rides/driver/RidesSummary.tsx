@@ -14,14 +14,32 @@ interface RideSummaryProps {
     departureTime: Date;
     availableSeats: number;
     price?: number;
+    serviceType: string;
   };
 }
 
 const RideSummary = ({ formData }: RideSummaryProps) => {
+  const getServiceLabel = (serviceType: string) => {
+    const services = {
+      culte: "Culte du dimanche",
+      priere: "Réunion de prière",
+      evenement: "Événement spécial",
+      autre: "Autre",
+    };
+    return services[serviceType as keyof typeof services] || "Non spécifié";
+  };
+
   return (
     <div className="space-y-4">
       <Card className="p-4">
         <div className="grid gap-4">
+          <div>
+            <h3 className="text-sm font-medium text-slate-500">
+              Type de service
+            </h3>
+            <p className="text-lg">{getServiceLabel(formData.serviceType)}</p>
+          </div>
+
           <div>
             <h3 className="text-sm font-medium text-slate-500">
               Date et heure de départ
@@ -58,15 +76,6 @@ const RideSummary = ({ formData }: RideSummaryProps) => {
             <h3 className="text-sm font-medium text-slate-500">Église</h3>
             <p className="text-lg">{formData.churchName}</p>
           </div>
-
-          {/* {formData.price && (
-            <div>
-              <h3 className="text-sm font-medium text-slate-500">
-                Prix par personne
-              </h3>
-              <p className="text-lg">{formData.price}€</p>
-            </div>
-          )} */}
         </div>
       </Card>
     </div>

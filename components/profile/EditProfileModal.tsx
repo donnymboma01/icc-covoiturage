@@ -44,15 +44,8 @@ export function EditProfileModal({
       <DialogContent className="max-h-[90vh] w-full sm:w-[90%] md:w-[600px] lg:w-[500px] overflow-y-auto p-4 sm:p-6">
         <DialogHeader className="sticky top-0 bg-white z-10 pb-4">
           <DialogTitle className="text-xl font-semibold">
-            Modifier le profil
+            Modifier son profil
           </DialogTitle>
-          {/* <Button
-            variant="ghost"
-            className="absolute right-4 top-4"
-            onClick={onClose}
-          >
-            X
-          </Button> */}
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="flex justify-center mb-4">

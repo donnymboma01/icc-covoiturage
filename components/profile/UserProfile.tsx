@@ -7,6 +7,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import Image from "next/image";
 import {
   MdEmail,
   MdPhone,
@@ -16,12 +17,15 @@ import {
   MdLocationOn,
   MdVerified,
   MdStar,
+  MdNotifications,
 } from "react-icons/md";
 import { FaCarSide, FaUserEdit } from "react-icons/fa";
 import { EditProfileModal } from "./EditProfileModal";
 import { BecomeDriverModal } from "./BecomeDriver";
 import { doc, setDoc, getFirestore } from "firebase/firestore";
 import { app } from "../../app/config/firebase-config";
+import { useNotifications } from "@/app/hooks/useNotifications";
+import UserAvatar from "../../public/images/avatarprofile.png";
 
 interface Vehicle {
   brand: string;
@@ -39,6 +43,7 @@ export interface UserData {
   email: string;
   phoneNumber: string;
   vehicle?: Vehicle;
+  fcmToken?: string;
 }
 
 const UserProfile = ({
@@ -48,6 +53,7 @@ const UserProfile = ({
   user: UserData | null;
   onUpdateUser: (data: Partial<UserData>) => Promise<void>;
 }) => {
+  const { requestPermission, token } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [showDriverForm, setShowDriverForm] = useState(false);
   const db = getFirestore(app);
@@ -57,6 +63,28 @@ const UserProfile = ({
       await onUpdateUser(userData);
     } catch (error) {
       console.error("Error updating profile:", error);
+    }
+  };
+
+  const isVerifiedUser = (user: UserData | null): boolean => {
+    if (!user) return false;
+
+    const phoneNumberRegex = /^\d+$/;
+
+    return Boolean(
+      user.fullName &&
+        user.profilePicture &&
+        user.email &&
+        user.phoneNumber &&
+        phoneNumberRegex.test(user.phoneNumber)
+    );
+  };
+
+  const handleEnableNotifications = () => {
+    requestPermission();
+    // You can also store the token in the user's document
+    if (token && user) {
+      onUpdateUser({ fcmToken: token });
     }
   };
 
@@ -98,7 +126,7 @@ const UserProfile = ({
               <AvatarImage
                 src={
                   user?.profilePicture ||
-                  "../../public/images/avatarprofile.png"
+                  UserAvatar.src
                 }
               />
             </Avatar>
@@ -108,9 +136,14 @@ const UserProfile = ({
                 {user?.fullName}
               </h1>
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3 mb-4">
-                <Badge className="bg-white text-blue-800">
+                <Badge className="bg-slate-800 ">
                   {user?.isDriver ? "Conducteur" : "Passager"}
                 </Badge>
+                {/* {isVerifiedUser(user) && (
+                  <Badge className="bg-slate-800">
+                    <MdVerified className="mr-1" /> Vérifié
+                  </Badge>
+                )} */}
                 <Badge className="bg-slate-800">
                   <MdVerified className="mr-1" /> Vérifié
                 </Badge>
@@ -140,6 +173,7 @@ const UserProfile = ({
                   </p>
                 </div>
               </div>
+
               <div className="flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
                 <MdPhone className="text-lg sm:text-xl text-blue-600" />
                 <div>
@@ -149,6 +183,14 @@ const UserProfile = ({
                   </p>
                 </div>
               </div>
+
+              <Button
+                onClick={handleEnableNotifications}
+                className="flex items-center gap-2 w-full"
+              >
+                <MdNotifications />
+                Activer les notifications
+              </Button>
             </div>
           </Card>
 

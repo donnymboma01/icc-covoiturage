@@ -60,15 +60,39 @@ const RideSearch = () => {
   );
   const [selectedChurch, setSelectedChurch] = useState<string>("");
 
+  // useEffect(() => {
+  //   const fetchChurches = async () => {
+  //     const churchesRef = collection(db, "churches");
+  //     const churchesSnapshot = await getDocs(churchesRef);
+  //     const churchesData = churchesSnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       name: doc.data().name,
+  //     }));
+  //     setChurches(churchesData);
+  //   };
+
+  //   fetchChurches();
+  // }, []);
   useEffect(() => {
     const fetchChurches = async () => {
       const churchesRef = collection(db, "churches");
       const churchesSnapshot = await getDocs(churchesRef);
-      const churchesData = churchesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-      }));
-      setChurches(churchesData);
+
+      // Pour Jason & Djedou : ceci permet d'éviter les doublons des églises.
+      const churchMap = new Map();
+      churchesSnapshot.docs.forEach((doc) => {
+        const church = doc.data();
+        const normalizedName = church.name.trim().toLowerCase();
+        if (!churchMap.has(normalizedName)) {
+          churchMap.set(normalizedName, {
+            id: doc.id,
+            name: church.name.trim(),
+          });
+        }
+      });
+
+      const uniqueChurches = Array.from(churchMap.values());
+      setChurches(uniqueChurches);
     };
 
     fetchChurches();
@@ -86,12 +110,6 @@ const RideSearch = () => {
 
       const ridesRef = collection(db, "rides");
 
-      // const conditions = [
-      //   where("status", "==", "active"),
-      //   where("availableSeats", ">=", searchParams.seats),
-      //   where("departureTime", ">=", startOfDay),
-      //   where("departureTime", "<=", endOfDay),
-      // ];
       const conditions = [
         where("status", "==", "active"),
         where("departureTime", ">=", startOfDay),
@@ -197,7 +215,7 @@ const RideSearch = () => {
               />
             </div>
 
-            <Select
+            {/* <Select
               value={selectedChurch || "all"}
               onValueChange={(value) => setSelectedChurch(value)}
             >
@@ -211,6 +229,24 @@ const RideSearch = () => {
                     {church.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select> */}
+            <Select
+              value={selectedChurch || "all"}
+              onValueChange={(value) => setSelectedChurch(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sélectionner une église" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px] overflow-y-auto">
+                <SelectItem value="all">Toutes les églises</SelectItem>
+                {churches
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((church) => (
+                    <SelectItem key={church.id} value={church.id}>
+                      {church.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
 
