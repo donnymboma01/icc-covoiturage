@@ -25,6 +25,7 @@
     "covoiturage-icc-next": "file:",
     "date-fns": "^2.30.0",
     "firebase": "^11.0.2",
+    "firebase-admin": "^13.0.1",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
     "lucide-react": "^0.460.0",
