@@ -24,10 +24,10 @@ const NavBar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeRidesCount, setActiveRidesCount] = useState(0);
   const db = getFirestore(app);
-  const [notifications, setNotifications] = useState({
-    reservations: 2,
-    demandesTrajets: 3,
-  });
+  // const [notifications, setNotifications] = useState({
+  //   reservations: 2,
+  //   demandesTrajets: 3,
+  // });
 
   const router = useRouter();
   const { user, loading } = useAuth();
