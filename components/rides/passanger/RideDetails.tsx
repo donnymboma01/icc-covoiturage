@@ -43,7 +43,7 @@ interface Ride {
   churchId: string;
   departureAddress: string;
   arrivalAddress: string;
-  departureTime: Date; 
+  departureTime: Date;
   availableSeats: number;
   isRecurring: boolean;
   frequency?: "weekly" | "monthly";
@@ -52,22 +52,58 @@ interface Ride {
   waypoints?: string[];
 }
 
+interface Church {
+  id: string;
+  name: string;
+}
+
 const RideDetails = ({ rideId }: RideDetailsProps) => {
   const [ride, setRide] = useState<Ride | null>(null);
   const [driver, setDriver] = useState<Driver | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [church, setChurch] = useState<Church | null>(null);
 
   useEffect(() => {
+    // const fetchRideDetails = async () => {
+    //   try {
+    //     const rideDoc = await getDoc(doc(db, "rides", rideId));
+    //     if (rideDoc.exists()) {
+    //       const rideData = rideDoc.data();
+    //       setRide({
+    //         id: rideDoc.id,
+    //         ...rideData,
+    //         departureTime: rideData.departureTime.toDate(),
+    //       } as Ride);
+
+    //       const driverDoc = await getDocs(
+    //         query(
+    //           collection(db, "users"),
+    //           where("uid", "==", rideData.driverId)
+    //         )
+    //       );
+
+    //       if (!driverDoc.empty) {
+    //         const driverData = driverDoc.docs[0].data() as Driver;
+    //         setDriver(driverData);
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.error("Erreur au chargement du trajet:", error);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
     const fetchRideDetails = async () => {
       try {
         const rideDoc = await getDoc(doc(db, "rides", rideId));
         if (rideDoc.exists()) {
           const rideData = rideDoc.data();
+          console.log("rideData: ", rideData);
           setRide({
             id: rideDoc.id,
             ...rideData,
-            departureTime: rideData.departureTime.toDate(), 
+            departureTime: rideData.departureTime.toDate(),
           } as Ride);
 
           const driverDoc = await getDocs(
@@ -81,6 +117,29 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             const driverData = driverDoc.docs[0].data() as Driver;
             setDriver(driverData);
           }
+
+          // Fetch church data
+          // const churchDoc = await getDoc(
+          //   doc(db, "churches", rideData.churchId)
+          // );
+          // if (churchDoc.exists()) {
+          //   setChurch({
+          //     id: churchDoc.id,
+          //     name: churchDoc.data().name,
+          //   });
+          // }
+          // Inside fetchRideDetails function
+          if (rideData.churchId) {
+            const churchDoc = await getDoc(
+              doc(db, "churches", rideData.churchId)
+            );
+            if (churchDoc.exists()) {
+              setChurch({
+                id: churchDoc.id,
+                name: churchDoc.data().name,
+              });
+            }
+          }
         }
       } catch (error) {
         console.error("Erreur au chargement du trajet:", error);
@@ -88,6 +147,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
         setLoading(false);
       }
     };
+
     fetchRideDetails();
   }, [rideId]);
 
@@ -99,7 +159,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
     return <div>Trajet non trouvé</div>;
   }
 
-  const departureDate = ride.departureTime; 
+  const departureDate = ride.departureTime;
 
   return (
     <Card className="p-4 sm:p-6 max-w-2xl mx-auto w-full">
@@ -118,6 +178,11 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             <p className="text-gray-500 text-sm sm:text-base">
               {driver.phoneNumber}
             </p>
+            {church && (
+              <p className="text-gray-500 text-sm sm:text-base">
+                {church.name}
+              </p>
+            )}
           </div>
         </div>
 

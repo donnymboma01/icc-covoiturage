@@ -48,7 +48,7 @@ export const RegisterSchema = z.object({
   phoneNumber: z.string().min(10, "Numéro de téléphone invalide"),
   isDriver: z.boolean().default(false),
   profilePicture: z.instanceof(File).optional(),
-  church: z.string().min(2, "Le nom de l'église est requis"),
+  church: z.string().min(1, "Veuillez sélectionner une église"),
   vehicle: z
     .object({
       brand: z.string(),

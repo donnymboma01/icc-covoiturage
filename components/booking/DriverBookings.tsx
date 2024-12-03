@@ -19,6 +19,34 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
 import StatusBadge from "../ui/statusbadge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+const REJECTION_REASONS = [
+  "Horaires ne correspondent plus",
+  "Trajet modifié",
+  "Véhicule complet",
+  "Plus disponible ce jour-là",
+  "Autre",
+];
+
+interface RejectDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+}
 
 interface Booking {
   id: string;
@@ -45,13 +73,16 @@ const DriverBookings = () => {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
   const [passengerDetails, setPassengerDetails] = useState<{
     [key: string]: Passenger;
   }>({});
   const [rideDetails, setRideDetails] = useState<{ [key: string]: Ride }>({});
   const [filter, setFilter] = useState<
     "pending" | "accepted" | "rejected" | "all"
-  >("pending");
+  >("all");
 
   const filterButtons = (
     <div className="flex gap-2 mb-4">
@@ -82,31 +113,6 @@ const DriverBookings = () => {
     </div>
   );
 
-  //   useEffect(() => {
-  //     if (!user) return;
-
-  //     const db = getFirestore();
-  //     let q = query(collection(db, "bookings"));
-
-  //     // Ajout du filtre dans la requête
-  //     if (filter !== "all") {
-  //       q = query(collection(db, "bookings"), where("status", "==", filter));
-  //     }
-
-  //     const unsubscribe = onSnapshot(q, (snapshot) => {
-  //       const bookingsData = snapshot.docs.map(
-  //         (doc) =>
-  //           ({
-  //             id: doc.id,
-  //             ...doc.data(),
-  //           } as Booking)
-  //       );
-  //       setBookings(bookingsData);
-  //       setLoading(false);
-  //     });
-
-  //     return () => unsubscribe();
-  //   }, [user, filter]);
   useEffect(() => {
     if (!user) return;
 
@@ -160,7 +166,6 @@ const DriverBookings = () => {
 
     const db = getFirestore();
     bookings.forEach(async (booking) => {
-     
       const passengerDoc = await getDoc(doc(db, "users", booking.passengerId));
       if (passengerDoc.exists()) {
         setPassengerDetails((prev) => ({
@@ -169,7 +174,6 @@ const DriverBookings = () => {
         }));
       }
 
-     
       const rideDoc = await getDoc(doc(db, "rides", booking.rideId));
       if (rideDoc.exists()) {
         setRideDetails((prev) => ({
@@ -180,51 +184,18 @@ const DriverBookings = () => {
     });
   }, [bookings]);
 
-  //   useEffect(() => {
-  //     if (!user) return;
-
-  //     const db = getFirestore();
-  //     const q = query(
-  //       collection(db, "bookings"),
-  //       where("status", "==", "pending")
-  //     );
-
-  //     const unsubscribe = onSnapshot(q, (snapshot) => {
-  //       const bookingsData = snapshot.docs.map(
-  //         (doc) =>
-  //           ({
-  //             id: doc.id,
-  //             ...doc.data(),
-  //           } as Booking)
-  //       );
-  //       setBookings(bookingsData);
-  //       setLoading(false);
-  //     });
-
-  //     return () => unsubscribe();
-  //   }, [user]);
-
-  //   const handleBookingAction = async (
-  //     bookingId: string,
-  //     status: "accepted" | "rejected"
-  //   ) => {
-  //     const db = getFirestore();
-  //     try {
-  //       await updateDoc(doc(db, "bookings", bookingId), {
-  //         status,
-  //         updatedAt: new Date(),
-  //       });
-  //     } catch (error) {
-  //       console.error("Error updating booking:", error);
-  //     }
-  //   };
   const handleBookingAction = async (
     booking: Booking,
     status: "accepted" | "rejected"
   ) => {
+    if (status === "rejected") {
+      setSelectedBooking(booking);
+      setIsRejectDialogOpen(true);
+      return;
+    }
+
     const db = getFirestore();
     try {
-     
       await updateDoc(doc(db, "bookings", booking.id), {
         status,
         updatedAt: Timestamp.now(),
@@ -241,6 +212,23 @@ const DriverBookings = () => {
           });
         }
       }
+    } catch (error) {
+      console.error("Error updating booking:", error);
+    }
+  };
+
+  const handleConfirmReject = async (reason: string) => {
+    if (!selectedBooking) return;
+
+    const db = getFirestore();
+    try {
+      await updateDoc(doc(db, "bookings", selectedBooking.id), {
+        status: "rejected",
+        rejectionReason: reason,
+        updatedAt: Timestamp.now(),
+      });
+      setIsRejectDialogOpen(false);
+      setSelectedBooking(null);
     } catch (error) {
       console.error("Error updating booking:", error);
     }
@@ -330,69 +318,56 @@ const DriverBookings = () => {
           ))}
         </div>
       )}
+      <RejectDialog
+        isOpen={isRejectDialogOpen}
+        onClose={() => setIsRejectDialogOpen(false)}
+        onConfirm={handleConfirmReject}
+      />
     </div>
   );
-
-  //   return (
-  //     <div className="space-y-4">
-  //       <h2 className="text-2xl font-bold">Demandes de réservation</h2>
-  //       {filterButtons}
-  //       {bookings.length === 0 ? (
-  //         <p>Aucune demande en attente</p>
-  //       ) : (
-  //         bookings.map((booking) => (
-  //           <Card key={booking.id} className="p-4">
-  //             <div className="space-y-2">
-  //               {passengerDetails[booking.passengerId] && (
-  //                 <div className="mb-4">
-  //                   <h3 className="font-semibold">Passager :</h3>
-  //                   <p>Nom : {passengerDetails[booking.passengerId].fullName}</p>
-  //                   {passengerDetails[booking.passengerId].phoneNumber && (
-  //                     <p>
-  //                       Téléphone :{" "}
-  //                       {passengerDetails[booking.passengerId].phoneNumber}
-  //                     </p>
-  //                   )}
-  //                 </div>
-  //               )}
-
-  //               {rideDetails[booking.rideId] && (
-  //                 <div className="mb-4">
-  //                   <h3 className="font-semibold">Détails du trajet :</h3>
-  //                   <p>De : {rideDetails[booking.rideId].departureAddress}</p>
-  //                   <p>À : {rideDetails[booking.rideId].arrivalAddress}</p>
-  //                   <p>
-  //                     Départ :{" "}
-  //                     {rideDetails[booking.rideId].departureTime
-  //                       .toDate()
-  //                       .toLocaleString("fr-FR")}
-  //                   </p>
-  //                 </div>
-  //               )}
-
-  //               <p>Places demandées : {booking.seatsBooked}</p>
-  //               {booking.specialNotes && <p>Notes : {booking.specialNotes}</p>}
-
-  //               <div className="flex gap-2 mt-4">
-  //                 <Badge
-  //                   onClick={() => handleBookingAction(booking, "accepted")}
-  //                   variant="default"
-  //                 >
-  //                   Accepter
-  //                 </Badge>
-  //                 <Badge
-  //                   onClick={() => handleBookingAction(booking, "rejected")}
-  //                   variant="destructive"
-  //                 >
-  //                   Refuser
-  //                 </Badge>
-  //               </div>
-  //             </div>
-  //           </Card>
-  //         ))
-  //       )}
-  //     </div>
-  //   );
 };
 
 export default DriverBookings;
+
+const RejectDialog = ({ isOpen, onClose, onConfirm }: RejectDialogProps) => {
+  const [selectedReason, setSelectedReason] = useState<string>("");
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirmer le refus</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="mb-4">
+            Êtes-vous sûr de vouloir refuser cette demande ?
+          </p>
+          <Select onValueChange={setSelectedReason} value={selectedReason}>
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionnez une raison" />
+            </SelectTrigger>
+            <SelectContent>
+              {REJECTION_REASONS.map((reason) => (
+                <SelectItem key={reason} value={reason}>
+                  {reason}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => onConfirm(selectedReason)}
+            disabled={!selectedReason}
+          >
+            Confirmer le refus
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

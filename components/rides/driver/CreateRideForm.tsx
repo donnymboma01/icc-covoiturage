@@ -23,7 +23,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { toast } from "sonner";
 import ChurchSelector from "./ChrurchSelector";
 import RideSummary from "./RidesSummary";
-import { ErrorBoundary} from "react-error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -43,18 +43,30 @@ interface RideFormData {
   frequency?: "weekly" | "monthly";
 }
 
-// @ts-expect-error
-const MapWithErrorBoundary = ({ setFormData, formData }) => {
+const MapWithErrorBoundary = ({
+  setFormData,
+  formData,
+}: {
+  setFormData: React.Dispatch<React.SetStateAction<RideFormData>>;
+  formData: RideFormData;
+}) => {
   return (
-      <ErrorBoundary fallback={<div>Une erreur est survenue lors du chargement de la carte</div>}>
-        <MapComponent
-            onDepartureSelect={(address) => setFormData({ ...formData, departureAddress: address })}
-            onArrivalSelect={(address) => setFormData({ ...formData, arrivalAddress: address })}
-        />
-      </ErrorBoundary>
+    <ErrorBoundary
+      fallback={
+        <div>Une erreur est survenue lors du chargement de la carte</div>
+      }
+    >
+      <MapComponent
+        onDepartureSelect={(address) =>
+          setFormData({ ...formData, departureAddress: address })
+        }
+        onArrivalSelect={(address) =>
+          setFormData({ ...formData, arrivalAddress: address })
+        }
+      />
+    </ErrorBoundary>
   );
 };
-
 
 const CreateRideForm = () => {
   const { user } = useAuth();
@@ -102,20 +114,6 @@ const CreateRideForm = () => {
         return;
       }
 
-      // const rideData = {
-      //   driverId: user.uid,
-      //   churchId: formData.churchId,
-      //   departureAddress: formData.departureAddress,
-      //   arrivalAddress: formData.arrivalAddress,
-      //   departureTime: formData.departureTime,
-      //   availableSeats: formData.availableSeats,
-      //   isRecurring: formData.isRecurring,
-      //   frequency: formData.frequency,
-      //   status: "active",
-      //   waypoints: formData.waypoints,
-      //   price: formData.price || 0,
-      //   createdAt: new Date(),
-      // };
       const rideData = {
         driverId: user.uid,
         churchId: formData.churchId,
@@ -136,7 +134,7 @@ const CreateRideForm = () => {
 
       toast.success("Votre trajet a été créé");
 
-      router.push("/rides");
+      router.push("/rides/history");
     } catch (error: unknown) {
       console.error("Détails complets de l'erreur:", error);
       if (error instanceof Error) {
@@ -153,8 +151,9 @@ const CreateRideForm = () => {
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Sélection de l'église</h2>
       <ChurchSelector
-        onChurchSelect={(churchId, churchName) => 
-          setFormData({ ...formData, churchId, churchName })}
+        onChurchSelect={(churchId, churchName) =>
+          setFormData({ ...formData, churchId, churchName })
+        }
       />
     </div>
   );
@@ -211,15 +210,13 @@ const CreateRideForm = () => {
     </div>
   ); */
   const renderStepThree = () => (
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Adresses</h2>
-        <div style={{ display: currentStep === 3 ? "block" : "none" }}>
-          <MapWithErrorBoundary setFormData={setFormData} formData={formData} />
-        </div>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Adresses</h2>
+      <div style={{ display: currentStep === 3 ? "block" : "none" }}>
+        <MapWithErrorBoundary setFormData={setFormData} formData={formData} />
       </div>
+    </div>
   );
-
-
 
   const renderStepFour = () => (
     <div className="space-y-4">

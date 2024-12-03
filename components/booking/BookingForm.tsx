@@ -69,6 +69,65 @@ const BookingForm = ({
   const [seats, setSeats] = useState(1);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+
+  // const validateSeats = (value: number) => {
+  //   if (value <= 0) {
+  //     setError("Vous devez réserver au moins 1 place");
+  //     return false;
+  //   }
+  //   if (value > ride.availableSeats) {
+  //     setError(
+  //       `Il ne reste que ${ride.availableSeats} place${
+  //         ride.availableSeats > 1 ? "s" : ""
+  //       } disponible${ride.availableSeats > 1 ? "s" : ""}`
+  //     );
+  //     return false;
+  //   }
+  //   setError("");
+  //   return true;
+  // };
+  const validateSeats = (value: number | string) => {
+    if (value === "" || value === undefined) {
+      setError("Veuillez entrer le nombre de places souhaité");
+      return false;
+    }
+
+    const numValue = Number(value);
+
+    if (isNaN(numValue)) {
+      setError("Veuillez entrer uniquement des chiffres");
+      return false;
+    }
+
+    if (!Number.isInteger(numValue)) {
+      setError("Le nombre de places doit être un nombre entier");
+      return false;
+    }
+
+    if (numValue <= 0) {
+      setError("Vous devez réserver au moins 1 place");
+      return false;
+    }
+
+    if (numValue > ride.availableSeats) {
+      setError(
+        `Il ne reste que ${ride.availableSeats} place${
+          ride.availableSeats > 1 ? "s" : ""
+        } disponible${ride.availableSeats > 1 ? "s" : ""}`
+      );
+      return false;
+    }
+
+    setError("");
+    return true;
+  };
+
+  const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSeats(Number(value));
+    validateSeats(value);
+  };
 
   // const handleSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
@@ -76,7 +135,12 @@ const BookingForm = ({
 
   //   setLoading(true);
   //   try {
-  //     await addDoc(collection(db, "bookings"), {
+  //     const userDoc = await getDoc(doc(db, "users", user.uid));
+  //     if (!userDoc.exists()) {
+  //       throw new Error("Le profil de l'utilisateur n'existe pas.");
+  //     }
+
+  //     const bookingRef = await addDoc(collection(db, "bookings"), {
   //       rideId: ride.id,
   //       passengerId: user.uid,
   //       bookingDate: new Date(),
@@ -85,21 +149,23 @@ const BookingForm = ({
   //       specialNotes: notes,
   //     });
 
-  //     await updateDoc(doc(db, "rides", ride.id), {
+  //     const rideRef = doc(db, "rides", ride.id);
+  //     await updateDoc(rideRef, {
   //       availableSeats: ride.availableSeats - seats,
   //     });
 
   //     onSuccess();
   //   } catch (error) {
-  //     console.error("Error creating booking:", error);
+  //     console.error("Erreur lors de la création de la réservation:", error);
   //   } finally {
   //     setLoading(false);
   //   }
   // };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (!validateSeats(seats)) return;
 
     setLoading(true);
     try {
@@ -125,6 +191,7 @@ const BookingForm = ({
       onSuccess();
     } catch (error) {
       console.error("Erreur lors de la création de la réservation:", error);
+      setError("Une erreur est survenue lors de la réservation");
     } finally {
       setLoading(false);
     }
@@ -140,12 +207,20 @@ const BookingForm = ({
           min={1}
           max={ride.availableSeats}
           value={seats}
-          onChange={(e) => setSeats(parseInt(e.target.value))}
+          onChange={handleSeatsChange}
+          required
+          pattern="[0-9]*"
+          className={error ? "border-red-500" : ""}
         />
+
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        <p className="text-sm text-gray-500">
+          Places disponibles: {ride.availableSeats}
+        </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Notes spéciales</Label>
+        <Label htmlFor="notes">Ecrivez un message pour le conducteur</Label>
         <Textarea
           id="notes"
           placeholder="Informations complémentaires pour le conducteur..."
@@ -154,7 +229,13 @@ const BookingForm = ({
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={
+          loading || !!error || seats <= 0 || seats > ride.availableSeats
+        }
+      >
         {loading ? "Réservation en cours..." : "Confirmer la réservation"}
       </Button>
     </form>

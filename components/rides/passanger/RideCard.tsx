@@ -5,6 +5,7 @@ import { fr } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MdAccessTime, MdLocationOn } from "react-icons/md";
 
 interface RideCardProps {
@@ -44,11 +45,11 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
                 {format(ride.departureTime, "EEEE d MMMM", { locale: fr })}
               </p>
             </div>
-            {ride.price && (
+            {/* {ride.price && (
               <span className="font-semibold text-green-600">
                 {ride.price}€
               </span>
-            )}
+            )} */}
           </div>
 
           <div className="space-y-1.5">
@@ -72,11 +73,29 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-2">
+          {/* <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-2">
             <span className="text-xs sm:text-sm text-slate-600">
               {ride.availableSeats} place{ride.availableSeats > 1 ? "s" : ""}{" "}
               disponible{ride.availableSeats > 1 ? "s" : ""}
             </span>
+            <Button
+              onClick={onClick}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              Voir détails
+            </Button>
+          </div> */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-2">
+            <Badge
+              variant={ride.availableSeats === 0 ? "secondary" : "default"}
+            >
+              {ride.availableSeats === 0
+                ? "Complet"
+                : `${ride.availableSeats} place${
+                    ride.availableSeats > 1 ? "s" : ""
+                  } disponible${ride.availableSeats > 1 ? "s" : ""}`}
+            </Badge>
             <Button
               onClick={onClick}
               variant="outline"

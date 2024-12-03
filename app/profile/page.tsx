@@ -10,15 +10,29 @@ import {
   query,
   where,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { app } from "../config/firebase-config";
 import UserProfile from "../../components/profile/UserProfile";
+import { UserData } from "../../components/profile/UserProfile";
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const auth = getAuth(app);
   const db = getFirestore(app);
+
+  // const handleUpdateUser = async (data: Partial<UserData>) => {
+  //   const userRef = doc(db, "Users", user.uid);
+  //   await updateDoc(userRef, data);
+  // };
+  const handleUpdateUser = async (data: Partial<UserData>) => {
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, data);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -70,7 +84,7 @@ const Profile = () => {
     );
   }
 
-  return <UserProfile user={userData} />;
+  return <UserProfile user={userData} onUpdateUser={handleUpdateUser} />;
 };
 
 export default Profile;

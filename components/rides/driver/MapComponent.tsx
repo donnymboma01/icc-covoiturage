@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -103,36 +104,69 @@ const MapComponent = ({
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !mapRef.current) return;
-
-    setTimeout(() => {
-      leafletMap.current = L.map(mapRef.current!).setView(userLocation, 13);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      }).addTo(leafletMap.current);
-
-      navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const newLocation: [number, number] = [
-              position.coords.latitude,
-              position.coords.longitude,
-            ];
-            setUserLocation(newLocation);
-            leafletMap.current?.setView(newLocation, 13);
-          },
-          (error) => {
-            console.warn("Erreur de géolocalisation :", error);
-          }
-      );
-    }, 100);
-
+    if (typeof window === 'undefined' || !mapRef.current || leafletMap.current) return;
+  
+    leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
+  
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(leafletMap.current);
+  
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation: [number, number] = [
+          position.coords.latitude,
+          position.coords.longitude,
+        ];
+        setUserLocation(newLocation);
+        leafletMap.current?.setView(newLocation, 13);
+      },
+      (error) => {
+        console.warn("Erreur de géolocalisation :", error);
+      }
+    );
+  
     return () => {
-      leafletMap.current?.remove();
-      leafletMap.current = null;
+      if (leafletMap.current) {
+        leafletMap.current.remove();
+        leafletMap.current = null;
+      }
     };
-  }, [userLocation]);
+  }, []); 
+  
+
+  // useEffect(() => {
+  //   if (typeof window === 'undefined' || !mapRef.current) return;
+
+  //   setTimeout(() => {
+  //     leafletMap.current = L.map(mapRef.current!).setView(userLocation, 13);
+
+  //     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  //       attribution:
+  //           '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  //     }).addTo(leafletMap.current);
+
+  //     navigator.geolocation.getCurrentPosition(
+  //         (position) => {
+  //           const newLocation: [number, number] = [
+  //             position.coords.latitude,
+  //             position.coords.longitude,
+  //           ];
+  //           setUserLocation(newLocation);
+  //           leafletMap.current?.setView(newLocation, 13);
+  //         },
+  //         (error) => {
+  //           console.warn("Erreur de géolocalisation :", error);
+  //         }
+  //     );
+  //   }, 100);
+
+  //   return () => {
+  //     leafletMap.current?.remove();
+  //     leafletMap.current = null;
+  //   };
+  // }, [userLocation]);
 
 
   /*useEffect(() => {

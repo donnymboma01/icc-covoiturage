@@ -12,12 +12,24 @@ import {
   doc,
   getDoc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 import { useAuth } from "@/app/hooks/useAuth";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import StatusBadge from "../ui/statusbadge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Booking {
   id: string;
@@ -27,6 +39,7 @@ interface Booking {
   seatsBooked: number;
   specialNotes: string;
   bookingDate: Timestamp;
+  rejectionReason?: string;
 }
 
 interface Ride {
@@ -48,6 +61,7 @@ const PassengerBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [rideDetails, setRideDetails] = useState<{ [key: string]: Ride }>({});
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
   const [driverDetails, setDriverDetails] = useState<{ [key: string]: Driver }>(
     {}
   );
@@ -121,6 +135,31 @@ const PassengerBookings = () => {
     }
   };
 
+  // const handleDeleteBooking = async (bookingId: string) => {
+  //   const db = getFirestore();
+  //   try {
+  //     await deleteDoc(doc(db, "bookings", bookingId));
+  //   } catch (error) {
+  //     console.error("Erreur lors de la suppression:", error);
+  //   }
+  // };
+  const handleDeleteBooking = async () => {
+    if (!bookingToDelete) return;
+
+    const db = getFirestore();
+    try {
+      await deleteDoc(doc(db, "bookings", bookingToDelete));
+      setBookingToDelete(null);
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+    }
+  };
+
+  const isBookingPast = (departureTime: Timestamp) => {
+    const now = Timestamp.now();
+    return departureTime.seconds < now.seconds;
+  };
+
   if (loading) return <div>Chargement de vos réservations...</div>;
 
   return (
@@ -141,6 +180,13 @@ const PassengerBookings = () => {
                 <div className="space-y-2 text-sm sm:text-base">
                   <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
                     <StatusBadge status={booking.status} />
+                    {booking.status === "rejected" &&
+                      booking.rejectionReason && (
+                        <p className="text-sm text-red-600">
+                          <strong>Raison du refus :</strong>{" "}
+                          {booking.rejectionReason}
+                        </p>
+                      )}
                     <p>
                       <strong>Places réservées : </strong>
                       {booking.seatsBooked}
@@ -222,6 +268,39 @@ const PassengerBookings = () => {
                     </Badge>
                   )}
                 </div>
+                {(booking.status === "rejected" ||
+                  (ride && isBookingPast(ride.departureTime))) && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Badge
+                        variant="destructive"
+                        className="mt-2 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
+                        onClick={() => setBookingToDelete(booking.id)}
+                      >
+                        Supprimer la réservation
+                      </Badge>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Cette action est irréversible. La réservation sera
+                          définitivement supprimée.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel
+                          onClick={() => setBookingToDelete(null)}
+                        >
+                          Annuler
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteBooking}>
+                          Confirmer la suppression
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </Card>
             );
           })}

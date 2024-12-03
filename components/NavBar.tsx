@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import React, { useState } from "react";
-import { MdLogin, MdMenu } from "react-icons/md";
+import React, { useState, useEffect } from "react";
+import { MdHistory, MdLogin, MdMenu } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,10 +17,13 @@ import {
   MdBookmarkAdd,
   MdClose,
 } from "react-icons/md";
-import NotificationBadge from "./NotificationBadge";
+import { collection, query, where, getDocs, getFirestore, Timestamp } from "firebase/firestore";
+// import NotificationBadge from "./NotificationBadge";
 
 const NavBar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeRidesCount, setActiveRidesCount] = useState(0);
+  const db = getFirestore(app);
   const [notifications, setNotifications] = useState({
     reservations: 2,
     demandesTrajets: 3,
@@ -29,13 +33,63 @@ const NavBar = () => {
   const { user, loading } = useAuth();
   const auth = getAuth(app);
 
-  if (loading) return null;
-
   const handleSignOut = async () => {
     await signOut(auth);
     router.push("/auth/login");
     setIsDrawerOpen(false);
   };
+
+  useEffect(() => {
+    if (user) {
+      fetchActiveRidesCount();
+    }
+  }, [user]);
+
+  const fetchActiveRidesCount = async () => {
+    if (!user?.uid) return;
+    
+    const ridesRef = collection(db, "rides");
+    const now = new Date();
+    const q = query(
+      ridesRef,
+      where("driverId", "==", user.uid),
+      where("status", "==", "active"),
+      where("departureTime", ">=", Timestamp.fromDate(now))
+    );
+  
+    const querySnapshot = await getDocs(q);
+    const activeRides = querySnapshot.docs.filter(doc => doc.data().availableSeats > 0);
+    setActiveRidesCount(activeRides.length);
+  };
+  
+
+  const DriverNavigation = () => (
+    <div className="flex flex-col lg:flex-row gap-4">
+      <Link href="/dashboard/driver" onClick={() => setIsDrawerOpen(false)}>
+        <Button variant="ghost" className="flex items-center gap-2 w-full">
+          <MdAddRoad /> Créer un trajet
+        </Button>
+      </Link>
+      <Link
+        href="/dashboard/driver/bookings"
+        onClick={() => setIsDrawerOpen(false)}
+      >
+        <Button variant="ghost" className="flex items-center gap-2 w-full">
+          <MdOutlineDirectionsCar /> Les demandes de trajet
+        </Button>
+      </Link>
+      <Link href="/rides/history" onClick={() => setIsDrawerOpen(false)}>
+      <Button variant="ghost" className="flex items-center gap-2 w-full">
+        <MdHistory /> Mes trajets publiés <span className="ml-1">({activeRidesCount})</span>
+      </Button>
+    </Link>
+      <Link href="/dashboard/passanger" onClick={() => setIsDrawerOpen(false)}>
+        <Button variant="ghost" className="flex items-center gap-2 w-full">
+          <MdBookmarkAdd /> Trouver un trajet
+        </Button>
+      </Link>
+    </div>
+  );
 
   // const DriverNavigation = () => (
   //   <div className="flex flex-col lg:flex-row gap-4">
@@ -52,29 +106,13 @@ const NavBar = () => {
   //         <MdOutlineDirectionsCar /> Les demandes de trajet
   //       </Button>
   //     </Link>
+  //     <Link href="/rides/history" onClick={() => setIsDrawerOpen(false)}>
+  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
+  //         <MdHistory /> Mes trajets publiés
+  //       </Button>
+  //     </Link>
   //   </div>
   // );
-  const DriverNavigation = () => (
-    <div className="flex flex-col lg:flex-row gap-4">
-      <Link href="/dashboard/driver" onClick={() => setIsDrawerOpen(false)}>
-        <Button variant="ghost" className="flex items-center gap-2 w-full">
-          <MdAddRoad /> Créer un trajet
-        </Button>
-      </Link>
-      <Link
-        href="/dashboard/driver/bookings"
-        onClick={() => setIsDrawerOpen(false)}
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full relative"
-        >
-          <MdOutlineDirectionsCar /> Les demandes de trajet
-          <NotificationBadge count={notifications.demandesTrajets} />
-        </Button>
-      </Link>
-    </div>
-  );
 
   const PassengerNavigation = () => (
     <div className="flex flex-col lg:flex-row gap-4">
@@ -87,31 +125,12 @@ const NavBar = () => {
         href="/dashboard/passanger/bookings"
         onClick={() => setIsDrawerOpen(false)}
       >
-        <Button variant="ghost" className="flex items-center gap-2 w-full relative">
+        <Button variant="ghost" className="flex items-center gap-2 w-full">
           <MdPerson /> Mes réservations
-          <NotificationBadge count={notifications.reservations} />
         </Button>
       </Link>
     </div>
   );
-
-  // const PassengerNavigation = () => (
-  //   <div className="flex flex-col lg:flex-row gap-4">
-  //     <Link href="/dashboard/passanger" onClick={() => setIsDrawerOpen(false)}>
-  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
-  //         <MdBookmarkAdd /> Trouver un trajet
-  //       </Button>
-  //     </Link>
-  //     <Link
-  //       href="/dashboard/passanger/bookings"
-  //       onClick={() => setIsDrawerOpen(false)}
-  //     >
-  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
-  //         <MdPerson /> Mes réservations
-  //       </Button>
-  //     </Link>
-  //   </div>
-  // );
 
   const MobileDrawer = () => (
     <div
@@ -180,6 +199,8 @@ const NavBar = () => {
     </div>
   );
 
+  if (loading) return null;
+
   return (
     <nav className="bg-white shadow-md">
       <div className="container mx-auto flex justify-between items-center p-4">
@@ -229,5 +250,4 @@ const NavBar = () => {
     </nav>
   );
 };
-
 export default NavBar;
