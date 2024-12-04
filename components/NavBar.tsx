@@ -6,6 +6,7 @@ import { MdHistory, MdLogin, MdMenu, MdSettings } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useAuth } from "@/app/hooks/useAuth";
 import { app } from "@/app/config/firebase-config";
 import { signOut, getAuth } from "firebase/auth";
@@ -33,26 +34,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-// import NotificationBadge from "./NotificationBadge";
 
 const NavBar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeRidesCount, setActiveRidesCount] = useState(0);
   const db = getFirestore(app);
-  // const [notifications, setNotifications] = useState({
-  //   reservations: 2,
-  //   demandesTrajets: 3,
-  // });
 
   const router = useRouter();
   const { user, loading } = useAuth();
   const auth = getAuth(app);
-
-  // const handleSignOut = async () => {
-  //   await signOut(auth);
-  //   router.push("/auth/login");
-  //   setIsDrawerOpen(false);
-  // };
 
   const handleDeleteAccount = async () => {
     if (
@@ -64,14 +54,16 @@ const NavBar = () => {
         const user = auth.currentUser;
         if (!user) return;
 
-        // Delete user data from Firestore
         await deleteDoc(doc(db, "users", user.uid));
-        // Delete user authentication
         await user.delete();
 
-        window.location.href = "/auth/login";
+        toast.success("Compte supprimé avec succès. Nous espérons vous revoir bientôt !");
+
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 3000);
       } catch (error) {
-        console.error("Error deleting account:", error);
+        toast.error("Un problème est survenu lors de la suppression du compte");
       }
     }
   };
@@ -86,11 +78,6 @@ const NavBar = () => {
     }
   };
 
-  // useEffect(() => {
-  //   if (user) {
-  //     fetchActiveRidesCount();
-  //   }
-  // }, [user]);
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -160,29 +147,6 @@ const NavBar = () => {
       </Link>
     </div>
   );
-
-  // const DriverNavigation = () => (
-  //   <div className="flex flex-col lg:flex-row gap-4">
-  //     <Link href="/dashboard/driver" onClick={() => setIsDrawerOpen(false)}>
-  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
-  //         <MdAddRoad /> Créer un trajet
-  //       </Button>
-  //     </Link>
-  //     <Link
-  //       href="/dashboard/driver/bookings"
-  //       onClick={() => setIsDrawerOpen(false)}
-  //     >
-  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
-  //         <MdOutlineDirectionsCar /> Les demandes de trajet
-  //       </Button>
-  //     </Link>
-  //     <Link href="/rides/history" onClick={() => setIsDrawerOpen(false)}>
-  //       <Button variant="ghost" className="flex items-center gap-2 w-full">
-  //         <MdHistory /> Mes trajets publiés
-  //       </Button>
-  //     </Link>
-  //   </div>
-  // );
 
   const PassengerNavigation = () => (
     <div className="flex flex-col lg:flex-row gap-4">

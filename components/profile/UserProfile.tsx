@@ -22,7 +22,7 @@ import {
 import { FaCarSide, FaUserEdit } from "react-icons/fa";
 import { EditProfileModal } from "./EditProfileModal";
 import { BecomeDriverModal } from "./BecomeDriver";
-import { doc, setDoc, getFirestore } from "firebase/firestore";
+import { doc, setDoc, getFirestore, getDoc } from "firebase/firestore";
 import { app } from "../../app/config/firebase-config";
 import { useNotifications } from "@/app/hooks/useNotifications";
 import UserAvatar from "../../public/images/avatarprofile.png";
@@ -44,6 +44,7 @@ export interface UserData {
   phoneNumber: string;
   vehicle?: Vehicle;
   fcmToken?: string;
+  churchIds?: string[];
 }
 
 const verses = [
@@ -68,6 +69,7 @@ const UserProfile = ({
   const [isEditing, setIsEditing] = useState(false);
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
+  const [churchData, setChurchData] = useState<{ name: string } | null>(null);
 
   const db = getFirestore(app);
 
@@ -121,6 +123,19 @@ const UserProfile = ({
   };
 
   useEffect(() => {
+    const fetchChurchData = async () => {
+      if (user?.churchIds?.[0]) {
+        const churchRef = doc(db, "churches", user.churchIds[0]);
+        const churchSnap = await getDoc(churchRef);
+        if (churchSnap.exists()) {
+          setChurchData(churchSnap.data() as { name: string });
+        }
+      }
+    };
+    fetchChurchData();
+  }, [user?.churchIds]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setCurrentVerseIndex((prevIndex) => (prevIndex + 1) % verses.length);
     }, 50000);
@@ -142,9 +157,6 @@ const UserProfile = ({
           </Button>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
-            {/* <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
-              <AvatarImage src={user?.profilePicture || UserAvatar.src} />
-            </Avatar> */}
             <div className="relative">
               <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
                 <AvatarImage src={user?.profilePicture || UserAvatar.src} />
@@ -173,6 +185,12 @@ const UserProfile = ({
                 <Badge className="bg-slate-800">
                   <MdVerified className="mr-1" /> Vérifié
                 </Badge>
+              </div>
+              <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
+                <MdLocationOn className="text-yellow-400" />
+                <span className="text-sm sm:text-base">
+                  {churchData?.name || "Église non spécifiée"}
+                </span>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <MdStar className="text-yellow-400" />

@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { MdAccessTime, MdLocationOn, MdPerson } from "react-icons/md";
+import { MdAccessTime, MdLocationOn, MdPerson, MdChurch } from "react-icons/md";
 import BookingForm from "@/components/booking/BookingForm";
 import Modal from "@/components/ui/Modal";
 
@@ -63,42 +63,15 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [church, setChurch] = useState<Church | null>(null);
+  const [driverChurch, setDriverChurch] = useState<Church | null>(null);
 
   useEffect(() => {
-    // const fetchRideDetails = async () => {
-    //   try {
-    //     const rideDoc = await getDoc(doc(db, "rides", rideId));
-    //     if (rideDoc.exists()) {
-    //       const rideData = rideDoc.data();
-    //       setRide({
-    //         id: rideDoc.id,
-    //         ...rideData,
-    //         departureTime: rideData.departureTime.toDate(),
-    //       } as Ride);
-
-    //       const driverDoc = await getDocs(
-    //         query(
-    //           collection(db, "users"),
-    //           where("uid", "==", rideData.driverId)
-    //         )
-    //       );
-
-    //       if (!driverDoc.empty) {
-    //         const driverData = driverDoc.docs[0].data() as Driver;
-    //         setDriver(driverData);
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.error("Erreur au chargement du trajet:", error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
     const fetchRideDetails = async () => {
       try {
         const rideDoc = await getDoc(doc(db, "rides", rideId));
         if (rideDoc.exists()) {
           const rideData = rideDoc.data();
+          console.log("Church ID:", rideData.churchId);
           console.log("rideData: ", rideData);
           setRide({
             id: rideDoc.id,
@@ -133,6 +106,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             const churchDoc = await getDoc(
               doc(db, "churches", rideData.churchId)
             );
+            console.log("Church Data:", churchDoc.data());
             if (churchDoc.exists()) {
               setChurch({
                 id: churchDoc.id,
@@ -150,6 +124,26 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
 
     fetchRideDetails();
   }, [rideId]);
+
+  useEffect(() => {
+    const fetchDriverChurch = async () => {
+      if (driver?.churchIds?.[0]) {
+        const churchDoc = await getDoc(
+          doc(db, "churches", driver.churchIds[0])
+        );
+        if (churchDoc.exists()) {
+          setDriverChurch({
+            id: churchDoc.id,
+            name: churchDoc.data().name,
+          });
+        }
+      }
+    };
+
+    if (driver) {
+      fetchDriverChurch();
+    }
+  }, [driver]);
 
   if (loading) {
     return <div>Chargement...</div>;
@@ -178,10 +172,13 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             <p className="text-gray-500 text-sm sm:text-base">
               {driver.phoneNumber}
             </p>
-            {church && (
-              <p className="text-gray-500 text-sm sm:text-base">
-                {church.name}
-              </p>
+            {driverChurch && (
+              <div className="flex items-center gap-2">
+                <MdChurch className="text-gray-500 text-lg" />
+                <p className="text-gray-500 text-sm sm:text-base">
+                  Membre de {driverChurch.name}
+                </p>
+              </div>
             )}
           </div>
         </div>
