@@ -1,21 +1,3 @@
-// import { useEffect, useState } from "react";
-// import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-
-// export const useAuth = () => {
-//   const [user, setUser] = useState<User | null>(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     const auth = getAuth();
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       setUser(user);
-//       setLoading(false);
-//     });
-//     return unsubscribe;
-//   }, []);
-
-//   return { user, loading };
-// };
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useState, useEffect } from "react";
