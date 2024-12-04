@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import React, { useState, useEffect } from "react";
-import { MdHistory, MdLogin, MdMenu } from "react-icons/md";
+import { MdHistory, MdLogin, MdMenu, MdSettings } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,14 @@ import {
   getFirestore,
   Timestamp,
   onSnapshot,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 // import NotificationBadge from "./NotificationBadge";
 
 const NavBar = () => {
@@ -46,6 +53,29 @@ const NavBar = () => {
   //   router.push("/auth/login");
   //   setIsDrawerOpen(false);
   // };
+
+  const handleDeleteAccount = async () => {
+    if (
+      window.confirm(
+        "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible."
+      )
+    ) {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        // Delete user data from Firestore
+        await deleteDoc(doc(db, "users", user.uid));
+        // Delete user authentication
+        await user.delete();
+
+        window.location.href = "/auth/login";
+      } catch (error) {
+        console.error("Error deleting account:", error);
+      }
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -225,6 +255,26 @@ const NavBar = () => {
             </div>
 
             <div className="p-4 border-t">
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteAccount}
+                  className="w-full"
+                >
+                  Supprimer mon compte
+                </Button>
+                <Button
+                  onClick={handleSignOut}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  Déconnexion
+                </Button>
+              </div>
+            </div>
+
+            {/* <div className="p-4 border-t">
               <Button
                 onClick={handleSignOut}
                 variant="destructive"
@@ -232,7 +282,7 @@ const NavBar = () => {
               >
                 Déconnexion
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -263,10 +313,43 @@ const NavBar = () => {
               <Link href="/profile">
                 <Button variant="ghost">Profil</Button>
               </Link>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <MdSettings className="h-5 w-5 text-gray-600 hover:text-gray-800" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full text-sm"
+                      onClick={handleDeleteAccount}
+                    >
+                      Supprimer mon compte
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+                <Button onClick={handleSignOut} variant="secondary" size="sm">
+                  Déconnexion
+                </Button>
+              </div>
+            </div>
+
+            {/* <div className="hidden lg:flex items-center gap-4">
+              {user.isDriver ? <DriverNavigation /> : <PassengerNavigation />}
+              <Link href="/profile">
+                <Button variant="ghost">Profil</Button>
+              </Link>
               <Button onClick={handleSignOut} variant="secondary" size="sm">
                 Déconnexion
               </Button>
-            </div>
+            </div> */}
 
             <Button
               variant="ghost"
