@@ -171,6 +171,8 @@ const RegisterForm = () => {
         values.password
       );
 
+      await auth.signOut();
+
       let profilePictureUrl = "";
       if (values.profilePicture) {
         profilePictureUrl = await uploadImage(
@@ -209,11 +211,12 @@ const RegisterForm = () => {
         await addDoc(collection(db, "vehicles"), vehicleDoc);
       }
 
-      await auth.signOut();
+      // await auth.signOut();
       toast.success("Inscription réussie");
       router.push("/auth/login");
     } catch (error: any) {
       console.error("Registration error:", error);
+      await auth.signOut();
       toast.error("Une erreur est survenue, veuillez essayer plus tard");
     } finally {
       setIsLoading(false);
