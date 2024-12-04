@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MdInfo } from "react-icons/md";
 // import { BiBuildingHouse } from "react-icons/bi";
-import { GrUserAdmin } from "react-icons/gr";
+// import { GrUserAdmin } from "react-icons/gr";
 import Covoiturage from "../../public/images/covoiturage.png";
 import LogoICC from "../../public/images/image.png";
 
@@ -70,7 +70,8 @@ const Home = () => {
               <p>Nos campus du Benelux</p>
             </div>
           </Link> */}
-          <Link
+
+          {/* <Link
             className="mt-24  max-md:mt-16  underline hover:text-yellow-400 max-md:text-xs"
             href="/auth/register"
           >
@@ -79,7 +80,7 @@ const Home = () => {
 
               <p>S'inscrire</p>
             </div>
-          </Link>
+          </Link> */}
         </div>
 
         {/* <div className="w-full h-full flex items-center py-32 gap-8 ">
