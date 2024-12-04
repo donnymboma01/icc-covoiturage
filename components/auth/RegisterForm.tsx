@@ -164,15 +164,17 @@ const RegisterForm = () => {
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
     try {
       setIsLoading(true);
-
+  
+      // First create the user account
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
-
-      await auth.signOut();
-
+  
+      // Wait a moment for auth state to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+  
       let profilePictureUrl = "";
       if (values.profilePicture) {
         profilePictureUrl = await uploadImage(
@@ -180,7 +182,8 @@ const RegisterForm = () => {
           userCredential.user.uid
         );
       }
-
+  
+      // Create church document
       const churchRef = await addDoc(collection(db, "churches"), {
         name: values.church,
         adminUserIds: [],
@@ -188,7 +191,8 @@ const RegisterForm = () => {
         contactPhone: "",
         address: "",
       });
-
+  
+      // Create user document
       const userDocument = {
         uid: userCredential.user.uid,
         email: values.email,
@@ -199,9 +203,10 @@ const RegisterForm = () => {
         churchIds: [churchRef.id],
         profilePicture: profilePictureUrl || null
       };
-
+  
       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
-
+  
+      // Handle vehicle if user is a driver
       if (values.isDriver && values.vehicle) {
         const vehicleDoc = {
           userId: userCredential.user.uid,
@@ -210,8 +215,9 @@ const RegisterForm = () => {
         };
         await addDoc(collection(db, "vehicles"), vehicleDoc);
       }
-
-      // await auth.signOut();
+  
+      // Sign out after everything is done
+      await auth.signOut();
       toast.success("Inscription réussie");
       router.push("/auth/login");
     } catch (error: any) {
@@ -222,6 +228,69 @@ const RegisterForm = () => {
       setIsLoading(false);
     }
   };
+  
+
+  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+  //   try {
+  //     setIsLoading(true);
+
+  //     const userCredential = await createUserWithEmailAndPassword(
+  //       auth,
+  //       values.email,
+  //       values.password
+  //     );
+
+  //     await auth.signOut();
+
+  //     let profilePictureUrl = "";
+  //     if (values.profilePicture) {
+  //       profilePictureUrl = await uploadImage(
+  //         values.profilePicture,
+  //         userCredential.user.uid
+  //       );
+  //     }
+
+  //     const churchRef = await addDoc(collection(db, "churches"), {
+  //       name: values.church,
+  //       adminUserIds: [],
+  //       contactEmail: "",
+  //       contactPhone: "",
+  //       address: "",
+  //     });
+
+  //     const userDocument = {
+  //       uid: userCredential.user.uid,
+  //       email: values.email,
+  //       fullName: values.fullName,
+  //       phoneNumber: values.phoneNumber,
+  //       isDriver: values.isDriver,
+  //       createdAt: new Date(),
+  //       churchIds: [churchRef.id],
+  //       profilePicture: profilePictureUrl || null
+  //     };
+
+  //     await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
+
+  //     if (values.isDriver && values.vehicle) {
+  //       const vehicleDoc = {
+  //         userId: userCredential.user.uid,
+  //         ...values.vehicle,
+  //         isActive: true,
+  //       };
+  //       await addDoc(collection(db, "vehicles"), vehicleDoc);
+  //     }
+
+  //     // await auth.signOut();
+  //     toast.success("Inscription réussie");
+  //     router.push("/auth/login");
+  //   } catch (error: any) {
+  //     console.error("Registration error:", error);
+  //     await auth.signOut();
+  //     toast.error("Une erreur est survenue, veuillez essayer plus tard");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   return (
     <Form {...form}>
