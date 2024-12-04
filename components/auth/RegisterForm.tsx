@@ -165,14 +165,12 @@ const RegisterForm = () => {
     try {
       setIsLoading(true);
   
-      // First create the user account
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
   
-      // Wait a moment for auth state to propagate
       await new Promise(resolve => setTimeout(resolve, 1000));
   
       let profilePictureUrl = "";
@@ -183,7 +181,6 @@ const RegisterForm = () => {
         );
       }
   
-      // Create church document
       const churchRef = await addDoc(collection(db, "churches"), {
         name: values.church,
         adminUserIds: [],

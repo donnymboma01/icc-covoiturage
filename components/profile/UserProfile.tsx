@@ -2,7 +2,7 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,17 @@ export interface UserData {
   fcmToken?: string;
 }
 
+const verses = [
+  {
+    text: "Celui qui arrose sera lui-même arrosé.",
+    reference: "Proverbes 11:25",
+  },
+  {
+    text: "Que chacun de vous, au lieu de considérer ses propres intérêts, considère aussi ceux des autres.",
+    reference: "Philippiens 2:4",
+  },
+];
+
 const UserProfile = ({
   user,
   onUpdateUser,
@@ -56,6 +67,8 @@ const UserProfile = ({
   const { requestPermission, token } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [showDriverForm, setShowDriverForm] = useState(false);
+  const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
+
   const db = getFirestore(app);
 
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
@@ -66,6 +79,8 @@ const UserProfile = ({
     }
   };
 
+  // Pour Jason & Djedou: Nous allons utiliser cette fonction pour
+  // vérifier les informations d'un utilisateur avant de lui attribuer une certification.
   const isVerifiedUser = (user: UserData | null): boolean => {
     if (!user) return false;
 
@@ -82,7 +97,6 @@ const UserProfile = ({
 
   const handleEnableNotifications = () => {
     requestPermission();
-    // You can also store the token in the user's document
     if (token && user) {
       onUpdateUser({ fcmToken: token });
     }
@@ -90,13 +104,11 @@ const UserProfile = ({
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
-      // Update user status to driver and add vehicle
       await onUpdateUser({
         isDriver: true,
         vehicle: vehicleData,
       });
 
-      // Create vehicle document in Firestore
       const vehicleRef = doc(db, "Vehicles", user?.uid || "");
       await setDoc(vehicleRef, {
         ...vehicleData,
@@ -107,6 +119,14 @@ const UserProfile = ({
       console.error("Error becoming driver:", error);
     }
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentVerseIndex((prevIndex) => (prevIndex + 1) % verses.length);
+    }, 50000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <main className="container mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen">
@@ -123,12 +143,7 @@ const UserProfile = ({
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
             <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
-              <AvatarImage
-                src={
-                  user?.profilePicture ||
-                  UserAvatar.src
-                }
-              />
+              <AvatarImage src={user?.profilePicture || UserAvatar.src} />
             </Avatar>
 
             <div className="text-white text-center sm:text-left">
@@ -195,16 +210,18 @@ const UserProfile = ({
           </Card>
 
           {!user?.isDriver && (
-            <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-blue-50">
-              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
-                Devenir conducteur
-              </h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-4">
-                Partagez vos trajets et rejoignez notre communauté de
-                conducteurs
-              </p>
+            <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-blue-50 flex flex-col justify-between h-full">
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+                  Devenir conducteur
+                </h2>
+                <p className="text-sm sm:text-base text-gray-600 mb-4">
+                  {verses[currentVerseIndex].text} (
+                  {verses[currentVerseIndex].reference})
+                </p>
+              </div>
               <Button
-                className="w-full text-sm sm:text-base"
+                className="w-full text-sm sm:text-base mt-4"
                 onClick={() => setShowDriverForm(true)}
               >
                 <FaCarSide className="mr-2" /> Devenir conducteur
