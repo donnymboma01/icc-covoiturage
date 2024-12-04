@@ -195,7 +195,7 @@ const RegisterForm = () => {
         isDriver: values.isDriver,
         createdAt: new Date(),
         churchIds: [churchRef.id],
-        profilePicture: profilePictureUrl,
+        profilePicture: profilePictureUrl || null
       };
 
       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
