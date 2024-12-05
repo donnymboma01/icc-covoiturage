@@ -39,37 +39,6 @@ const Profile = () => {
     }
   };
 
-  // useEffect(() => {
-  //   const fetchUserData = async () => {
-  //     try {
-  //       const user = auth.currentUser;
-  //       if (user) {
-  //         const userDoc = await getDoc(doc(db, "users", user.uid));
-  //         const userData = userDoc.data();
-
-  //         if (userData) {
-  //           if (userData.isDriver) {
-  //             const vehicleQuery = query(
-  //               collection(db, "vehicles"),
-  //               where("userId", "==", user.uid)
-  //             );
-  //             const vehicleSnapshot = await getDocs(vehicleQuery);
-  //             if (!vehicleSnapshot.empty) {
-  //               const vehicleData = vehicleSnapshot.docs[0].data();
-  //               userData.vehicle = vehicleData;
-  //             }
-  //           }
-  //           setUserData(userData as any);
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching user data:", error);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   fetchUserData();
-  // }, [auth.currentUser, db]);
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {

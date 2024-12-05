@@ -60,19 +60,6 @@ const RideSearch = () => {
   );
   const [selectedChurch, setSelectedChurch] = useState<string>("");
 
-  // useEffect(() => {
-  //   const fetchChurches = async () => {
-  //     const churchesRef = collection(db, "churches");
-  //     const churchesSnapshot = await getDocs(churchesRef);
-  //     const churchesData = churchesSnapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       name: doc.data().name,
-  //     }));
-  //     setChurches(churchesData);
-  //   };
-
-  //   fetchChurches();
-  // }, []);
   useEffect(() => {
     const fetchChurches = async () => {
       const churchesRef = collection(db, "churches");

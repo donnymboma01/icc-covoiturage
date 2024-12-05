@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useState, useEffect } from "react";
@@ -62,10 +63,6 @@ const RidesHistory = () => {
     fetchRides();
   }, [user]);
 
-  //   const filteredRides = rides.filter((ride) => {
-  //     if (filter === "all") return true;
-  //     return ride.status === filter;
-  //   });
   const filteredRides = rides.filter((ride) => {
     const departureDate = ride.departureTime.toDate();
     const now = new Date();

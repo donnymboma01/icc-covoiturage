@@ -44,7 +44,7 @@ const ChurchSelector = ({ onChurchSelect }: ChurchSelectorProps) => {
           return;
         }
 
-        console.log("Fetching churches for IDs:", user.churchIds);
+        console.log("Fetch des ids de l'église :", user.churchIds);
 
         const churchesRef = collection(db, "churches");
         

@@ -264,7 +264,7 @@ const RegisterForm = () => {
           phoneNumber: values.phoneNumber,
           isDriver: values.isDriver,
           createdAt: new Date(),
-          churchIds: [values.church], 
+          churchIds: [values.church],
           profilePicture: profilePictureUrl || null,
         };
 
@@ -298,71 +298,6 @@ const RegisterForm = () => {
       setIsLoading(false);
     }
   };
-
-  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
-  //   try {
-  //     setIsLoading(true);
-
-  //     const userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       values.email,
-  //       values.password
-  //     );
-
-  //     await new Promise(resolve => setTimeout(resolve, 1000));
-
-  //     let profilePictureUrl = "";
-  //     if (values.profilePicture) {
-  //       profilePictureUrl = await uploadImage(
-  //         values.profilePicture,
-  //         userCredential.user.uid
-  //       );
-  //     }
-
-  //     const churchRef = await addDoc(collection(db, "churches"), {
-  //       name: values.church,
-  //       adminUserIds: [],
-  //       contactEmail: "",
-  //       contactPhone: "",
-  //       address: "",
-  //     });
-
-  //     // Create user document
-  //     const userDocument = {
-  //       uid: userCredential.user.uid,
-  //       email: values.email,
-  //       fullName: values.fullName,
-  //       phoneNumber: values.phoneNumber,
-  //       isDriver: values.isDriver,
-  //       createdAt: new Date(),
-  //       churchIds: [churchRef.id],
-  //       profilePicture: profilePictureUrl || null
-  //     };
-
-  //     await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
-
-  //     // Handle vehicle if user is a driver
-  //     if (values.isDriver && values.vehicle) {
-  //       const vehicleDoc = {
-  //         userId: userCredential.user.uid,
-  //         ...values.vehicle,
-  //         isActive: true,
-  //       };
-  //       await addDoc(collection(db, "vehicles"), vehicleDoc);
-  //     }
-
-  //     // Sign out after everything is done
-  //     await auth.signOut();
-  //     toast.success("Inscription réussie");
-  //     router.push("/auth/login");
-  //   } catch (error: any) {
-  //     console.error("Registration error:", error);
-  //     await auth.signOut();
-  //     toast.error("Une erreur est survenue, veuillez essayer plus tard");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   return (
     <Form {...form}>
@@ -474,20 +409,6 @@ const RegisterForm = () => {
                 </SelectContent>
               </Select>
 
-              {/* <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez une église" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {churches.map((church) => (
-                    <SelectItem key={church.id} value={church.id}>
-                      {church.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select> */}
               <FormMessage />
             </FormItem>
           )}

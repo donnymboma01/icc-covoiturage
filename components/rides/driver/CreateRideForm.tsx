@@ -129,10 +129,9 @@ const CreateRideForm = () => {
         waypoints: formData.waypoints,
         price: formData.price || 0,
         createdAt: new Date(),
-        serviceType: formData.serviceType,  
+        serviceType: formData.serviceType,
         ...(formData.isRecurring && { frequency: formData.frequency }),
       };
-      
 
       const docRef = await addDoc(collection(db, "rides"), rideData);
 
@@ -151,34 +150,28 @@ const CreateRideForm = () => {
     }
   };
 
-  // const renderStepOne = () => (
-  //   <div className="space-y-4">
-  //     <h2 className="text-xl font-semibold">Sélection de l'église</h2>
-  //     <ChurchSelector
-  //       onChurchSelect={(churchId, churchName) =>
-  //         setFormData({ ...formData, churchId, churchName })
-  //       }
-  //     />
-  //   </div>
-  // );
   const renderStepOne = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Type de service</h2>
       <div className="grid grid-cols-2 gap-4">
         {[
-          { id: 'culte', label: 'Culte du dimanche', icon: '🙏' },
-          { id: 'priere', label: 'Réunion de prière', icon: '✝️' },
-          { id: 'evenement', label: 'Événement spécial', icon: '🎉' },
-          { id: 'autre', label: 'Autre', icon: '📌' },
+          { id: "culte", label: "Culte du dimanche", icon: "🙏" },
+          { id: "priere", label: "Réunion de prière", icon: "✝️" },
+          { id: "evenement", label: "Événement spécial", icon: "🎉" },
+          { id: "autre", label: "Autre", icon: "📌" },
         ].map((service) => (
           <div
             key={service.id}
-            onClick={() => setFormData({ ...formData, serviceType: service.id })}
+            onClick={() =>
+              setFormData({ ...formData, serviceType: service.id })
+            }
             className={`
               p-4 rounded-lg border-2 cursor-pointer transition-all
-              ${formData.serviceType === service.id 
-                ? 'border-primary bg-primary/10' 
-                : 'border-gray-200 hover:border-primary/50'}
+              ${
+                formData.serviceType === service.id
+                  ? "border-primary bg-primary/10"
+                  : "border-gray-200 hover:border-primary/50"
+              }
             `}
           >
             <div className="flex flex-col items-center space-y-2">
@@ -190,7 +183,6 @@ const CreateRideForm = () => {
       </div>
     </div>
   );
-  
 
   const renderStepTwo = () => (
     <div className="space-y-4">

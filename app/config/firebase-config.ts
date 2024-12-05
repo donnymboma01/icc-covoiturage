@@ -14,7 +14,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+// Pour Jason & Djedou : le messaging est utilisé pour les notifications.
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
-// const analytics = getAnalytics(app);
+// const analytics = getAnalytics(app); --> On ne l'utilisera pas parce que nous allons probablement avoir une partie admin de nous-meme.
 
 export { app, messaging };

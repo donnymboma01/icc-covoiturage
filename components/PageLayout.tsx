@@ -5,7 +5,7 @@ import Image from "next/image";
 import Logo from "../public/images/image.png";
 import CarHeader from "../public/images/header2.png";
 import { MdLogin } from "react-icons/md";
-import {  useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type PageLayoutProps = {
   title: string;
@@ -37,12 +37,6 @@ const PageLayout = ({ title, description, children }: PageLayoutProps) => {
             {"ICC "}
             <span className="text-white font-semibold"> Covoiturage</span>
           </p>
-          {/* <div className="hover:cursor-pointer hover:text-white flex-col items-center text-yellow-300 md:flex">
-            <MdLogin
-              className="mx-2 "
-              onClick={() => router.push("/auth/login")}
-            />
-          </div> */}
         </div>
       </div>
 

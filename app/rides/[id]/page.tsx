@@ -15,7 +15,6 @@ const RideDetailsPage = async ({
 }: {
   params: Promise<{ id: string }>;
 }) => {
-  // Attendre les paramètres
   const { id } = await params;
 
   return (

@@ -183,18 +183,6 @@ const RideCard = ({
                     Êtes-vous sûr de vouloir supprimer ce trajet ? Cette action
                     est irréversible.
                   </span>
-                  {/* <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                    <div className="font-medium">
-                      {ride.departureAddress} → {ride.arrivalAddress}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {departureDate.toLocaleDateString("fr-FR", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
-                    </div>
-                  </div> */}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

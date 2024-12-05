@@ -59,3 +59,27 @@ erDiagram
         string contactEmail
         string contactPhone
     }
+
+    import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+    import { app } from '@/app/config/firebase-config';
+
+    const uploadImage = async (file: File, userId: string) => {
+      const storage = getStorage(app);
+      const fileExtension = file.name.split('.').pop();
+      const filename = `profile-pictures/${userId}-${Date.now()}.${fileExtension}`;
+      const storageRef = ref(storage, filename);
+
+      try {
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (error) {
+        console.error("Erreur d'upload:", error);
+        throw error;
+      }
+    };
+
+if (values.profilePicture) {
+  const downloadURL = await uploadImage(values.profilePicture, userCredential.user.uid);
+  profilePictureUrl = downloadURL;
+}

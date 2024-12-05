@@ -71,22 +71,6 @@ const BookingForm = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
-  // const validateSeats = (value: number) => {
-  //   if (value <= 0) {
-  //     setError("Vous devez réserver au moins 1 place");
-  //     return false;
-  //   }
-  //   if (value > ride.availableSeats) {
-  //     setError(
-  //       `Il ne reste que ${ride.availableSeats} place${
-  //         ride.availableSeats > 1 ? "s" : ""
-  //       } disponible${ride.availableSeats > 1 ? "s" : ""}`
-  //     );
-  //     return false;
-  //   }
-  //   setError("");
-  //   return true;
-  // };
   const validateSeats = (value: number | string) => {
     if (value === "" || value === undefined) {
       setError("Veuillez entrer le nombre de places souhaité");
@@ -129,38 +113,6 @@ const BookingForm = ({
     validateSeats(value);
   };
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (!user) return;
-
-  //   setLoading(true);
-  //   try {
-  //     const userDoc = await getDoc(doc(db, "users", user.uid));
-  //     if (!userDoc.exists()) {
-  //       throw new Error("Le profil de l'utilisateur n'existe pas.");
-  //     }
-
-  //     const bookingRef = await addDoc(collection(db, "bookings"), {
-  //       rideId: ride.id,
-  //       passengerId: user.uid,
-  //       bookingDate: new Date(),
-  //       status: "pending",
-  //       seatsBooked: seats,
-  //       specialNotes: notes,
-  //     });
-
-  //     const rideRef = doc(db, "rides", ride.id);
-  //     await updateDoc(rideRef, {
-  //       availableSeats: ride.availableSeats - seats,
-  //     });
-
-  //     onSuccess();
-  //   } catch (error) {
-  //     console.error("Erreur lors de la création de la réservation:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;

@@ -34,11 +34,6 @@ const CustomBreadcrumb = ({ name }: { name: string }) => {
           <BreadcrumbLink href="/home">Accueil</BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
-
-        {/* <BreadcrumbItem>
-            <BreadcrumbLink href="/auth/users">Utilisateurs</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator /> */}
         <BreadcrumbItem>
           <BreadcrumbPage className="font-semibold">{name}</BreadcrumbPage>
         </BreadcrumbItem>

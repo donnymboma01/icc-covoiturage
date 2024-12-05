@@ -135,14 +135,6 @@ const PassengerBookings = () => {
     }
   };
 
-  // const handleDeleteBooking = async (bookingId: string) => {
-  //   const db = getFirestore();
-  //   try {
-  //     await deleteDoc(doc(db, "bookings", bookingId));
-  //   } catch (error) {
-  //     console.error("Erreur lors de la suppression:", error);
-  //   }
-  // };
   const handleDeleteBooking = async () => {
     if (!bookingToDelete) return;
 
@@ -213,10 +205,6 @@ const PassengerBookings = () => {
                         </span>{" "}
                         {ride.departureTime.toDate().toLocaleString("fr-FR")}
                       </p>
-                      {/* <p>
-                        <span className="font-medium">Prix :</span> {ride.price}
-                        €
-                      </p> */}
                     </div>
                   )}
 

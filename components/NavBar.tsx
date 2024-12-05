@@ -57,7 +57,9 @@ const NavBar = () => {
         await deleteDoc(doc(db, "users", user.uid));
         await user.delete();
 
-        toast.success("Compte supprimé avec succès. Nous espérons vous revoir bientôt !");
+        toast.success(
+          "Compte supprimé avec succès. Nous espérons vous revoir bientôt !"
+        );
 
         setTimeout(() => {
           window.location.href = "/auth/login";
@@ -237,16 +239,6 @@ const NavBar = () => {
                 </Button>
               </div>
             </div>
-
-            {/* <div className="p-4 border-t">
-              <Button
-                onClick={handleSignOut}
-                variant="destructive"
-                className="w-full"
-              >
-                Déconnexion
-              </Button>
-            </div> */}
           </div>
         </div>
       </div>
@@ -304,16 +296,6 @@ const NavBar = () => {
                 </Button>
               </div>
             </div>
-
-            {/* <div className="hidden lg:flex items-center gap-4">
-              {user.isDriver ? <DriverNavigation /> : <PassengerNavigation />}
-              <Link href="/profile">
-                <Button variant="ghost">Profil</Button>
-              </Link>
-              <Button onClick={handleSignOut} variant="secondary" size="sm">
-                Déconnexion
-              </Button>
-            </div> */}
 
             <Button
               variant="ghost"
