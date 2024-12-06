@@ -98,10 +98,14 @@ const UserProfile = ({
     );
   };
 
-  const handleEnableNotifications = () => {
-    requestPermission();
-    if (token && user) {
-      onUpdateUser({ fcmToken: token });
+  const handleEnableNotifications = async () => {
+    try {
+      await requestPermission();
+      if (token && user) {
+        onUpdateUser({ fcmToken: token });
+      }
+    } catch (e) {
+      console.error("Erreur lors de l'activation des notifications:", e);
     }
   };
 

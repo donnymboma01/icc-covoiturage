@@ -17,6 +17,7 @@ export const useNotifications = () => {
       })
       .then((token) => {
         if (token) {
+          console.log("Notification permission granted. Token:", token);
           setToken(token);
         }
       })
