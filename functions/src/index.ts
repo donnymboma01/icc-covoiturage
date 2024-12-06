@@ -20,6 +20,12 @@ export const onNewRideRequest = onDocumentCreated(
         "Nouvelle demande de trajet",
         `${booking.passengerName} souhaite rejoindre votre trajet`
       );
+
+      await sendNotification(
+        booking.passengerId,
+        "Demande envoyée",
+        "Votre demande de trajet a bien été envoyée au conducteur."
+      );
     }
   }
 );
@@ -38,6 +44,14 @@ export const onRideRequestUpdate = onDocumentUpdated(
         `Votre demande de trajet a été ${
           newData.status === "accepted" ? "acceptée" : "refusée"
         }`
+      );
+
+      await sendNotification(
+        newData.driverId,
+        "Mise à jour du trajet",
+        `La demande de ${newData.passengerName} a été ${
+          newData.status === "accepted" ? "acceptée" : "refusée"
+        }.`
       );
     }
   }

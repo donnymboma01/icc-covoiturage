@@ -71,6 +71,7 @@ const UserProfile = ({
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [churchData, setChurchData] = useState<{ name: string } | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   const db = getFirestore(app);
 
@@ -99,10 +100,11 @@ const UserProfile = ({
   };
 
   const handleEnableNotifications = async () => {
+    setNotificationsEnabled(!notificationsEnabled);
     try {
       await requestPermission();
       if (token && user) {
-        onUpdateUser({ fcmToken: token });
+        await onUpdateUser({ fcmToken: token });
       }
     } catch (e) {
       console.error("Erreur lors de l'activation des notifications:", e);
@@ -123,7 +125,7 @@ const UserProfile = ({
         isActive: true,
       });
     } catch (error) {
-      console.error("Error becoming driver:", error);
+      console.error("Erreur en passant à l'état de conducteur :", error);
     }
   };
 
@@ -238,7 +240,9 @@ const UserProfile = ({
                 className="flex items-center gap-2 w-full"
               >
                 <MdNotifications />
-                Activer les notifications
+                {notificationsEnabled
+                  ? "Désactiver les notifications"
+                  : "Activer les notifications"}
               </Button>
             </div>
           </Card>
