@@ -135,6 +135,5 @@ const RidesHistory = () => {
       </div>
     </div>
   );
-
 };
 export default RidesHistory;

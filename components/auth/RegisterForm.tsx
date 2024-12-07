@@ -46,6 +46,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadImageToFirebase } from "@/utils/custom-functions";
 
 interface VehicleDoc {
   userId: string;
@@ -73,6 +74,7 @@ const RegisterForm = () => {
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       fullName: "",
       phoneNumber: "",
       isDriver: false,
@@ -134,17 +136,14 @@ const RegisterForm = () => {
   };
 
   const uploadImage = async (file: File, userId: string) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("userId", userId);
-
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-    return data.filepath;
+    try {
+      const path = `profile-pictures/${userId}/${file.name}`;
+      const downloadURL = await uploadImageToFirebase(file, path);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      throw error;
+    }
   };
 
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
@@ -303,6 +302,20 @@ const RegisterForm = () => {
 
         <FormField
           control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirmer le mot de passe</FormLabel>
+              <FormControl>
+                <Input placeholder="••••••••" type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="church"
           render={({ field }) => (
             <FormItem>
@@ -435,6 +448,81 @@ const RegisterForm = () => {
             />
           </div>
         )}
+
+        <div className="mt-8 rounded-lg border border-slate-200 bg-white p-8">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between font-semibold text-slate-800">
+              <span>
+                Consentement loi RGPD (Réglement sur la Protection des Données)
+              </span>
+              <span className="transition group-open:rotate-180">
+                <svg
+                  fill="none"
+                  height="24"
+                  shape-rendering="geometricPrecision"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  viewBox="0 0 24 24"
+                  width="24"
+                >
+                  <path d="M6 9l6 6 6-6"></path>
+                </svg>
+              </span>
+            </summary>
+            <div className="mt-4 space-y-4 text-slate-600">
+              <p>
+                Les informations personnelles figurant dans le présent
+                formulaire sont traitées avec confidentialité par Impact Centre
+                Chrétien et conformément au règlement 2016/679 du Parlement
+                européen et du Conseil du 27 avril 2016 relatif à la protection
+                des personnes physiques à légard du traitement des données à
+                caractère personnel et à la libre circulation de ces données
+                (RGPD).
+              </p>
+
+              <p>
+                Ces données personnelles sont nécessaires pour vous informer et
+                vous inscrire aux différentes activités organisées par l'Eglise
+                et à des fins de gestion interne. Elles seront conservées
+                pendant la durée nécessaire pour atteindre les finalités visées
+                ci-dessus.
+              </p>
+
+              <p>
+                En tant que personne concernée, vous avez le droit, à tout
+                moment, de consulter, de mettre à jour, de rectifier vos données
+                personnelles ou d'en demander la suppression.
+              </p>
+
+              <p>
+                Si vous souhaitez exercer un ou plusieurs des droits
+                susmentionnés ou obtenir de plus amples informations sur la
+                protection de vos données personnelles, vous pouvez envoyer un
+                e-mail à l'adresse contact@impactcentrechretien.be.
+              </p>
+
+              <p>
+                J'accepte que mes données personnelles récoltées via ce
+                formulaire soient traitées par Impact Centre Chrétien pour les
+                finalités d'information et d'inscriptions aux événements de
+                l'Eglise et pour le suivi de la gestion interne;
+              </p>
+
+              <p>
+                J'autorise la prise et la diffusion de photos ou de fragments
+                d'images me concernant sur les sites web et les réseaux sociaux
+                des églises connectées Impact Centre Chrétien.
+              </p>
+
+              <p>
+                J'accepte de recevoir des informations de la part d'Impact
+                Centre Chrétien.
+              </p>
+            </div>
+          </details>
+        </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Inscription en cours..." : "S'inscrire"}

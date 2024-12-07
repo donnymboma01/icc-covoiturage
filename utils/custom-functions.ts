@@ -1,5 +1,7 @@
 import { db } from "@/app/config/firebase-config";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { app } from "@/app/config/firebase-config";
 
 interface Ride {
   id: string;
@@ -25,5 +27,22 @@ export const updateRideInDatabase = async (
     await updateDoc(rideRef, updatedData);
   } else {
     throw new Error("Firestore database is not initialized");
+  }
+};
+
+export const uploadImageToFirebase = async (
+  file: File,
+  path: string
+): Promise<string> => {
+  const storage = getStorage(app);
+  const storageRef = ref(storage, path);
+
+  try {
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    throw error;
   }
 };
