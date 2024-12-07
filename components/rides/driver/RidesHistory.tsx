@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import {
-  addDoc,
   collection,
   getDocs,
   query,
@@ -17,9 +16,9 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { app } from "@/app/config/firebase-config";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import RideCard from "./RideCard";
+// import { FirebaseApp } from "firebase/app";
 
 export interface Ride {
   id: string;
@@ -49,7 +48,7 @@ const RidesHistory = () => {
     try {
       const rideRef = doc(db, "rides", rideId);
       await updateDoc(rideRef, updatedData);
-      await fetchRides(); // Refresh the rides list
+      await fetchRides();
     } catch (error) {
       console.error("Error updating ride:", error);
     }
@@ -134,18 +133,8 @@ const RidesHistory = () => {
           />
         ))}
       </div>
-
-      {/* <div className="grid gap-4">
-        {filteredRides.map((ride) => (
-          <RideCard
-            key={ride.id}
-            ride={ride}
-            onDelete={() => handleDeleteRide(ride.id)}
-          />
-        ))}
-      </div> */}
     </div>
   );
-};
 
+};
 export default RidesHistory;

@@ -1,6 +1,8 @@
+"use client";
 import React from "react";
 import PageLayout from "@/components/PageLayout";
-import RideHistory from "@/components/rides/driver/RidesHistory";
+//import RideHistory from "@/components/rides/driver/RidesHistory";
+import dynamic from "next/dynamic";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,6 +11,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+
+const RideHistory = dynamic(
+  () => import("@/components/rides/driver/RidesHistory"),
+  {
+    ssr: false,
+  }
+);
 
 const RidesHistoryPage = () => {
   return (
