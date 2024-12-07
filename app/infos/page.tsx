@@ -27,11 +27,12 @@ const InfosPage = () => {
     >
       <div className="">
         <CustomBreadcrumb name="Informations" />
-        <p className="text-white border mb-8 rounded-bl-full rounded-tr-full m-1 uppercase text-xl max-md:text-sm text-center p-4 font-bold bg-slate-800">
+        <p className="text-white bg-gradient-to-r from-blue-900 to-slate-800 shadow-lg rounded-lg m-4 uppercase text-xl max-md:text-sm text-center px-6 py-4 font-bold">
           {
             "Les bonnes raisons d'utiliser l'application de covoiturage de l'église"
           }
         </p>
+
         <div className="flex">
           <div className="max-md:text-xs max-md:mx-1 flex flex-col items-start justify-between my-2">
             <p className="flex items-center bg-white p-1 px-2 rounded-bl-3xl rounded-tr-3xl">

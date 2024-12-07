@@ -196,22 +196,30 @@ const DriverBookings = () => {
 
     const db = getFirestore();
     try {
+      const rideRef = doc(db, "rides", booking.rideId);
+      const rideDoc = await getDoc(rideRef);
+
+      if (!rideDoc.exists()) {
+        console.error("Ride not found");
+        return;
+      }
+
+      const currentSeats = rideDoc.data().availableSeats;
+
+      if (currentSeats < booking.seatsBooked) {
+        alert("Pas assez de places disponibles pour cette réservation");
+        return;
+      }
+
+      // Si ok, procéder à la mise à jour
       await updateDoc(doc(db, "bookings", booking.id), {
         status,
         updatedAt: Timestamp.now(),
       });
 
-      if (status === "accepted") {
-        const rideRef = doc(db, "rides", booking.rideId);
-        const rideDoc = await getDoc(rideRef);
-
-        if (rideDoc.exists()) {
-          const currentSeats = rideDoc.data().availableSeats;
-          await updateDoc(rideRef, {
-            availableSeats: currentSeats - booking.seatsBooked,
-          });
-        }
-      }
+      await updateDoc(rideRef, {
+        availableSeats: currentSeats - booking.seatsBooked,
+      });
     } catch (error) {
       console.error("Error updating booking:", error);
     }
@@ -227,6 +235,17 @@ const DriverBookings = () => {
         rejectionReason: reason,
         updatedAt: Timestamp.now(),
       });
+
+      const rideRef = doc(db, "rides", selectedBooking.rideId);
+      const rideDoc = await getDoc(rideRef);
+
+      if (rideDoc.exists()) {
+        const currentSeats = rideDoc.data().availableSeats;
+        await updateDoc(rideRef, {
+          availableSeats: currentSeats + selectedBooking.seatsBooked,
+        });
+      }
+
       setIsRejectDialogOpen(false);
       setSelectedBooking(null);
     } catch (error) {

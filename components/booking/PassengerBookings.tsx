@@ -220,13 +220,16 @@ const PassengerBookings = () => {
                           {driver.phoneNumber}
                         </p>
                       )}
-                      {driver.profilePicture && (
-                        <Image
-                          src={driver.profilePicture}
-                          alt={`Photo de ${driver.fullName}`}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      )}
+                      <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                        {driver.profilePicture && (
+                          <Image
+                            src={driver.profilePicture}
+                            alt={`Photo de ${driver.fullName}`}
+                            layout="fill"
+                            objectFit="cover"
+                          />
+                        )}
+                      </div>
                     </div>
                   )}
 

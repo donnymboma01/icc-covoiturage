@@ -27,6 +27,7 @@ import { doc, setDoc, getFirestore, getDoc } from "firebase/firestore";
 import { app } from "../../app/config/firebase-config";
 import { useNotifications } from "@/app/hooks/useNotifications";
 import UserAvatar from "../../public/images/avatarprofile.png";
+// import { updateUser } from "@/utils/user";
 
 interface Vehicle {
   brand: string;
@@ -44,7 +45,7 @@ export interface UserData {
   email: string;
   phoneNumber: string;
   vehicle?: Vehicle;
-  fcmToken?: string;
+  fcmToken?: string | null;
   churchIds?: string[];
 }
 
@@ -66,7 +67,7 @@ const UserProfile = ({
   user: UserData | null;
   onUpdateUser: (data: Partial<UserData>) => Promise<void>;
 }) => {
-  const { requestPermission, token } = useNotifications();
+  const { requestPermission, token, isEnabled } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
@@ -82,6 +83,10 @@ const UserProfile = ({
       console.error("Error updating profile:", error);
     }
   };
+
+  useEffect(() => {
+    setNotificationsEnabled(isEnabled);
+  }, [isEnabled]);
 
   // Pour Jason & Djedou: Nous allons utiliser cette fonction pour
   // vérifier les informations d'un utilisateur avant de lui attribuer une certification.
@@ -99,17 +104,71 @@ const UserProfile = ({
     );
   };
 
+  // const handleEnableNotifications = async () => {
+  //   setNotificationsEnabled(!notificationsEnabled);
+  //   try {
+  //     await requestPermission();
+  //     if (token && user) {
+  //       await onUpdateUser({ fcmToken: token });
+  //     }
+  //   } catch (e) {
+  //     console.error("Erreur lors de l'activation des notifications:", e);
+  //   }
+  // };
+
+  // const handleEnableNotifications = async () => {
+  //   if (!notificationsEnabled) {
+  //     const newToken = await requestPermission();
+  //     if (newToken) {
+  //       await onUpdateUser({ fcmToken: newToken });
+  //       setNotificationsEnabled(true);
+  //     }
+  //   } else {
+  //     // Disable notifications
+  //     await onUpdateUser({ fcmToken: undefined });
+  //     setNotificationsEnabled(false);
+  //   }
+  // };
   const handleEnableNotifications = async () => {
-    setNotificationsEnabled(!notificationsEnabled);
-    try {
-      await requestPermission();
-      if (token && user) {
-        await onUpdateUser({ fcmToken: token });
+    if (!notificationsEnabled) {
+      try {
+        await requestPermission();
+        if (token && user?.uid) {
+          // Update Firestore with the new token
+          await onUpdateUser({
+            fcmToken: token
+          });
+          setNotificationsEnabled(true);
+        }
+      } catch (error) {
+        console.error("Error enabling notifications:", error);
       }
-    } catch (e) {
-      console.error("Erreur lors de l'activation des notifications:", e);
+    } else {
+      if (user?.uid) {
+        // Remove token from Firestore
+        await onUpdateUser({
+          fcmToken: null
+        });
+        setNotificationsEnabled(false);
+      }
     }
   };
+  
+  
+
+  // const handleEnableNotifications = async () => {
+  //   if (!notificationsEnabled && user?.uid) {
+  //     try {
+  //       const newToken = await requestPermission();
+  //       if (newToken) {
+  //         await updateUser(user.uid, { fcmToken: newToken });
+  //         setNotificationsEnabled(true);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error enabling notifications:", error);
+  //     }
+  //   }
+  // };
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
@@ -244,6 +303,16 @@ const UserProfile = ({
                   ? "Désactiver les notifications"
                   : "Activer les notifications"}
               </Button>
+
+              {/* <Button
+                onClick={handleEnableNotifications}
+                className="flex items-center gap-2 w-full"
+              >
+                <MdNotifications />
+                {notificationsEnabled
+                  ? "Désactiver les notifications"
+                  : "Activer les notifications"}
+              </Button> */}
             </div>
           </Card>
 

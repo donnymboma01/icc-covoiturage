@@ -90,20 +90,6 @@ const RegisterForm = () => {
 
   const isDriver = form.watch("isDriver");
 
-  // useEffect(() => {
-  //   const fetchChurches = async () => {
-  //     const churchesCollection = collection(db, "churches");
-  //     const churchesSnapshot = await getDocs(churchesCollection);
-  //     const churchesList = churchesSnapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       name: doc.data().name,
-  //     }));
-  //     setChurches(churchesList);
-  //   };
-
-  //   fetchChurches();
-  // }, [db]);
-  // Replace the existing useEffect with this improved version
   useEffect(() => {
     const fetchChurches = async () => {
       const churchesCollection = collection(db, "churches");
@@ -160,79 +146,6 @@ const RegisterForm = () => {
     const data = await response.json();
     return data.filepath;
   };
-
-  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
-  //   let userCredential;
-
-  //   try {
-  //     setIsLoading(true);
-
-  //     userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       values.email,
-  //       values.password
-  //     );
-
-  //     try {
-  //       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  //       let profilePictureUrl = "";
-  //       if (values.profilePicture) {
-  //         profilePictureUrl = await uploadImage(
-  //           values.profilePicture,
-  //           userCredential.user.uid
-  //         );
-  //       }
-
-  //       const churchRef = await addDoc(collection(db, "churches"), {
-  //         name: values.church,
-  //         adminUserIds: [],
-  //         contactEmail: "",
-  //         contactPhone: "",
-  //         address: "",
-  //       });
-
-  //       const userDocument = {
-  //         uid: userCredential.user.uid,
-  //         email: values.email,
-  //         fullName: values.fullName,
-  //         phoneNumber: values.phoneNumber,
-  //         isDriver: values.isDriver,
-  //         createdAt: new Date(),
-  //         churchIds: [churchRef.id],
-  //         profilePicture: profilePictureUrl || null,
-  //       };
-
-  //       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
-
-  //       if (values.isDriver && values.vehicle) {
-  //         const vehicleDoc = {
-  //           userId: userCredential.user.uid,
-  //           ...values.vehicle,
-  //           isActive: true,
-  //         };
-  //         await addDoc(collection(db, "vehicles"), vehicleDoc);
-  //       }
-
-  //       await auth.signOut();
-  //       toast.success("Inscription réussie");
-  //       router.push("/auth/login");
-  //     } catch (innerError) {
-  //       if (userCredential?.user) {
-  //         await userCredential.user.delete();
-  //       }
-  //       throw innerError;
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Registration error:", error);
-  //     if (userCredential?.user) {
-  //       await userCredential.user.delete();
-  //     }
-  //     toast.error("Une erreur est survenue, veuillez essayer plus tard");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
     let userCredential;

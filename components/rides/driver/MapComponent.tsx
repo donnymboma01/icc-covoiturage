@@ -24,17 +24,27 @@ interface Location {
 interface MapComponentProps {
   onDepartureSelect: (address: string) => void;
   onArrivalSelect: (address: string) => void;
+  initialDepartureAddress?: string;
+  initialArrivalAddress?: string;
 }
 
 const MapComponent = ({
   onDepartureSelect,
   onArrivalSelect,
+  initialDepartureAddress = "",
+  initialArrivalAddress = "",
 }: MapComponentProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
 
-  const [departureAddress, setDepartureAddress] = useState<string>("");
-  const [arrivalAddress, setArrivalAddress] = useState<string>("");
+  // const [departureAddress, setDepartureAddress] = useState<string>("");
+  // const [arrivalAddress, setArrivalAddress] = useState<string>("");
+  const [departureAddress, setDepartureAddress] = useState<string>(
+    initialDepartureAddress
+  );
+  const [arrivalAddress, setArrivalAddress] = useState<string>(
+    initialArrivalAddress
+  );
   const [departureMarker, setDepartureMarker] = useState<L.Marker | null>(null);
   const [arrivalMarker, setArrivalMarker] = useState<L.Marker | null>(null);
 
@@ -159,6 +169,7 @@ const MapComponent = ({
                 className="w-full"
               />
               <Button
+                type="button"
                 onClick={() => searchAddress(departureAddress, "departure")}
                 className="w-full sm:w-auto"
               >
@@ -175,6 +186,7 @@ const MapComponent = ({
                 className="w-full"
               />
               <Button
+                type="button"
                 onClick={() => searchAddress(arrivalAddress, "arrival")}
                 className="w-full sm:w-auto"
               >

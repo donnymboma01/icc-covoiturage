@@ -3,12 +3,13 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MdInfo } from "react-icons/md";
+import { FaCar } from "react-icons/fa"; // Import de l'icône voiture
 import Covoiturage from "../../public/images/covoiturage.png";
 import LogoICC from "../../public/images/image.png";
 
 const Home = () => {
   return (
-    <main className="relative text-white flex flex-col md:flex-row gap-10 justify-center items-center  h-screen md:px-2">
+    <main className="relative text-white flex flex-col md:flex-row items-center justify-center h-screen w-full overflow-hidden">
       <Image
         alt="background"
         src={Covoiturage}
@@ -19,37 +20,42 @@ const Home = () => {
         className="object-cover -z-10"
       />
 
-      <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-tr from-blue-900/50 to-black/50 -z-5"></div>
-      <div className="px-2 absolute text-center flex flex-col items-center">
+      <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/70 to-black/70 -z-5"></div>
+
+      <div className="absolute flex flex-col items-center px-4 text-center">
         <Image
           alt="logo"
           src={LogoICC}
           quality={100}
-          className="bg-gradient-to-tr from-yellow-600/40 to-transparent p-2 rounded-full text-center z-5 w-1/5 md:w-1/6 "
+          className="bg-gradient-to-tr from-yellow-600/40 to-transparent p-3 rounded-full z-5 w-24 md:w-28"
         />
 
-        <h5 className="relative  mb-3 font-bold max-md:flex max-md:flex-col items-start mt-4">
-          <span className="text-white absolute z-10 text-sm md:text-lg left-24 -top-4">
+        <div className="relative mt-6">
+          <p className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-sm md:text-lg font-medium text-white/90 shadow-md mb-2 md:mb-4">
             Partageons la route, partageons notre foi.
-          </span>
-          <p className="text-5xl max-md:text-3xl text-dark-green">
-            Ensemble
-            <strong className="text-white">
-              {", servons notre communauté."}
-            </strong>
           </p>
-        </h5>
 
-        <div className=" w-full flex justify-center gap-4">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mt-8">
+            Ensemble{" "}
+            <span className="text-yellow-400">servons notre communauté.</span>
+          </h1>
+        </div>
+
+        <div className="flex justify-center items-center gap-6 mt-12 md:mt-16">
           <Link
-            className="mt-24 max-md:mt-16 underline hover:text-yellow-400 max-md:text-xs"
             href="/infos"
+            className="flex items-center gap-2 text-sm md:text-base underline hover:text-yellow-400 transition-colors duration-300"
           >
-            <div className="flex flex-col justify-center items-center">
-              <MdInfo className="text-orange-400" size={30} />
+            <MdInfo className="text-orange-400" size={30} />
+            <span>Plus d'infos</span>
+          </Link>
 
-              <p>{"Plus d'informations"}</p>
-            </div>
+          <Link
+            href="/dashboard/passanger"
+            className="flex items-center gap-2 text-sm md:text-base underline hover:text-yellow-400 transition-colors duration-300"
+          >
+            <FaCar className="text-green-400" size={30} />
+            <span>Trouver un trajet</span>
           </Link>
         </div>
       </div>

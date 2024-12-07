@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 // import { getAnalytics } from "firebase/analytics";
 import { getMessaging} from "firebase/messaging";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,6 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 // Pour Jason & Djedou : le messaging est utilisé pour les notifications.
 const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
+const db = typeof window !== 'undefined' ? getFirestore(app) : null;
 // const analytics = getAnalytics(app); --> On ne l'utilisera pas parce que nous allons probablement avoir une partie admin de nous-meme.
 
-export { app, messaging };
+export { app, messaging, db };

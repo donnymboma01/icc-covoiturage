@@ -22,20 +22,42 @@ const Profile = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  // const handleUpdateUser = async (data: Partial<UserData>) => {
+  //   const user = auth.currentUser;
+  //   if (user) {
+  //     const userRef = doc(db, "users", user.uid);
+  //     await updateDoc(userRef, data);
+
+  //     setUserData((prevData) =>
+  //       prevData
+  //         ? {
+  //             ...prevData,
+  //             ...data,
+  //           }
+  //         : null
+  //     );
+  //   }
+  // };
   const handleUpdateUser = async (data: Partial<UserData>) => {
     const user = auth.currentUser;
     if (user) {
+      console.log("Updating user with data:", data); // Debug log
       const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, data);
+      try {
+        await updateDoc(userRef, data);
+        console.log("Update successful"); // Debug log
 
-      setUserData((prevData) =>
-        prevData
-          ? {
-              ...prevData,
-              ...data,
-            }
-          : null
-      );
+        setUserData((prevData) =>
+          prevData
+            ? {
+                ...prevData,
+                ...data,
+              }
+            : null
+        );
+      } catch (error) {
+        console.error("Error updating user:", error); // Debug log
+      }
     }
   };
 

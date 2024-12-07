@@ -9,7 +9,10 @@ import {
   MdRepeat,
   MdWarning,
   MdDelete,
+  MdEdit,
+  MdCancel,
 } from "react-icons/md";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { RideEditDialog } from "./EditRide";
+import { updateRideInDatabase } from "@/utils/custom-functions";
 
 interface Ride {
   id: string;
@@ -41,11 +46,14 @@ interface Ride {
 
 interface RideCardProps {
   ride: Ride;
+  onDelete: () => void;
+  onUpdate: (updatedData: Partial<Ride>) => Promise<void>;
 }
 
 const RideCard = ({
   ride,
   onDelete,
+  onUpdate,
 }: RideCardProps & { onDelete: () => void }) => {
   const departureDate = ride.departureTime.toDate();
 
@@ -155,12 +163,19 @@ const RideCard = ({
 
         {isModifiable && (
           <div className="flex space-x-2 pt-2">
-            <Button variant="outline" size="sm" className="flex-1">
-              Modifier
-            </Button>
-            <Button variant="destructive" size="sm" className="flex-1">
-              Annuler
-            </Button>
+            {isModifiable && (
+              <div className="flex space-x-2 pt-2">
+                <RideEditDialog ride={ride} onSave={onUpdate} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <MdCancel className="mr-2" />
+                  Annuler(en développement)
+                </Button>
+              </div>
+            )}
           </div>
         )}
         <AlertDialog>
@@ -168,7 +183,7 @@ const RideCard = ({
             <Button
               variant="destructive"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex-1 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
             >
               <MdDelete /> Supprimer
             </Button>

@@ -14,6 +14,7 @@ import {
   Timestamp,
   deleteDoc,
   doc,
+  updateDoc,
 } from "firebase/firestore";
 import { app } from "@/app/config/firebase-config";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,19 @@ const RidesHistory = () => {
   const { user } = useAuth();
   const [filter, setFilter] = useState<"all" | "active" | "cancelled">("all");
   const db = getFirestore(app);
+
+  const handleUpdateRide = async (
+    rideId: string,
+    updatedData: Partial<Ride>
+  ) => {
+    try {
+      const rideRef = doc(db, "rides", rideId);
+      await updateDoc(rideRef, updatedData);
+      await fetchRides(); // Refresh the rides list
+    } catch (error) {
+      console.error("Error updating ride:", error);
+    }
+  };
 
   const fetchRides = async () => {
     if (!user?.uid) return;
@@ -116,9 +130,20 @@ const RidesHistory = () => {
             key={ride.id}
             ride={ride}
             onDelete={() => handleDeleteRide(ride.id)}
+            onUpdate={(updatedData) => handleUpdateRide(ride.id, updatedData)}
           />
         ))}
       </div>
+
+      {/* <div className="grid gap-4">
+        {filteredRides.map((ride) => (
+          <RideCard
+            key={ride.id}
+            ride={ride}
+            onDelete={() => handleDeleteRide(ride.id)}
+          />
+        ))}
+      </div> */}
     </div>
   );
 };

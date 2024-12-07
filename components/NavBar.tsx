@@ -248,7 +248,7 @@ const NavBar = () => {
   if (loading) return null;
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center p-4">
         {user ? (
           <>

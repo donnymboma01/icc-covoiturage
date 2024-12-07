@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
@@ -24,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/app/hooks/useAuth";
 
 interface Ride {
   id: string;
@@ -59,6 +61,9 @@ const RideSearch = () => {
     []
   );
   const [selectedChurch, setSelectedChurch] = useState<string>("");
+  const [highlightedDates, setHighlightedDates] = useState<Date[]>([]);
+  const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchChurches = async () => {
@@ -85,10 +90,42 @@ const RideSearch = () => {
     fetchChurches();
   }, []);
 
+  const fetchAllAvailableRides = async () => {
+    try {
+      const ridesRef = collection(db, "rides");
+      const q = query(
+        ridesRef,
+        where("status", "==", "active"),
+        where("departureTime", ">=", new Date())
+      );
+
+      const querySnapshot = await getDocs(q);
+      console.log("Found rides:", querySnapshot.size);
+
+      const dates = querySnapshot.docs.map((doc) => {
+        const rideData = doc.data();
+        return rideData.departureTime.toDate();
+      });
+
+      const normalizedDates = dates.map(
+        (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      );
+
+      console.log("Setting available dates:", normalizedDates);
+      setAvailableDates(normalizedDates);
+    } catch (error) {
+      console.error("Error fetching rides:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllAvailableRides();
+  }, []);
+
   const handleSearch = async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      console.log("Search Params:", searchParams);
       const startOfDay = new Date(searchParams.date);
       startOfDay.setHours(0, 0, 0, 0);
 
@@ -96,7 +133,6 @@ const RideSearch = () => {
       endOfDay.setHours(23, 59, 59, 999);
 
       const ridesRef = collection(db, "rides");
-
       const conditions = [
         where("status", "==", "active"),
         where("departureTime", ">=", startOfDay),
@@ -105,10 +141,6 @@ const RideSearch = () => {
 
       if (selectedChurch && selectedChurch !== "all") {
         conditions.push(where("churchId", "==", selectedChurch));
-      }
-
-      if (searchParams.seats > 0) {
-        conditions.push(where("availableSeats", ">=", searchParams.seats));
       }
 
       const q = query(ridesRef, ...conditions);
@@ -153,92 +185,13 @@ const RideSearch = () => {
       const filteredRides = ridesData.filter(
         (ride): ride is Ride & { driver: Driver } => ride !== null
       );
-
       setRides(filteredRides);
     } catch (error) {
       console.error("Error fetching rides:", error);
-      console.error("Détails de l'erreur:", error);
     } finally {
       setLoading(false);
     }
   };
-
-  // const handleSearch = async () => {
-  //   setLoading(true);
-  //   try {
-  //     console.log("Search Params:", searchParams);
-  //     const startOfDay = new Date(searchParams.date);
-  //     startOfDay.setHours(0, 0, 0, 0);
-
-  //     const endOfDay = new Date(searchParams.date);
-  //     endOfDay.setHours(23, 59, 59, 999);
-
-  //     const ridesRef = collection(db, "rides");
-
-  //     const conditions = [
-  //       where("status", "==", "active"),
-  //       where("departureTime", ">=", startOfDay),
-  //       where("departureTime", "<=", endOfDay),
-  //     ];
-
-  //     if (selectedChurch) {
-  //       conditions.push(where("churchId", "==", selectedChurch));
-  //     }
-  //     if (searchParams.seats > 0) {
-  //       conditions.push(where("availableSeats", ">=", searchParams.seats));
-  //     }
-
-  //     const q = query(ridesRef, ...conditions);
-  //     const querySnapshot = await getDocs(q);
-
-  //     const ridesData = await Promise.all(
-  //       querySnapshot.docs.map(async (doc) => {
-  //         const rideData = doc.data() as Ride;
-
-  //         const departureMatch =
-  //           !searchParams.departure ||
-  //           rideData.departureAddress
-  //             .toLowerCase()
-  //             .includes(searchParams.departure.toLowerCase());
-
-  //         const arrivalMatch =
-  //           !searchParams.arrival ||
-  //           rideData.arrivalAddress
-  //             .toLowerCase()
-  //             .includes(searchParams.arrival.toLowerCase());
-
-  //         if (!departureMatch || !arrivalMatch) {
-  //           return null;
-  //         }
-
-  //         const driverSnap = await getDocs(
-  //           query(
-  //             collection(db, "users"),
-  //             where("uid", "==", rideData.driverId)
-  //           )
-  //         );
-  //         const driverData = driverSnap.docs[0]?.data() as Driver;
-
-  //         return {
-  //           ...rideData,
-  //           id: doc.id,
-  //           driver: driverData,
-  //         };
-  //       })
-  //     );
-
-  //     const filteredRides = ridesData.filter(
-  //       (ride): ride is Ride & { driver: Driver } => ride !== null
-  //     );
-
-  //     setRides(filteredRides);
-  //   } catch (error) {
-  //     console.error("Error fetching rides:", error);
-  //     console.error("Détails de l'erreur:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   useEffect(() => {
     handleSearch();
@@ -280,7 +233,7 @@ const RideSearch = () => {
               />
             </div>
 
-            <Select
+            {/* <Select
               value={selectedChurch || "all"}
               onValueChange={(value) => setSelectedChurch(value)}
             >
@@ -297,15 +250,55 @@ const RideSearch = () => {
                     </SelectItem>
                   ))}
               </SelectContent>
-            </Select>
+            </Select> */}
 
             <div className="w-full">
+              <p className="text-sm text-muted-foreground italic mb-2 text-center sm:text-left">
+                <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2 align-middle"></span>
+                <em>
+                  Les dates surlignées en orange indiquent des trajets
+                  disponibles pour le covoiturage
+                </em>
+              </p>
               <Calendar
                 mode="single"
                 selected={searchParams.date}
                 onSelect={(date) =>
                   date && setSearchParams({ ...searchParams, date })
                 }
+                modifiers={{
+                  highlighted: (date) => {
+                    return (
+                      availableDates.some(
+                        (availableDate) =>
+                          date.getDate() === availableDate.getDate() &&
+                          date.getMonth() === availableDate.getMonth() &&
+                          date.getFullYear() === availableDate.getFullYear()
+                      ) &&
+                      !(
+                        date.getDate() === searchParams.date.getDate() &&
+                        date.getMonth() === searchParams.date.getMonth() &&
+                        date.getFullYear() === searchParams.date.getFullYear()
+                      )
+                    );
+                  },
+                  selected: (date) =>
+                    date.getDate() === searchParams.date.getDate() &&
+                    date.getMonth() === searchParams.date.getMonth() &&
+                    date.getFullYear() === searchParams.date.getFullYear(),
+                }}
+                modifiersStyles={{
+                  highlighted: {
+                    backgroundColor: "#f97316",
+                    color: "white",
+                    borderRadius: "9999px",
+                  },
+                  selected: {
+                    backgroundColor: "#1e293b",
+                    color: "white",
+                    borderRadius: "9999px",
+                  },
+                }}
                 className="rounded-md border w-full"
               />
             </div>
@@ -327,13 +320,42 @@ const RideSearch = () => {
             </div>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full sm:w-auto sm:min-w-[200px] mx-auto block"
-            disabled={loading}
-          >
-            {loading ? "Recherche en cours..." : "Rechercher"}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              type="submit"
+              className="w-full sm:w-auto sm:min-w-[200px] mx-auto block"
+              disabled={loading || !user}
+            >
+              {loading ? "Recherche en cours..." : "Rechercher"}
+            </Button>
+
+            {!user && (
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                <span className="flex items-center justify-center gap-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m0 0v2m0-2h2m-2 0H10"
+                    />
+                  </svg>
+                  Pour rechercher et réserver des trajets, veuillez vous
+                  <a
+                    href="/auth/login"
+                    className="text-orange-500 hover:text-orange-600 font-medium"
+                  >
+                    connecter
+                  </a>
+                </span>
+              </p>
+            )}
+          </div>
         </form>
       </Card>
 
@@ -362,28 +384,6 @@ const RideSearch = () => {
           </div>
         )}
       </div>
-
-      {/* <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        {rides.length > 0 ? (
-          rides.map((ride) => (
-            <RideCard
-              key={ride.id}
-              ride={{
-                ...ride,
-                departureTime: ride.departureTime.toDate(),
-              }}
-              driver={ride.driver}
-              onClick={() => {
-                window.location.href = `/rides/${ride.id}`;
-              }}
-            />
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8 text-gray-500">
-            Aucun trajet disponible
-          </div>
-        )}
-      </div> */}
     </div>
   );
 };
