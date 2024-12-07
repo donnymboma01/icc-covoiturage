@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from "@/app/config/firebase-config";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -44,5 +45,16 @@ export const uploadImageToFirebase = async (
   } catch (error) {
     console.error("Error uploading image:", error);
     throw error;
+  }
+};
+
+export const cleanupFailedRegistration = async (user: any) => {
+  if (user) {
+    try {
+      await user.delete();
+      console.log("User cleanup successful");
+    } catch (error) {
+      console.error("Cleanup failed:", error);
+    }
   }
 };

@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useState, useEffect } from "react";
-// import fs from "fs/promises";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -47,6 +46,7 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { uploadImageToFirebase } from "@/utils/custom-functions";
+import { cleanupFailedRegistration } from "@/utils/custom-functions";
 
 interface VehicleDoc {
   userId: string;
@@ -67,7 +67,7 @@ const RegisterForm = () => {
   const router = useRouter();
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
+  // const storage = getStorage(app);
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -146,29 +146,108 @@ const RegisterForm = () => {
     }
   };
 
+  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+  //   let userCredential;
+
+  //   try {
+  //     setIsLoading(true);
+
+  //     userCredential = await createUserWithEmailAndPassword(
+  //       auth,
+  //       values.email,
+  //       values.password
+  //     );
+
+  //     try {
+  //       await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //       let profilePictureUrl = "";
+  //       if (values.profilePicture) {
+  //         profilePictureUrl = await uploadImage(
+  //           values.profilePicture,
+  //           userCredential.user.uid
+  //         );
+  //       }
+
+  //       const userDocument = {
+  //         uid: userCredential.user.uid,
+  //         email: values.email,
+  //         fullName: values.fullName,
+  //         phoneNumber: values.phoneNumber,
+  //         isDriver: values.isDriver,
+  //         createdAt: new Date(),
+  //         churchIds: [values.church],
+  //         profilePicture: profilePictureUrl || null,
+  //       };
+
+  //       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
+
+  //       if (values.isDriver && values.vehicle) {
+  //         const vehicleDoc = {
+  //           userId: userCredential.user.uid,
+  //           ...values.vehicle,
+  //           isActive: true,
+  //         };
+  //         await addDoc(collection(db, "vehicles"), vehicleDoc);
+  //       }
+
+  //       await auth.signOut();
+  //       toast.success("Inscription réussie");
+  //       router.push("/auth/login");
+  //     } catch (innerError) {
+  //       if (userCredential?.user) {
+  //         await userCredential.user.delete();
+  //       }
+  //       throw innerError;
+  //     }
+  //   } catch (error: any) {
+  //     console.error("Registration error:", error);
+  //     if (userCredential?.user) {
+  //       await userCredential.user.delete();
+  //     }
+  //     toast.error("Une erreur est survenue, veuillez essayer plus tard");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+    console.log("Form submitted with values:", values);
+    console.log("Form validation state:", form.formState);
     let userCredential;
 
     try {
       setIsLoading(true);
 
-      userCredential = await createUserWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-
+      // 1. Create auth user
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        userCredential = await createUserWithEmailAndPassword(
+          auth,
+          values.email,
+          values.password
+        );
+      } catch (authError: any) {
+        console.error("Auth creation failed:", authError);
+        toast.error(authError.message || "Erreur d'authentification");
+        return;
+      }
 
-        let profilePictureUrl = "";
-        if (values.profilePicture) {
+      // 2. Handle profile picture upload
+      let profilePictureUrl = "";
+      if (values.profilePicture) {
+        try {
           profilePictureUrl = await uploadImage(
             values.profilePicture,
             userCredential.user.uid
           );
+        } catch (uploadError: any) {
+          console.error("Image upload failed:", uploadError);
+          await userCredential.user.delete();
+          toast.error("Erreur lors de l'upload de l'image");
+          return;
         }
+      }
 
+      try {
         const userDocument = {
           uid: userCredential.user.uid,
           email: values.email,
@@ -183,29 +262,27 @@ const RegisterForm = () => {
         await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
 
         if (values.isDriver && values.vehicle) {
-          const vehicleDoc = {
+          await addDoc(collection(db, "vehicles"), {
             userId: userCredential.user.uid,
             ...values.vehicle,
             isActive: true,
-          };
-          await addDoc(collection(db, "vehicles"), vehicleDoc);
+          });
         }
 
         await auth.signOut();
         toast.success("Inscription réussie");
         router.push("/auth/login");
-      } catch (innerError) {
-        if (userCredential?.user) {
-          await userCredential.user.delete();
-        }
-        throw innerError;
+      } catch (dbError: any) {
+        console.error("Database operation failed:", dbError);
+        await userCredential.user.delete();
+        toast.error("Erreur lors de la création du profil");
       }
     } catch (error: any) {
       console.error("Registration error:", error);
       if (userCredential?.user) {
-        await userCredential.user.delete();
+        await cleanupFailedRegistration(userCredential.user);
       }
-      toast.error("Une erreur est survenue, veuillez essayer plus tard");
+      toast.error("Une erreur est survenue, veuillez réessayer");
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +290,13 @@ const RegisterForm = () => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log("Form validation errors:", errors);
+          toast.error("Veuillez remplir tous les champs correctement");
+        })}
+        className="space-y-6"
+      >
         <FormItem>
           <FormLabel>Photo de profil</FormLabel>
           <FormControl>
@@ -524,7 +607,15 @@ const RegisterForm = () => {
           </details>
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isLoading}
+          onTouchStart={(e) => {
+            console.log("Button touched");
+            e.currentTarget.click();
+          }}
+        >
           {isLoading ? "Inscription en cours..." : "S'inscrire"}
         </Button>
       </form>

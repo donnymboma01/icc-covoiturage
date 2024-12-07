@@ -328,10 +328,9 @@ const RideSearch = () => {
             >
               {loading ? "Recherche en cours..." : "Rechercher"}
             </Button>
-
             {!user && (
               <p className="text-center text-sm text-muted-foreground mt-2">
-                <span className="flex items-center justify-center gap-2">
+                <span className="flex flex-wrap items-center justify-center gap-2">
                   <svg
                     className="w-4 h-4"
                     fill="none"
