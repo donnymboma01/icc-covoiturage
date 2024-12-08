@@ -194,8 +194,10 @@ const RideSearch = () => {
   };
 
   useEffect(() => {
-    handleSearch();
-  }, []);
+    if (user) {
+      handleSearch();
+    }
+  }, [user]);
 
   return (
     <div className="space-y-6 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -263,9 +265,12 @@ const RideSearch = () => {
               <Calendar
                 mode="single"
                 selected={searchParams.date}
-                onSelect={(date) =>
-                  date && setSearchParams({ ...searchParams, date })
-                }
+                onSelect={(date) => {
+                  if (date) {
+                    setSearchParams({ ...searchParams, date });
+                    handleSearch();
+                  }
+                }}
                 modifiers={{
                   highlighted: (date) => {
                     return (

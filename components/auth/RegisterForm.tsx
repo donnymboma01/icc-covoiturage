@@ -67,7 +67,6 @@ const RegisterForm = () => {
   const router = useRouter();
   const auth = getAuth(app);
   const db = getFirestore(app);
-  // const storage = getStorage(app);
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -146,70 +145,6 @@ const RegisterForm = () => {
     }
   };
 
-  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
-  //   let userCredential;
-
-  //   try {
-  //     setIsLoading(true);
-
-  //     userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       values.email,
-  //       values.password
-  //     );
-
-  //     try {
-  //       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  //       let profilePictureUrl = "";
-  //       if (values.profilePicture) {
-  //         profilePictureUrl = await uploadImage(
-  //           values.profilePicture,
-  //           userCredential.user.uid
-  //         );
-  //       }
-
-  //       const userDocument = {
-  //         uid: userCredential.user.uid,
-  //         email: values.email,
-  //         fullName: values.fullName,
-  //         phoneNumber: values.phoneNumber,
-  //         isDriver: values.isDriver,
-  //         createdAt: new Date(),
-  //         churchIds: [values.church],
-  //         profilePicture: profilePictureUrl || null,
-  //       };
-
-  //       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
-
-  //       if (values.isDriver && values.vehicle) {
-  //         const vehicleDoc = {
-  //           userId: userCredential.user.uid,
-  //           ...values.vehicle,
-  //           isActive: true,
-  //         };
-  //         await addDoc(collection(db, "vehicles"), vehicleDoc);
-  //       }
-
-  //       await auth.signOut();
-  //       toast.success("Inscription réussie");
-  //       router.push("/auth/login");
-  //     } catch (innerError) {
-  //       if (userCredential?.user) {
-  //         await userCredential.user.delete();
-  //       }
-  //       throw innerError;
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Registration error:", error);
-  //     if (userCredential?.user) {
-  //       await userCredential.user.delete();
-  //     }
-  //     toast.error("Une erreur est survenue, veuillez essayer plus tard");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
     console.log("Form submitted with values:", values);
     console.log("Form validation state:", form.formState);
@@ -218,7 +153,6 @@ const RegisterForm = () => {
     try {
       setIsLoading(true);
 
-      // 1. Create auth user
       try {
         userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -231,7 +165,6 @@ const RegisterForm = () => {
         return;
       }
 
-      // 2. Handle profile picture upload
       let profilePictureUrl = "";
       if (values.profilePicture) {
         try {
@@ -273,7 +206,7 @@ const RegisterForm = () => {
         toast.success("Inscription réussie");
         router.push("/auth/login");
       } catch (dbError: any) {
-        console.error("Database operation failed:", dbError);
+        console.error("Opération dans la base de données a échoué :", dbError);
         await userCredential.user.delete();
         toast.error("Erreur lors de la création du profil");
       }
