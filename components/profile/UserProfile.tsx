@@ -23,6 +23,7 @@ import {
 import { FaCarSide, FaUserEdit } from "react-icons/fa";
 import { EditProfileModal } from "./EditProfileModal";
 import { BecomeDriverModal } from "./BecomeDriver";
+import { toast } from "sonner";
 import {
   doc,
   setDoc,
@@ -156,28 +157,74 @@ const UserProfile = ({
     fetchChurches();
   }, [db]);
 
+  // const handleEnableNotifications = async () => {
+  //   try {
+  //     if (notificationsEnabled) {
+  //       await onUpdateUser({
+  //         fcmToken: null,
+  //       });
+  //       setNotificationsEnabled(false);
+  //       return;
+  //     }
+
+  //     const newToken = await requestPermission();
+
+  //     if (newToken && user?.uid) {
+  //       await onUpdateUser({
+  //         fcmToken: newToken,
+  //       });
+  //       setNotificationsEnabled(true);
+  //       toast.success("Notifications activées avec succès");
+  //     } else {
+  //       toast.error("Impossible d'activer les notifications");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error handling notifications:", error);
+  //     toast.error("Erreur lors de l'activation des notifications");
+  //   }
+  // };
+  // Add this debug code temporarily
   const handleEnableNotifications = async () => {
-    if (!notificationsEnabled) {
-      try {
-        await requestPermission();
-        if (token && user?.uid) {
-          await onUpdateUser({
-            fcmToken: token,
-          });
-          setNotificationsEnabled(true);
-        }
-      } catch (error) {
-        console.error("Error enabling notifications:", error);
-      }
-    } else {
-      if (user?.uid) {
+    try {
+      console.log("Requesting permission...");
+      const newToken = await requestPermission();
+      console.log("Got token:", newToken);
+      toast.success("Notifications activées avec succès");
+
+      if (newToken && user?.uid) {
         await onUpdateUser({
-          fcmToken: null,
+          fcmToken: newToken,
         });
-        setNotificationsEnabled(false);
+        setNotificationsEnabled(true);
       }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Erreur lors de l'activation des notifications");
     }
   };
+
+  // const handleEnableNotifications = async () => {
+  //   if (!notificationsEnabled) {
+  //     try {
+  //       await requestPermission();
+  //       if (token && user?.uid) {
+  //         await onUpdateUser({
+  //           fcmToken: token,
+  //         });
+  //         setNotificationsEnabled(true);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error enabling notifications:", error);
+  //     }
+  //   } else {
+  //     if (user?.uid) {
+  //       await onUpdateUser({
+  //         fcmToken: null,
+  //       });
+  //       setNotificationsEnabled(false);
+  //     }
+  //   }
+  // };
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
@@ -303,7 +350,7 @@ const UserProfile = ({
                 </div>
               </div>
 
-              <Button
+              {/* <Button
                 onClick={handleEnableNotifications}
                 className="flex items-center gap-2 w-full"
               >
@@ -311,6 +358,18 @@ const UserProfile = ({
                 {notificationsEnabled
                   ? "Désactiver les notifications"
                   : "Activer les notifications"}
+              </Button> */}
+              <Button
+                onClick={handleEnableNotifications}
+                className="flex items-center justify-center gap-2 w-full p-4 touch-action-manipulation"
+                style={{ touchAction: "manipulation" }}
+              >
+                <MdNotifications size={20} />
+                <span className="text-sm">
+                  {notificationsEnabled
+                    ? "Désactiver les notifications"
+                    : "Activer les notifications"}
+                </span>
               </Button>
 
               {/* <Button
