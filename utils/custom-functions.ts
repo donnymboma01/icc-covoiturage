@@ -1,6 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from "@/app/config/firebase-config";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import {
+  doc,
+  updateDoc,
+  Timestamp,
+  deleteDoc,
+  collection,
+  where,
+  getDocs,
+  query,
+} from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { app } from "@/app/config/firebase-config";
 
@@ -48,13 +57,40 @@ export const uploadImageToFirebase = async (
   }
 };
 
+// export const cleanupFailedRegistration = async (user: any) => {
+//   if (user) {
+//     try {
+//       await user.delete();
+//       console.log("User cleanup successful");
+//     } catch (error) {
+//       console.error("Cleanup failed:", error);
+//     }
+//   }
+// };
+
 export const cleanupFailedRegistration = async (user: any) => {
-  if (user) {
-    try {
+  try {
+    if (db) {
+      // Delete user document if exists
+      const userDoc = doc(db, "users", user.uid);
+      await deleteDoc(userDoc);
+
+      // Delete vehicle documents if exist
+      const vehicleQuery = query(
+        collection(db, "vehicles"),
+        where("userId", "==", user.uid)
+      );
+      const vehicleSnap = await getDocs(vehicleQuery);
+      vehicleSnap.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
+
+      // Delete auth user
       await user.delete();
-      console.log("User cleanup successful");
-    } catch (error) {
-      console.error("Cleanup failed:", error);
+    } else {
+      throw new Error("Firestore database is not initialized");
     }
+  } catch (error) {
+    console.error("Cleanup failed:", error);
   }
 };

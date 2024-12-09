@@ -153,71 +153,54 @@ const RegisterForm = () => {
     try {
       setIsLoading(true);
 
-      try {
-        userCredential = await createUserWithEmailAndPassword(
-          auth,
-          values.email,
-          values.password
-        );
-      } catch (authError: any) {
-        console.error("Auth creation failed:", authError);
+      // 1. Create auth user
+      userCredential = await createUserWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
 
-        // Vérification du code d'erreur Firebase pour une adresse e-mail déjà utilisée
-        if (authError.code === "auth/email-already-in-use") {
-          toast.error(
-            "L'adresse e-mail que vous avez saisie est déjà associée à un autre profil."
-          );
-        } else {
-          toast.error(authError.message || "Erreur d'authentification");
-        }
-        return;
-      }
-
+      // 2. Upload profile picture if exists
       let profilePictureUrl = "";
       if (values.profilePicture) {
-        try {
-          profilePictureUrl = await uploadImage(
-            values.profilePicture,
-            userCredential.user.uid
-          );
-        } catch (uploadError: any) {
-          console.error("Image upload failed:", uploadError);
-          await userCredential.user.delete();
-          toast.error("Erreur lors de l'upload de l'image");
-          return;
-        }
+        profilePictureUrl = await uploadImage(
+          values.profilePicture,
+          userCredential.user.uid
+        );
       }
 
-      try {
-        const userDocument = {
-          uid: userCredential.user.uid,
-          email: values.email,
-          fullName: values.fullName,
-          phoneNumber: values.phoneNumber,
-          isDriver: values.isDriver,
-          createdAt: new Date(),
-          churchIds: [values.church],
-          profilePicture: profilePictureUrl || null,
+      // 3. Create user document
+      const userDocument = {
+        uid: userCredential.user.uid,
+        email: values.email,
+        fullName: values.fullName,
+        phoneNumber: values.phoneNumber,
+        isDriver: values.isDriver,
+        createdAt: new Date(),
+        churchIds: [values.church],
+        profilePicture: profilePictureUrl || null,
+      };
+
+      await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
+
+      // 4. If user is driver, create vehicle document
+      if (values.isDriver && values.vehicle) {
+        const vehicleDoc = {
+          userId: userCredential.user.uid,
+          ...values.vehicle,
+          isActive: true,
         };
+        await addDoc(collection(db, "vehicles"), vehicleDoc);
+      }
 
-        await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
+      // 5. Sign out and redirect
+      await auth.signOut();
 
-        if (values.isDriver && values.vehicle) {
-          await addDoc(collection(db, "vehicles"), {
-            userId: userCredential.user.uid,
-            ...values.vehicle,
-            isActive: true,
-          });
-        }
-
-        await auth.signOut();
+      // 6. Add delay before redirect
+      setTimeout(() => {
         toast.success("Inscription réussie");
         router.push("/auth/login");
-      } catch (dbError: any) {
-        console.error("Opération dans la base de données a échoué :", dbError);
-        await userCredential.user.delete();
-        toast.error("Erreur lors de la création du profil");
-      }
+      }, 1000);
     } catch (error: any) {
       console.error("Registration error:", error);
       if (userCredential?.user) {
