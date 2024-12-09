@@ -211,10 +211,6 @@ const RideSearch = () => {
         where("departureTime", "<=", endOfDay),
       ];
 
-      if (selectedChurch && selectedChurch !== "all") {
-        conditions.push(where("churchId", "==", selectedChurch));
-      }
-
       const q = query(ridesRef, ...conditions);
       const querySnapshot = await getDocs(q);
 
@@ -222,8 +218,8 @@ const RideSearch = () => {
         querySnapshot.docs.map(async (doc) => {
           const rideData = doc.data() as Ride;
 
-          // Apply filters only if user is logged in
-          if (user) {
+          // Only apply filters if user is logged in and has entered search criteria
+          if (user && (searchParams.departure || searchParams.arrival)) {
             const departureMatch =
               !searchParams.departure ||
               rideData.departureAddress
@@ -268,11 +264,87 @@ const RideSearch = () => {
     }
   };
 
+  // const handleSearch = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const startOfDay = new Date(searchParams.date);
+  //     startOfDay.setHours(0, 0, 0, 0);
+  //     const endOfDay = new Date(searchParams.date);
+  //     endOfDay.setHours(23, 59, 59, 999);
+
+  //     const ridesRef = collection(db, "rides");
+  //     const conditions = [
+  //       where("status", "==", "active"),
+  //       where("departureTime", ">=", startOfDay),
+  //       where("departureTime", "<=", endOfDay),
+  //     ];
+
+  //     if (selectedChurch && selectedChurch !== "all") {
+  //       conditions.push(where("churchId", "==", selectedChurch));
+  //     }
+
+  //     const q = query(ridesRef, ...conditions);
+  //     const querySnapshot = await getDocs(q);
+
+  //     const ridesData = await Promise.all(
+  //       querySnapshot.docs.map(async (doc) => {
+  //         const rideData = doc.data() as Ride;
+
+  //         // Apply filters only if user is logged in
+  //         if (user) {
+  //           const departureMatch =
+  //             !searchParams.departure ||
+  //             rideData.departureAddress
+  //               .toLowerCase()
+  //               .includes(searchParams.departure.toLowerCase());
+
+  //           const arrivalMatch =
+  //             !searchParams.arrival ||
+  //             rideData.arrivalAddress
+  //               .toLowerCase()
+  //               .includes(searchParams.arrival.toLowerCase());
+
+  //           if (!departureMatch || !arrivalMatch) {
+  //             return null;
+  //           }
+  //         }
+
+  //         const driverSnap = await getDocs(
+  //           query(
+  //             collection(db, "users"),
+  //             where("uid", "==", rideData.driverId)
+  //           )
+  //         );
+  //         const driverData = driverSnap.docs[0]?.data() as Driver;
+
+  //         return {
+  //           ...rideData,
+  //           id: doc.id,
+  //           driver: driverData,
+  //         };
+  //       })
+  //     );
+
+  //     const filteredRides = ridesData.filter(
+  //       (ride): ride is Ride & { driver: Driver } => ride !== null
+  //     );
+  //     setRides(filteredRides);
+  //   } catch (error) {
+  //     console.error("Error fetching rides:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   useEffect(() => {
     if (user) {
       handleSearch();
     }
   }, [user]);
+
+  useEffect(() => {
+    handleSearch();
+  }, []);
 
   return (
     <div className="space-y-6 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -346,7 +418,9 @@ const RideSearch = () => {
                 onSelect={(date) => {
                   if (date) {
                     setSearchParams({ ...searchParams, date });
-                    handleSearch();
+                    setTimeout(() => {
+                      handleSearch();
+                    }, 0);
                   }
                 }}
                 modifiers={{

@@ -23,11 +23,17 @@ import {
 import { FaCarSide, FaUserEdit } from "react-icons/fa";
 import { EditProfileModal } from "./EditProfileModal";
 import { BecomeDriverModal } from "./BecomeDriver";
-import { doc, setDoc, getFirestore, getDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  getFirestore,
+  getDoc,
+  collection,
+  getDocs,
+} from "firebase/firestore";
 import { app } from "../../app/config/firebase-config";
 import { useNotifications } from "@/app/hooks/useNotifications";
 import UserAvatar from "../../public/images/avatarprofile.png";
-
 
 interface Vehicle {
   brand: string;
@@ -73,12 +79,31 @@ const UserProfile = ({
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [churchData, setChurchData] = useState<{ name: string } | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
+    []
+  );
 
   const db = getFirestore(app);
 
+  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
+  //   try {
+  //     await onUpdateUser(userData);
+  //   } catch (error) {
+  //     console.error("Error updating profile:", error);
+  //   }
+  // };
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
+      console.log("Updating user with data:", userData);
       await onUpdateUser(userData);
+
+      if (userData.churchIds?.[0]) {
+        const churchRef = doc(db, "churches", userData.churchIds[0]);
+        const churchSnap = await getDoc(churchRef);
+        if (churchSnap.exists()) {
+          setChurchData(churchSnap.data() as { name: string });
+        }
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
     }
@@ -104,39 +129,40 @@ const UserProfile = ({
     );
   };
 
-  // const handleEnableNotifications = async () => {
-  //   setNotificationsEnabled(!notificationsEnabled);
-  //   try {
-  //     await requestPermission();
-  //     if (token && user) {
-  //       await onUpdateUser({ fcmToken: token });
-  //     }
-  //   } catch (e) {
-  //     console.error("Erreur lors de l'activation des notifications:", e);
-  //   }
-  // };
+  useEffect(() => {
+    const fetchChurches = async () => {
+      const churchesCollection = collection(db, "churches");
+      const churchesSnapshot = await getDocs(churchesCollection);
+      const churchMap = new Map();
 
-  // const handleEnableNotifications = async () => {
-  //   if (!notificationsEnabled) {
-  //     const newToken = await requestPermission();
-  //     if (newToken) {
-  //       await onUpdateUser({ fcmToken: newToken });
-  //       setNotificationsEnabled(true);
-  //     }
-  //   } else {
-  //     // Disable notifications
-  //     await onUpdateUser({ fcmToken: undefined });
-  //     setNotificationsEnabled(false);
-  //   }
-  // };
+      churchesSnapshot.docs.forEach((doc) => {
+        const church = doc.data();
+        const normalizedName = church.name.trim().toLowerCase();
+
+        if (!churchMap.has(normalizedName)) {
+          churchMap.set(normalizedName, {
+            id: doc.id,
+            name: church.name.trim(),
+          });
+        }
+      });
+
+      const uniqueChurches = Array.from(churchMap.values());
+      uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
+      console.log("Fetched churches:", uniqueChurches); // Add this line
+      setChurches(uniqueChurches);
+    };
+
+    fetchChurches();
+  }, [db]);
+
   const handleEnableNotifications = async () => {
     if (!notificationsEnabled) {
       try {
         await requestPermission();
         if (token && user?.uid) {
-          // Update Firestore with the new token
           await onUpdateUser({
-            fcmToken: token
+            fcmToken: token,
           });
           setNotificationsEnabled(true);
         }
@@ -145,30 +171,13 @@ const UserProfile = ({
       }
     } else {
       if (user?.uid) {
-        // Remove token from Firestore
         await onUpdateUser({
-          fcmToken: null
+          fcmToken: null,
         });
         setNotificationsEnabled(false);
       }
     }
   };
-  
-  
-
-  // const handleEnableNotifications = async () => {
-  //   if (!notificationsEnabled && user?.uid) {
-  //     try {
-  //       const newToken = await requestPermission();
-  //       if (newToken) {
-  //         await updateUser(user.uid, { fcmToken: newToken });
-  //         setNotificationsEnabled(true);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error enabling notifications:", error);
-  //     }
-  //   }
-  // };
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
@@ -376,6 +385,7 @@ const UserProfile = ({
           onClose={() => setIsEditing(false)}
           onSubmit={handleUpdateProfile}
           currentUser={user}
+          churches={churches}
         />
       )}
 

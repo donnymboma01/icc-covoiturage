@@ -12,12 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 interface EditProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (userData: any) => Promise<void>;
   currentUser: any;
+  churches: { id: string; name: string }[];
 }
 
 export function EditProfileModal({
@@ -25,18 +33,45 @@ export function EditProfileModal({
   onClose,
   onSubmit,
   currentUser,
+  churches,
 }: EditProfileModalProps) {
+  console.log("Churches in modal:", churches);
   const [userData, setUserData] = useState({
     fullName: currentUser?.fullName || "",
     phoneNumber: currentUser?.phoneNumber || "",
     profilePicture: currentUser?.profilePicture || "",
     vehicle: currentUser?.vehicle || null,
+    email: currentUser?.email || "",
+    churchId: currentUser?.churchIds?.[0] || "",
   });
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   await onSubmit(userData);
+  //   onClose();
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(userData);
-    onClose();
+    console.log("Submitting userData:", userData); 
+
+
+    const updatedUserData = {
+      ...userData,
+      churchIds: userData.churchId ? [userData.churchId] : [],
+    };
+
+    try {
+      await onSubmit(updatedUserData);
+      onClose();
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
+
+  const handleChurchChange = (value: string) => {
+    console.log("Selected church:", value);
+    setUserData({ ...userData, churchId: value });
   };
 
   return (
@@ -77,6 +112,44 @@ export function EditProfileModal({
                   }
                   required
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={userData.email}
+                  onChange={(e) =>
+                    setUserData({ ...userData, email: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="church">Église</Label>
+                <Select
+                  value={userData.churchId}
+                  onValueChange={handleChurchChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une église" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {churches?.length === 0 ? (
+                      <SelectItem value="loading" disabled>
+                        Chargement des églises...
+                      </SelectItem>
+                    ) : (
+                      churches?.map((church) => (
+                        <SelectItem key={church.id} value={church.id}>
+                          {church.name || "Église sans nom"}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               {currentUser?.isDriver && (
