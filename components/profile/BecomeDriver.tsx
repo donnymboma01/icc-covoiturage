@@ -61,6 +61,7 @@ export function BecomeDriverModal({
                   setVehicleData({ ...vehicleData, brand: e.target.value })
                 }
                 required
+                placeholder="Tesla"
               />
             </div>
             <div>
@@ -72,6 +73,7 @@ export function BecomeDriverModal({
                   setVehicleData({ ...vehicleData, model: e.target.value })
                 }
                 required
+                placeholder="Model Y"
               />
             </div>
             <div>
@@ -83,6 +85,7 @@ export function BecomeDriverModal({
                   setVehicleData({ ...vehicleData, color: e.target.value })
                 }
                 required
+                placeholder="Grise"
               />
             </div>
 
@@ -97,7 +100,7 @@ export function BecomeDriverModal({
                 onChange={(e) =>
                   setVehicleData({
                     ...vehicleData,
-                    seats: parseInt(e.target.value) || 0,
+                    seats: parseInt(e.target.value) || 1,
                   })
                 }
                 required
@@ -116,6 +119,7 @@ export function BecomeDriverModal({
                   })
                 }
                 required
+                placeholder="x-xxx-xxx"
               />
             </div>
           </div>

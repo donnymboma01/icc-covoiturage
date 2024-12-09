@@ -42,21 +42,27 @@ const Home = () => {
         </div>
 
         <div className="flex justify-center items-center gap-6 mt-12 md:mt-16">
-          <Link
-            href="/infos"
-            className="flex items-center gap-2 text-sm md:text-base underline hover:text-yellow-400 transition-colors duration-300"
-          >
-            <MdInfo className="text-orange-400" size={30} />
-            <span>Plus d'infos</span>
-          </Link>
+          {/* Texte aligné en bas */}
+          <div className="flex flex-col items-center gap-2">
+            <Link href="/dashboard/passanger" className="text-center">
+              <div className="text-base hover:bg-gradient-to-r hover:from-red-700/80 hover:to-orange-400 bg-gradient-to-r from-red-800/80 to-orange-500 text-white py-1.5 px-10 max-md:px-8 rounded-full">
+                <p className="flex justify-center font-semibold items-center">
+                  <span className="text-yellow-400">
+                    <FaCar size={24} />
+                  </span>{" "}
+                  Trouver un trajet
+                </p>
+              </div>
+            </Link>
 
-          <Link
-            href="/dashboard/passanger"
-            className="flex items-center gap-2 text-sm md:text-base underline hover:text-yellow-400 transition-colors duration-300"
-          >
-            <FaCar className="text-green-400" size={30} />
-            <span>Trouver un trajet</span>
-          </Link>
+            <Link
+              href="/infos"
+              className="text-sm md:text-base text-yellow-400 underline hover:text-yellow-300 transition-colors duration-300 mt-2"
+            >
+              <MdInfo className="inline-block mr-1" />
+              Plus d'infos
+            </Link>
+          </div>
         </div>
       </div>
     </main>

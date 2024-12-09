@@ -168,25 +168,39 @@ const PassengerBookings = () => {
             const driver = ride ? driverDetails[ride.driverId] : null;
 
             return (
-              <Card key={booking.id} className="p-3 sm:p-4">
-                <div className="space-y-2 text-sm sm:text-base">
-                  <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
-                    <StatusBadge status={booking.status} />
-                    {booking.status === "rejected" &&
-                      booking.rejectionReason && (
-                        <p className="text-sm text-red-600">
-                          <strong>Raison du refus :</strong>{" "}
-                          {booking.rejectionReason}
-                        </p>
-                      )}
-                    <p>
-                      <strong>Places réservées : </strong>
-                      {booking.seatsBooked}
-                    </p>
+              <Card key={booking.id} className="p-4 sm:p-6">
+                <div className="space-y-4 text-sm sm:text-base">
+                  <div className="flex flex-col space-y-2 mb-2">
+                    <div className="flex items-center justify-between">
+                      <StatusBadge status={booking.status} />
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          <strong>Réservé le :</strong>
+                        </span>{" "}
+                        {booking.bookingDate
+                          .toDate()
+                          .toLocaleDateString("fr-FR")}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          <strong>Places réservées :</strong>
+                        </span>{" "}
+                        {booking.seatsBooked}
+                      </p>
+                    </div>
                   </div>
 
+                  {booking.status === "rejected" && booking.rejectionReason && (
+                    <p className="text-sm text-red-600">
+                      <strong>Raison du refus :</strong>{" "}
+                      {booking.rejectionReason}
+                    </p>
+                  )}
+
                   {ride && (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <p className="truncate">
                         <span className="font-medium">
                           <strong>De :</strong>
@@ -195,13 +209,13 @@ const PassengerBookings = () => {
                       </p>
                       <p className="truncate">
                         <span className="font-medium">
-                          <strong>À : </strong>
+                          <strong>À :</strong>
                         </span>{" "}
                         {ride.arrivalAddress}
                       </p>
                       <p className="break-words">
                         <span className="font-medium">
-                          <strong>Départ :</strong>
+                          <strong>Date & Heure :</strong>
                         </span>{" "}
                         {ride.departureTime.toDate().toLocaleString("fr-FR")}
                       </p>
@@ -209,7 +223,7 @@ const PassengerBookings = () => {
                   )}
 
                   {driver && (
-                    <div className="space-y-1 mt-2 border-t pt-2">
+                    <div className="space-y-2 mt-4 border-t pt-4">
                       <p className="font-medium text-gray-700">
                         <strong>Informations conducteur :</strong>
                       </p>
@@ -220,7 +234,7 @@ const PassengerBookings = () => {
                           {driver.phoneNumber}
                         </p>
                       )}
-                      <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                      <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
                         {driver.profilePicture && (
                           <Image
                             src={driver.profilePicture}
@@ -232,13 +246,6 @@ const PassengerBookings = () => {
                       </div>
                     </div>
                   )}
-
-                  <p className="text-sm">
-                    <span className="font-medium">
-                      <strong>Réservé le :</strong>
-                    </span>{" "}
-                    {booking.bookingDate.toDate().toLocaleDateString("fr-FR")}
-                  </p>
 
                   {booking.specialNotes && (
                     <p className="text-sm break-words">
@@ -253,19 +260,20 @@ const PassengerBookings = () => {
                     <Badge
                       onClick={() => handleCancelBooking(booking.id)}
                       variant="destructive"
-                      className="mt-2 w-full sm:w-auto text-center cursor-pointer"
+                      className="mt-4 w-full sm:w-auto text-center cursor-pointer"
                     >
                       Annuler la réservation
                     </Badge>
                   )}
                 </div>
+
                 {(booking.status === "rejected" ||
                   (ride && isBookingPast(ride.departureTime))) && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Badge
                         variant="destructive"
-                        className="mt-2 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
+                        className="mt-4 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
                         onClick={() => setBookingToDelete(booking.id)}
                       >
                         Supprimer la réservation

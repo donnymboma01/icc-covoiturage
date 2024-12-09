@@ -36,14 +36,14 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
 
         <div className="px-4 py-3">{children}</div>
 
-        <div className="border-t px-4 py-3 text-right">
+        {/* <div className="border-t px-4 py-3 text-right">
           <Badge
             onClick={onClose}
             className="bg-slate-700 text-white px-4 py-2 hover:bg-slate-400"
           >
             Fermer
           </Badge>
-        </div>
+        </div> */}
       </div>
     </div>
   );

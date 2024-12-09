@@ -17,6 +17,7 @@ const StatusBadge = ({ status }: { status: string }) => {
         case 'accepted': return 'Acceptée';
         case 'rejected': return 'Refusée';
         case 'pending': return 'En attente';
+        case 'cancelled': return 'Annulée';
         default: return status;
       }
     };

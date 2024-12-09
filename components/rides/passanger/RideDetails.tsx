@@ -21,6 +21,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { MdAccessTime, MdLocationOn, MdPerson, MdChurch } from "react-icons/md";
 import BookingForm from "@/components/booking/BookingForm";
 import Modal from "@/components/ui/Modal";
+import Link from "next/link";
 
 const db = getFirestore(app);
 
@@ -91,17 +92,6 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             setDriver(driverData);
           }
 
-          // Fetch church data
-          // const churchDoc = await getDoc(
-          //   doc(db, "churches", rideData.churchId)
-          // );
-          // if (churchDoc.exists()) {
-          //   setChurch({
-          //     id: churchDoc.id,
-          //     name: churchDoc.data().name,
-          //   });
-          // }
-          // Inside fetchRideDetails function
           if (rideData.churchId) {
             const churchDoc = await getDoc(
               doc(db, "churches", rideData.churchId)
@@ -176,7 +166,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
               <div className="flex items-center gap-2">
                 <MdChurch className="text-gray-500 text-lg" />
                 <p className="text-gray-500 text-sm sm:text-base">
-                  Membre de {driverChurch.name}
+                  {driverChurch.name}
                 </p>
               </div>
             )}
@@ -184,12 +174,13 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
         </div>
 
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <div className="flex items-center gap-2">
             <MdAccessTime className="text-xl text-gray-500" />
-            <div className="text-sm sm:text-base">
+            <div className="text-sm sm:text-base flex flex-wrap items-center gap-1">
               <p className="font-medium">
                 {format(departureDate, "EEEE d MMMM yyyy", { locale: fr })}
               </p>
+              <span className="text-gray-600">à</span>
               <p className="text-gray-600">{format(departureDate, "HH:mm")}</p>
             </div>
           </div>
@@ -198,13 +189,13 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             <div className="flex items-start gap-2">
               <MdLocationOn className="text-xl text-gray-500 mt-1" />
               <p className="text-sm sm:text-base break-words flex-1">
-                Départ: {ride.departureAddress}
+                De : {ride.departureAddress}
               </p>
             </div>
             <div className="flex items-start gap-2">
               <MdLocationOn className="text-xl text-gray-500 mt-1" />
               <p className="text-sm sm:text-base break-words flex-1">
-                Arrivée: {ride.arrivalAddress}
+                À : {ride.arrivalAddress}
               </p>
             </div>
           </div>
@@ -227,6 +218,15 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
           >
             {ride.availableSeats > 0 ? "Réserver" : "Complet"}
           </Button>
+          <p className="mt-4 text-center">
+            <Link
+              href="/dashboard/passanger"
+              className="text-orange-500 italic hover:underline hover:text-orange-600"
+            >
+              Retourner vers la page de recherche
+            </Link>
+          </p>
+
           <Modal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}

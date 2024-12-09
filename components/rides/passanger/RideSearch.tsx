@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import RideCard from "./RideCard";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -63,6 +64,8 @@ const RideSearch = () => {
   const [selectedChurch, setSelectedChurch] = useState<string>("");
   const [highlightedDates, setHighlightedDates] = useState<Date[]>([]);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const [searchTriggered, setSearchTriggered] = useState(false);
+
   const { user } = useAuth();
 
   useEffect(() => {
@@ -122,13 +125,82 @@ const RideSearch = () => {
     fetchAllAvailableRides();
   }, []);
 
+  // const handleSearch = async () => {
+  //   if (!user) return;
+  //   setSearchTriggered(true);
+  //   setLoading(true);
+  //   try {
+  //     const startOfDay = new Date(searchParams.date);
+  //     startOfDay.setHours(0, 0, 0, 0);
+
+  //     const endOfDay = new Date(searchParams.date);
+  //     endOfDay.setHours(23, 59, 59, 999);
+
+  //     const ridesRef = collection(db, "rides");
+  //     const conditions = [
+  //       where("status", "==", "active"),
+  //       where("departureTime", ">=", startOfDay),
+  //       where("departureTime", "<=", endOfDay),
+  //     ];
+
+  //     if (selectedChurch && selectedChurch !== "all") {
+  //       conditions.push(where("churchId", "==", selectedChurch));
+  //     }
+
+  //     const q = query(ridesRef, ...conditions);
+  //     const querySnapshot = await getDocs(q);
+
+  //     const ridesData = await Promise.all(
+  //       querySnapshot.docs.map(async (doc) => {
+  //         const rideData = doc.data() as Ride;
+
+  //         const departureMatch =
+  //           !searchParams.departure ||
+  //           rideData.departureAddress
+  //             .toLowerCase()
+  //             .includes(searchParams.departure.toLowerCase());
+
+  //         const arrivalMatch =
+  //           !searchParams.arrival ||
+  //           rideData.arrivalAddress
+  //             .toLowerCase()
+  //             .includes(searchParams.arrival.toLowerCase());
+
+  //         if (!departureMatch || !arrivalMatch) {
+  //           return null;
+  //         }
+
+  //         const driverSnap = await getDocs(
+  //           query(
+  //             collection(db, "users"),
+  //             where("uid", "==", rideData.driverId)
+  //           )
+  //         );
+  //         const driverData = driverSnap.docs[0]?.data() as Driver;
+
+  //         return {
+  //           ...rideData,
+  //           id: doc.id,
+  //           driver: driverData,
+  //         };
+  //       })
+  //     );
+
+  //     const filteredRides = ridesData.filter(
+  //       (ride): ride is Ride & { driver: Driver } => ride !== null
+  //     );
+  //     setRides(filteredRides);
+  //   } catch (error) {
+  //     console.error("Error fetching rides:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleSearch = async () => {
-    if (!user) return;
     setLoading(true);
     try {
       const startOfDay = new Date(searchParams.date);
       startOfDay.setHours(0, 0, 0, 0);
-
       const endOfDay = new Date(searchParams.date);
       endOfDay.setHours(23, 59, 59, 999);
 
@@ -150,20 +222,23 @@ const RideSearch = () => {
         querySnapshot.docs.map(async (doc) => {
           const rideData = doc.data() as Ride;
 
-          const departureMatch =
-            !searchParams.departure ||
-            rideData.departureAddress
-              .toLowerCase()
-              .includes(searchParams.departure.toLowerCase());
+          // Apply filters only if user is logged in
+          if (user) {
+            const departureMatch =
+              !searchParams.departure ||
+              rideData.departureAddress
+                .toLowerCase()
+                .includes(searchParams.departure.toLowerCase());
 
-          const arrivalMatch =
-            !searchParams.arrival ||
-            rideData.arrivalAddress
-              .toLowerCase()
-              .includes(searchParams.arrival.toLowerCase());
+            const arrivalMatch =
+              !searchParams.arrival ||
+              rideData.arrivalAddress
+                .toLowerCase()
+                .includes(searchParams.arrival.toLowerCase());
 
-          if (!departureMatch || !arrivalMatch) {
-            return null;
+            if (!departureMatch || !arrivalMatch) {
+              return null;
+            }
           }
 
           const driverSnap = await getDocs(
@@ -211,8 +286,9 @@ const RideSearch = () => {
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="space-y-2">
+              <Label>Départ</Label>
               <Input
-                placeholder="Départ"
+                placeholder="Entrez une ville, ou une adresse complète"
                 value={searchParams.departure}
                 onChange={(e) =>
                   setSearchParams({
@@ -225,8 +301,9 @@ const RideSearch = () => {
             </div>
 
             <div className="space-y-2">
+              <Label>Arrivée</Label>
               <Input
-                placeholder="Arrivée"
+                placeholder="Entrez une ville, ou une adresse complète"
                 value={searchParams.arrival}
                 onChange={(e) =>
                   setSearchParams({ ...searchParams, arrival: e.target.value })
@@ -262,6 +339,7 @@ const RideSearch = () => {
                   disponibles pour le covoiturage
                 </em>
               </p>
+              <Label>Date de départ</Label>
               <Calendar
                 mode="single"
                 selected={searchParams.date}
@@ -309,6 +387,7 @@ const RideSearch = () => {
             </div>
 
             <div className="space-y-2">
+              <Label>Nombre de places souhaitées</Label>
               <Input
                 type="number"
                 min={1}
@@ -363,7 +442,44 @@ const RideSearch = () => {
         </form>
       </Card>
 
+      {/* <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {rides.length > 0
+          ? rides.map((ride) => (
+              <RideCard
+                key={ride.id}
+                ride={{
+                  ...ride,
+                  departureTime: ride.departureTime.toDate(),
+                }}
+                driver={ride.driver}
+                onClick={() => {
+                  window.location.href = `/rides/${ride.id}`;
+                }}
+              />
+            ))
+          : searchTriggered && (
+              <div className="col-span-full text-center text-muted-foreground italic">
+                Aucun trajet disponible pour cette date.
+              </div>
+            )}
+      </div> */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {rides.map((ride) => (
+          <RideCard
+            key={ride.id}
+            ride={{
+              ...ride,
+              departureTime: ride.departureTime.toDate(),
+            }}
+            driver={ride.driver}
+            onClick={() => {
+              window.location.href = `/rides/${ride.id}`;
+            }}
+          />
+        ))}
+      </div>
+
+      {/* <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {rides.length > 0 ? (
           rides.map((ride) => (
             <RideCard
@@ -387,7 +503,7 @@ const RideSearch = () => {
               : "Aucun trajet disponible"}
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };

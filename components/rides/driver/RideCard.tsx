@@ -27,7 +27,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RideEditDialog } from "./EditRide";
-import { updateRideInDatabase } from "@/utils/custom-functions";
 
 interface Ride {
   id: string;

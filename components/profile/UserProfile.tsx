@@ -27,7 +27,7 @@ import { doc, setDoc, getFirestore, getDoc } from "firebase/firestore";
 import { app } from "../../app/config/firebase-config";
 import { useNotifications } from "@/app/hooks/useNotifications";
 import UserAvatar from "../../public/images/avatarprofile.png";
-// import { updateUser } from "@/utils/user";
+
 
 interface Vehicle {
   brand: string;
