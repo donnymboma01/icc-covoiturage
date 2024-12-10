@@ -153,14 +153,12 @@ const RegisterForm = () => {
     try {
       setIsLoading(true);
 
-      // 1. Create auth user
       userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
 
-      // 2. Upload profile picture if exists
       let profilePictureUrl = "";
       if (values.profilePicture) {
         profilePictureUrl = await uploadImage(
@@ -169,7 +167,6 @@ const RegisterForm = () => {
         );
       }
 
-      // 3. Create user document
       const userDocument = {
         uid: userCredential.user.uid,
         email: values.email,
@@ -183,7 +180,6 @@ const RegisterForm = () => {
 
       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
 
-      // 4. If user is driver, create vehicle document
       if (values.isDriver && values.vehicle) {
         const vehicleDoc = {
           userId: userCredential.user.uid,
@@ -193,20 +189,45 @@ const RegisterForm = () => {
         await addDoc(collection(db, "vehicles"), vehicleDoc);
       }
 
-      // 5. Sign out and redirect
       await auth.signOut();
 
-      // 6. Add delay before redirect
       setTimeout(() => {
         toast.success("Inscription réussie");
         router.push("/auth/login");
       }, 1000);
-    } catch (error: any) {
-      console.error("Registration error:", error);
+    } catch (authError: any) {
+      console.error("Registration error:", authError);
       if (userCredential?.user) {
         await cleanupFailedRegistration(userCredential.user);
       }
-      toast.error("Une erreur est survenue, veuillez réessayer");
+      switch (authError.code) {
+        case "auth/email-already-in-use":
+          toast.error(
+            "L'adresse e-mail que vous avez saisie est déjà associée à un autre profil."
+          );
+          break;
+        case "auth/weak-password":
+          toast.error(
+            "Le mot de passe est trop faible. Veuillez en choisir un plus sécurisé."
+          );
+          break;
+        case "auth/invalid-email":
+          toast.error(
+            "L'adresse e-mail saisie est invalide. Veuillez vérifier et réessayer."
+          );
+          break;
+        case "auth/network-request-failed":
+          toast.error(
+            "Erreur réseau. Vérifiez votre connexion internet et réessayez."
+          );
+          break;
+        default:
+          console.error("Erreur d'authentification :", authError);
+          toast.error(
+            "Une erreur inattendue est survenue. Veuillez réessayer."
+          );
+      }
+      // toast.error("Une erreur est survenue, veuillez réessayer");
     } finally {
       setIsLoading(false);
     }

@@ -197,15 +197,73 @@ const UserProfile = ({
   //     toast.error("Erreur lors de la gestion des notifications");
   //   }
   // };
+
+  const isIOSDevice = () => {
+    return (
+      typeof window !== "undefined" &&
+      /iPad|iPhone|iPod/.test(navigator.userAgent)
+    );
+  };
+
+  // Example usage
+  console.log("Is iOS:", isIOSDevice());
+
+  // const handleEnableNotifications = async () => {
+  //   try {
+  //     if (typeof window === "undefined" || !("Notification" in window)) {
+  //       toast.error(
+  //         "Les notifications ne sont pas supportées sur cet appareil"
+  //       );
+  //       return;
+  //     }
+
+  //     if (notificationsEnabled) {
+  //       await onUpdateUser({
+  //         fcmToken: null,
+  //       });
+  //       setNotificationsEnabled(false);
+  //       toast.success("Notifications désactivées avec succès");
+  //       return;
+  //     }
+
+  //     let permission;
+  //     try {
+  //       permission = await Notification.requestPermission();
+  //     } catch (error) {
+  //       console.error("Error requesting permission:", error);
+  //       toast.error(
+  //         "Impossible de demander la permission pour les notifications"
+  //       );
+  //       return;
+  //     }
+
+  //     if (permission === "granted") {
+  //       try {
+  //         const newToken = await requestPermission();
+  //         if (newToken && user?.uid) {
+  //           await onUpdateUser({
+  //             fcmToken: newToken,
+  //           });
+  //           setNotificationsEnabled(true);
+  //           toast.success("Notifications activées avec succès");
+  //         } else {
+  //           toast.error("Impossible d'obtenir le token de notification");
+  //         }
+  //       } catch (tokenError) {
+  //         console.error("Token error:", tokenError);
+  //         toast.error("Erreur lors de l'obtention du token");
+  //       }
+  //     } else {
+  //       toast.error("Permission de notification refusée");
+  //     }
+  //   } catch (error) {
+  //     console.error("Erreur générale:", error);
+  //     toast.error("Erreur lors de la gestion des notifications");
+  //   }
+  // };
   const handleEnableNotifications = async () => {
     try {
-      if (typeof window === "undefined" || !("Notification" in window)) {
-        toast.error(
-          "Les notifications ne sont pas supportées sur cet appareil"
-        );
-        return;
-      }
-
+      // Si déjà activé, permet la désactivation
       if (notificationsEnabled) {
         await onUpdateUser({
           fcmToken: null,
@@ -215,18 +273,8 @@ const UserProfile = ({
         return;
       }
 
-      let permission;
-      try {
-        permission = await Notification.requestPermission();
-      } catch (error) {
-        console.error("Error requesting permission:", error);
-        toast.error(
-          "Impossible de demander la permission pour les notifications"
-        );
-        return;
-      }
-
-      if (permission === "granted") {
+      // Gestion spécifique pour iOS
+      if (isIOSDevice()) {
         try {
           const newToken = await requestPermission();
           if (newToken && user?.uid) {
@@ -238,15 +286,27 @@ const UserProfile = ({
           } else {
             toast.error("Impossible d'obtenir le token de notification");
           }
-        } catch (tokenError) {
-          console.error("Token error:", tokenError);
-          toast.error("Erreur lors de l'obtention du token");
+        } catch (error) {
+          console.error("Erreur FCM:", error);
+          toast.error("Erreur lors de l'activation des notifications");
         }
-      } else {
-        toast.error("Permission de notification refusée");
+        return;
+      }
+
+      // Gestion pour les autres appareils
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        const newToken = await requestPermission();
+        if (newToken && user?.uid) {
+          await onUpdateUser({
+            fcmToken: newToken,
+          });
+          setNotificationsEnabled(true);
+          toast.success("Notifications activées avec succès");
+        }
       }
     } catch (error) {
-      console.error("Erreur générale:", error);
+      console.error("Erreur:", error);
       toast.error("Erreur lors de la gestion des notifications");
     }
   };
