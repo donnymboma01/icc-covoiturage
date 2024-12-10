@@ -85,11 +85,14 @@ const UserProfile = ({
   //   }
   //   return false;
   // });
+  // const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+  //   if (typeof window !== "undefined" && "Notification" in window) {
+  //     return Notification.permission === "granted";
+  //   }
+  //   return false;
+  // });
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      return Notification.permission === "granted";
-    }
-    return false;
+    return !!user?.fcmToken;
   });
 
   const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
@@ -400,23 +403,21 @@ const UserProfile = ({
                     : "Activer les notifications"}
                 </span>
               </Button> */}
-              {typeof window !== "undefined" && "Notification" in window && (
-                <Button
-                  onClick={handleEnableNotifications}
-                  className="flex items-center justify-center gap-2 w-full p-4"
-                  style={{
-                    touchAction: "manipulation",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  <MdNotifications size={20} />
-                  <span className="text-sm">
-                    {notificationsEnabled
-                      ? "Désactiver les notifications"
-                      : "Activer les notifications"}
-                  </span>
-                </Button>
-              )}
+              <Button
+                onClick={handleEnableNotifications}
+                className="flex items-center justify-center gap-2 w-full p-4"
+                style={{
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                <MdNotifications size={20} />
+                <span className="text-sm">
+                  {notificationsEnabled
+                    ? "Désactiver les notifications"
+                    : "Activer les notifications"}
+                </span>
+              </Button>
             </div>
           </Card>
 
