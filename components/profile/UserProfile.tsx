@@ -79,20 +79,19 @@ const UserProfile = ({
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [churchData, setChurchData] = useState<{ name: string } | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    if (typeof window !== "undefined") {
+      return Notification.permission === "granted";
+    }
+    return false;
+  });
+
   const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
     []
   );
 
   const db = getFirestore(app);
 
-  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
-  //   try {
-  //     await onUpdateUser(userData);
-  //   } catch (error) {
-  //     console.error("Error updating profile:", error);
-  //   }
-  // };
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
       console.log("Updating user with data:", userData);
@@ -150,7 +149,7 @@ const UserProfile = ({
 
       const uniqueChurches = Array.from(churchMap.values());
       uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
-      console.log("Fetched churches:", uniqueChurches); // Add this line
+      console.log("Fetched churches:", uniqueChurches);
       setChurches(uniqueChurches);
     };
 
@@ -159,72 +158,65 @@ const UserProfile = ({
 
   // const handleEnableNotifications = async () => {
   //   try {
-  //     if (notificationsEnabled) {
-  //       await onUpdateUser({
-  //         fcmToken: null,
-  //       });
-  //       setNotificationsEnabled(false);
-  //       return;
-  //     }
-
+  //     console.log("Requesting permission...");
   //     const newToken = await requestPermission();
+  //     console.log("Got token:", newToken);
+  //     toast.success("Notifications activées avec succès");
 
   //     if (newToken && user?.uid) {
   //       await onUpdateUser({
   //         fcmToken: newToken,
   //       });
   //       setNotificationsEnabled(true);
-  //       toast.success("Notifications activées avec succès");
-  //     } else {
-  //       toast.error("Impossible d'activer les notifications");
   //     }
   //   } catch (error) {
-  //     console.error("Error handling notifications:", error);
+  //     console.error("Error:", error);
   //     toast.error("Erreur lors de l'activation des notifications");
   //   }
   // };
-  // Add this debug code temporarily
   const handleEnableNotifications = async () => {
     try {
-      console.log("Requesting permission...");
-      const newToken = await requestPermission();
-      console.log("Got token:", newToken);
-      toast.success("Notifications activées avec succès");
-
-      if (newToken && user?.uid) {
+      if (notificationsEnabled) {
         await onUpdateUser({
-          fcmToken: newToken,
+          fcmToken: null,
         });
-        setNotificationsEnabled(true);
+        setNotificationsEnabled(false);
+        toast.success("Notifications désactivées avec succès");
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        const newToken = await requestPermission();
+
+        if (newToken && user?.uid) {
+          await onUpdateUser({
+            fcmToken: newToken,
+          });
+          setNotificationsEnabled(true);
+          toast.success("Notifications activées avec succès");
+        } else {
+          toast.error("Impossible d'obtenir le token de notification");
+        }
+      } else {
+        toast.error("Permission de notification refusée");
       }
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Erreur lors de l'activation des notifications");
+      console.error("Erreur lors de la reception de notifications:", error);
+      toast.error("Erreur lors de la gestion des notifications");
     }
   };
 
-  // const handleEnableNotifications = async () => {
-  //   if (!notificationsEnabled) {
-  //     try {
-  //       await requestPermission();
-  //       if (token && user?.uid) {
-  //         await onUpdateUser({
-  //           fcmToken: token,
-  //         });
-  //         setNotificationsEnabled(true);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error enabling notifications:", error);
-  //     }
-  //   } else {
-  //     if (user?.uid) {
-  //       await onUpdateUser({
-  //         fcmToken: null,
-  //       });
-  //       setNotificationsEnabled(false);
-  //     }
-  //   }
-  // };
+  useEffect(() => {
+    const checkNotificationPermission = async () => {
+      if (typeof window !== "undefined") {
+        const permission = await Notification.permission;
+        setNotificationsEnabled(permission === "granted");
+      }
+    };
+
+    checkNotificationPermission();
+  }, []);
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
@@ -352,15 +344,6 @@ const UserProfile = ({
 
               {/* <Button
                 onClick={handleEnableNotifications}
-                className="flex items-center gap-2 w-full"
-              >
-                <MdNotifications />
-                {notificationsEnabled
-                  ? "Désactiver les notifications"
-                  : "Activer les notifications"}
-              </Button> */}
-              <Button
-                onClick={handleEnableNotifications}
                 className="flex items-center justify-center gap-2 w-full p-4 touch-action-manipulation"
                 style={{ touchAction: "manipulation" }}
               >
@@ -370,17 +353,22 @@ const UserProfile = ({
                     ? "Désactiver les notifications"
                     : "Activer les notifications"}
                 </span>
-              </Button>
-
-              {/* <Button
-                onClick={handleEnableNotifications}
-                className="flex items-center gap-2 w-full"
-              >
-                <MdNotifications />
-                {notificationsEnabled
-                  ? "Désactiver les notifications"
-                  : "Activer les notifications"}
               </Button> */}
+              <Button
+                onClick={handleEnableNotifications}
+                className="flex items-center justify-center gap-2 w-full p-4"
+                style={{
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                <MdNotifications size={20} />
+                <span className="text-sm">
+                  {notificationsEnabled
+                    ? "Désactiver les notifications"
+                    : "Activer les notifications"}
+                </span>
+              </Button>
             </div>
           </Card>
 
