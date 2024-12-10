@@ -181,6 +181,18 @@ const NavBar = () => {
           <MdBookmarkAdd /> Trouver un trajet
         </Button>
       </Link>
+      <Link
+        href="/dashboard/passanger/bookings"
+        onClick={() => setIsDrawerOpen(false)}
+        className="w-full"
+      >
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 w-full justify-start"
+        >
+          <MdEventSeat /> Mes réservations
+        </Button>
+      </Link>
     </div>
   );
 
@@ -213,82 +225,6 @@ const NavBar = () => {
     </div>
   );
 
-  // const MobileDrawer = () => (
-  //   <div
-  //     className={`fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity ${
-  //       isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-  //     }`}
-  //     onClick={() => setIsDrawerOpen(false)}
-  //   >
-  //     <div
-  //       className={`fixed right-0 top-0 h-full w-64 bg-white shadow-xl transform transition-transform ${
-  //         isDrawerOpen ? "translate-x-0" : "translate-x-full"
-  //       }`}
-  //       onClick={(e) => e.stopPropagation()}
-  //     >
-  //       {" "}
-  //       <div
-  //         className={`fixed right-0 top-0 h-full w-64 bg-white shadow-xl transform transition-transform ${
-  //           isDrawerOpen ? "translate-x-0" : "translate-x-full"
-  //         }`}
-  //       >
-  //         <div className="flex flex-col h-full">
-  //           <div className="p-4 border-b">
-  //             <div className="flex justify-between items-center">
-  //               <div className="flex items-center gap-2">
-  //                 {user?.isDriver ? (
-  //                   <MdDirectionsCar className="text-2xl" />
-  //                 ) : (
-  //                   <MdPerson className="text-2xl" />
-  //                 )}
-  //                 Bonjour,
-  //                 <span className="text-blue-600 font-semibold">
-  //                   {user?.displayName || user?.fullName}
-  //                 </span>
-  //               </div>
-  //               <Button
-  //                 variant="ghost"
-  //                 size="sm"
-  //                 onClick={() => setIsDrawerOpen(false)}
-  //               >
-  //                 <MdClose className="text-xl" />
-  //               </Button>
-  //             </div>
-  //           </div>
-
-  //           <div className="flex-1 overflow-y-auto p-4">
-  //             {user?.isDriver ? <DriverNavigation /> : <PassengerNavigation />}
-  //             <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-  //               <Button variant="ghost" className="w-full mt-4">
-  //                 <CgProfile /> Profil
-  //               </Button>
-  //             </Link>
-  //           </div>
-
-  //           <div className="p-4 border-t">
-  //             <div className="flex flex-col gap-2">
-  //               <Button
-  //                 variant="destructive"
-  //                 size="sm"
-  //                 onClick={handleDeleteAccount}
-  //                 className="w-full"
-  //               >
-  //                 Supprimer mon compte
-  //               </Button>
-  //               <Button
-  //                 onClick={handleSignOut}
-  //                 variant="secondary"
-  //                 className="w-full"
-  //               >
-  //                 Déconnexion
-  //               </Button>
-  //             </div>
-  //           </div>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
   const MobileDrawer = () => (
     <div
       className={`fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity ${
