@@ -177,7 +177,7 @@ const RideCard = ({
             )}
           </div>
         )}
-        <AlertDialog>
+        {/* <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="destructive"
@@ -207,7 +207,7 @@ const RideCard = ({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialogPortal>
-        </AlertDialog>
+        </AlertDialog> */}
       </div>
     </div>
   );

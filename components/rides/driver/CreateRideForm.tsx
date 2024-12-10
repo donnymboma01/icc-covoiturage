@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 "use client";
@@ -7,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   addDoc,
@@ -44,6 +45,10 @@ interface RideFormData {
   serviceType: string;
 }
 
+interface Vehicle {
+  seats: number;
+}
+
 const MapWithErrorBoundary = ({
   setFormData,
   formData,
@@ -74,6 +79,8 @@ const CreateRideForm = () => {
   const router = useRouter();
   const db = getFirestore(app);
   const [currentStep, setCurrentStep] = useState(1);
+  const [vehicleSeats, setVehicleSeats] = useState<number>(0);
+  const [seatsError, setSeatsError] = useState<string>("");
   const [formData, setFormData] = useState<RideFormData>({
     churchId: "",
     churchName: "",
@@ -94,9 +101,40 @@ const CreateRideForm = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
+  const loadVehicleData = async () => {
+    if (!user?.uid) return;
+
+    try {
+      const vehicleQuery = query(
+        collection(db, "vehicles"),
+        where("userId", "==", user.uid),
+        where("isActive", "==", true)
+      );
+      const vehicleSnapshot = await getDocs(vehicleQuery);
+
+      if (!vehicleSnapshot.empty) {
+        const vehicleData = vehicleSnapshot.docs[0].data() as Vehicle;
+        setVehicleSeats(vehicleData.seats);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement du véhicule:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadVehicleData();
+  }, [user]);
+
   const handleCreateRide = async () => {
     if (!user?.isDriver) {
       toast.error("Vous devez être conducteur pour créer un trajet");
+      return;
+    }
+
+    if (formData.availableSeats > vehicleSeats) {
+      toast.error(
+        "Le nombre de places proposées dépasse la capacité de votre véhicule"
+      );
       return;
     }
 
@@ -184,6 +222,41 @@ const CreateRideForm = () => {
     </div>
   );
 
+  // const renderStepTwo = () => (
+  //   <div className="space-y-4">
+  //     <h2 className="text-xl font-semibold">Informations du trajet</h2>
+  //     <div className="space-y-4">
+  //       <div>
+  //         <Label htmlFor="departureTime">Date et heure de départ</Label>
+  //         <Input
+  //           type="datetime-local"
+  //           id="departureTime"
+  //           onChange={(e) =>
+  //             setFormData({
+  //               ...formData,
+  //               departureTime: new Date(e.target.value),
+  //             })
+  //           }
+  //         />
+  //       </div>
+  //       <div>
+  //         <Label htmlFor="seats">Nombre de places disponibles</Label>
+  //         <Input
+  //           type="number"
+  //           id="seats"
+  //           min="1"
+  //           value={formData.availableSeats}
+  //           onChange={(e) =>
+  //             setFormData({
+  //               ...formData,
+  //               availableSeats: parseInt(e.target.value),
+  //             })
+  //           }
+  //         />
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
   const renderStepTwo = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Informations du trajet</h2>
@@ -207,14 +280,24 @@ const CreateRideForm = () => {
             type="number"
             id="seats"
             min="1"
+            max={vehicleSeats}
             value={formData.availableSeats}
-            onChange={(e) =>
+            onChange={(e) => {
+              const seats = parseInt(e.target.value);
+              if (seats > vehicleSeats) {
+                setSeatsError(
+                  `Vous ne pouvez pas proposer plus de ${vehicleSeats} places (capacité de votre véhicule)`
+                );
+              } else {
+                setSeatsError("");
+              }
               setFormData({
                 ...formData,
-                availableSeats: parseInt(e.target.value),
-              })
-            }
+                availableSeats: seats,
+              });
+            }}
           />
+          {seatsError && <p className="text-orange-500 mt-2">{seatsError}</p>}
         </div>
       </div>
     </div>

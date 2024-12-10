@@ -36,12 +36,12 @@ importScripts(
 );
 
 firebase.initializeApp({
-  apiKey: self.FIREBASE_CONFIG.apiKey,
-  authDomain: self.FIREBASE_CONFIG.authDomain,
-  projectId: self.FIREBASE_CONFIG.projectId,
-  storageBucket: self.FIREBASE_CONFIG.storageBucket,
-  messagingSenderId: self.FIREBASE_CONFIG.messagingSenderId,
-  appId: self.FIREBASE_CONFIG.appId,
+  apiKey: "AIzaSyB1RKvnA-dKlTlj7r7tQOch77b6Q9DFEms",
+  authDomain: "icc-covoitturage.firebaseapp.com",
+  projectId: "icc-covoitturage",
+  storageBucket: "icc-covoitturage.firebasestorage.app",
+  messagingSenderId: "505815730527",
+  appId: "1:505815730527:web:cbefb27af4d36b27ffceea",
 });
 
 const messaging = firebase.messaging();

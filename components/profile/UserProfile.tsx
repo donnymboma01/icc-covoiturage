@@ -283,12 +283,12 @@ const UserProfile = ({
               <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
                 <AvatarImage src={user?.profilePicture || UserAvatar.src} />
               </Avatar>
-              <button
+              {/* <button
                 onClick={() => setIsEditing(true)}
                 className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-white hover:bg-blue-700 transition-colors"
               >
                 <MdEdit size={20} />
-              </button>
+              </button> */}
             </div>
 
             <div className="text-white text-center sm:text-left">

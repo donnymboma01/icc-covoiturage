@@ -93,7 +93,7 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            {/* <div className="grid grid-cols-1 gap-4">
               <div>
                 <label>Adresse de départ</label>
                 <Input
@@ -120,9 +120,9 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
                   className="mb-2"
                 />
               </div>
-            </div>
+            </div> */}
 
-            <div onClick={(e) => e.stopPropagation()}>
+            {/* <div onClick={(e) => e.stopPropagation()}>
               <MapComponent
                 onDepartureSelect={(address) =>
                   setFormData((prev) => ({
@@ -136,10 +136,10 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
                 initialDepartureAddress={ride.departureAddress}
                 initialArrivalAddress={ride.arrivalAddress}
               />
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              {/* <div>
                 <label>Date et heure de départ</label>
                 <Input
                   type="datetime-local"
@@ -151,9 +151,9 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
                     }))
                   }
                 />
-              </div>
+              </div> */}
               <div>
-                <label>Places disponibles</label>
+                <label>Nombre des places disponibles</label>
                 <Input
                   type="number"
                   value={formData.availableSeats}

@@ -27,31 +27,31 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // useEffect(() => {
-  //   const registerServiceWorker = async () => {
-  //     if ("serviceWorker" in navigator) {
-  //       try {
-  //         await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-  //         console.log("Service Worker registered successfully!");
-  //       } catch (error) {
-  //         console.error("Error registering Service Worker:", error);
-  //       }
-  //     } else {
-  //       console.error("Service Workers are not supported in this browser.");
-  //     }
-  //   };
-
-  //   registerServiceWorker();
-  // }, []);
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/firebase-messaging-sw.js")
-        .catch((error) => {
-          console.error("Service Worker registration failed:", error);
-        });
-    }
+    const registerServiceWorker = async () => {
+      if ("serviceWorker" in navigator) {
+        try {
+          await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+          console.log("Service Worker registered successfully!");
+        } catch (error) {
+          console.error("Error registering Service Worker:", error);
+        }
+      } else {
+        console.error("Service Workers are not supported in this browser.");
+      }
+    };
+
+    registerServiceWorker();
   }, []);
+  // useEffect(() => {
+  //   if ("serviceWorker" in navigator) {
+  //     navigator.serviceWorker
+  //       .register("/firebase-messaging-sw.js")
+  //       .catch((error) => {
+  //         console.error("Service Worker registration failed:", error);
+  //       });
+  //   }
+  // }, []);
 
   return (
     <html lang="en">
