@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { initializeApp } from "firebase/app";
 // import { getAnalytics } from "firebase/analytics";
-import { getMessaging} from "firebase/messaging";
+import { getMessaging } from "firebase/messaging";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -14,10 +14,12 @@ const firebaseConfig = {
   measurementId: "G-Q8MYSV9F7G",
 };
 
+console.log("Firebase configuration ", firebaseConfig); 
+
 const app = initializeApp(firebaseConfig);
 // Pour Jason & Djedou : le messaging est utilisé pour les notifications.
-const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
-const db = typeof window !== 'undefined' ? getFirestore(app) : null;
+const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
+const db = typeof window !== "undefined" ? getFirestore(app) : null;
 // const analytics = getAnalytics(app); --> On ne l'utilisera pas parce que nous allons probablement avoir une partie admin de nous-meme.
 
 export { app, messaging, db };
