@@ -207,16 +207,16 @@ const UserProfile = ({
     }
   };
 
-  useEffect(() => {
-    const checkNotificationPermission = async () => {
-      if (typeof window !== "undefined") {
-        const permission = await Notification.permission;
-        setNotificationsEnabled(permission === "granted");
-      }
-    };
+  // useEffect(() => {
+  //   const checkNotificationPermission = async () => {
+  //     if (typeof window !== "undefined") {
+  //       const permission = Notification.permission;
+  //       setNotificationsEnabled(permission === "granted");
+  //     }
+  //   };
 
-    checkNotificationPermission();
-  }, []);
+  //   checkNotificationPermission();
+  // }, []);
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
