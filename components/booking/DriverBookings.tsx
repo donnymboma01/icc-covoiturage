@@ -82,31 +82,28 @@ const DriverBookings = () => {
   const [rideDetails, setRideDetails] = useState<{ [key: string]: Ride }>({});
   const [filter, setFilter] = useState<
     "pending" | "accepted" | "rejected" | "all"
-  >("all");
+  >("pending");
 
   const filterButtons = (
     <div className="flex gap-2 mb-4">
       <Badge
-        onClick={() => setFilter("all")}
-        variant={filter === "all" ? "default" : "outline"}
-      >
-        Toutes
-      </Badge>
-      <Badge
         onClick={() => setFilter("pending")}
         variant={filter === "pending" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
       >
         En attente
       </Badge>
       <Badge
         onClick={() => setFilter("accepted")}
         variant={filter === "accepted" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
       >
         Acceptées
       </Badge>
       <Badge
         onClick={() => setFilter("rejected")}
         variant={filter === "rejected" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
       >
         Refusées
       </Badge>
@@ -317,20 +314,42 @@ const DriverBookings = () => {
                 )}
 
                 <div className="flex flex-col sm:flex-row gap-2 mt-3">
-                  <Badge
-                    onClick={() => handleBookingAction(booking, "accepted")}
-                    variant="default"
-                    className="text-center cursor-pointer"
-                  >
-                    Accepter
-                  </Badge>
-                  <Badge
-                    onClick={() => handleBookingAction(booking, "rejected")}
-                    variant="destructive"
-                    className="text-center cursor-pointer"
-                  >
-                    Refuser
-                  </Badge>
+                  {booking.status === "pending" && (
+                    <>
+                      <Badge
+                        onClick={() => handleBookingAction(booking, "accepted")}
+                        variant="default"
+                        className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto"
+                      >
+                        Accepter
+                      </Badge>
+                      <Badge
+                        onClick={() => handleBookingAction(booking, "rejected")}
+                        variant="destructive"
+                        className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+                      >
+                        Refuser
+                      </Badge>
+                    </>
+                  )}
+                  {booking.status === "accepted" && (
+                    <Badge
+                      onClick={() => handleBookingAction(booking, "rejected")}
+                      variant="destructive"
+                      className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
+                    >
+                      Refuser
+                    </Badge>
+                  )}
+                  {booking.status === "rejected" && (
+                    <Badge
+                      onClick={() => handleBookingAction(booking, "accepted")}
+                      variant="default"
+                      className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
+                    >
+                      Accepter
+                    </Badge>
+                  )}
                 </div>
               </div>
             </Card>

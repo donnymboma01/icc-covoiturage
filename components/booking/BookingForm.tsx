@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MdAccessTime, MdLocationOn, MdPerson, MdEuro } from "react-icons/md";
+import { useRouter } from "next/navigation";
 
 const db = getFirestore(app);
 
@@ -70,6 +71,8 @@ const BookingForm = ({
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+
+  const router = useRouter();
 
   const validateSeats = (value: number | string) => {
     if (value === "" || value === undefined) {
@@ -140,7 +143,12 @@ const BookingForm = ({
         availableSeats: ride.availableSeats - seats,
       });
 
+      console.log("Début de redirection...");
       onSuccess();
+      console.log("Booking successful, redirecting...");
+      window.location.href = "/dashboard/passanger/bookings";
+      // router.push("/dashboard/passenger/bookings");
+      console.log("Redirection effectuée avec succes.");
     } catch (error) {
       console.error("Erreur lors de la création de la réservation:", error);
       setError("Une erreur est survenue lors de la réservation");

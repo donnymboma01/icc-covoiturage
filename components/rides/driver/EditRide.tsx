@@ -85,7 +85,7 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier le trajet</DialogTitle>
+          <DialogTitle>Modifier le nombre des places</DialogTitle>
         </DialogHeader>
         <form
           onSubmit={handleSubmit}

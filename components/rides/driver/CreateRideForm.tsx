@@ -49,12 +49,40 @@ interface Vehicle {
   seats: number;
 }
 
+// const MapWithErrorBoundary = ({
+//   setFormData,
+//   formData,
+//   isMapVisible
+// }: {
+//   setFormData: React.Dispatch<React.SetStateAction<RideFormData>>;
+//   formData: RideFormData;
+//   isMapVisible: boolean;
+// }) => {
+//   return (
+//     <ErrorBoundary
+//       fallback={
+//         <div>Une erreur est survenue lors du chargement de la carte</div>
+//       }
+//     >
+//       <MapComponent
+//         onDepartureSelect={(address) =>
+//           setFormData({ ...formData, departureAddress: address })
+//         }
+//         onArrivalSelect={(address) =>
+//           setFormData({ ...formData, arrivalAddress: address })
+//         }
+//       />
+//     </ErrorBoundary>
+//   );
+// };
 const MapWithErrorBoundary = ({
   setFormData,
   formData,
+  isMapVisible,
 }: {
   setFormData: React.Dispatch<React.SetStateAction<RideFormData>>;
   formData: RideFormData;
+  isMapVisible: boolean;
 }) => {
   return (
     <ErrorBoundary
@@ -69,6 +97,7 @@ const MapWithErrorBoundary = ({
         onArrivalSelect={(address) =>
           setFormData({ ...formData, arrivalAddress: address })
         }
+        isMapVisible={isMapVisible}
       />
     </ErrorBoundary>
   );
@@ -92,6 +121,7 @@ const CreateRideForm = () => {
     isRecurring: false,
     serviceType: "",
   });
+  const [isMapVisible, setIsMapVisible] = useState(true);
 
   const handleNext = () => {
     setCurrentStep((prev) => prev + 1);
@@ -222,41 +252,6 @@ const CreateRideForm = () => {
     </div>
   );
 
-  // const renderStepTwo = () => (
-  //   <div className="space-y-4">
-  //     <h2 className="text-xl font-semibold">Informations du trajet</h2>
-  //     <div className="space-y-4">
-  //       <div>
-  //         <Label htmlFor="departureTime">Date et heure de départ</Label>
-  //         <Input
-  //           type="datetime-local"
-  //           id="departureTime"
-  //           onChange={(e) =>
-  //             setFormData({
-  //               ...formData,
-  //               departureTime: new Date(e.target.value),
-  //             })
-  //           }
-  //         />
-  //       </div>
-  //       <div>
-  //         <Label htmlFor="seats">Nombre de places disponibles</Label>
-  //         <Input
-  //           type="number"
-  //           id="seats"
-  //           min="1"
-  //           value={formData.availableSeats}
-  //           onChange={(e) =>
-  //             setFormData({
-  //               ...formData,
-  //               availableSeats: parseInt(e.target.value),
-  //             })
-  //           }
-  //         />
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
   const renderStepTwo = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Informations du trajet</h2>
@@ -303,11 +298,32 @@ const CreateRideForm = () => {
     </div>
   );
 
+  // const renderStepThree = () => (
+  //   <div className="space-y-4">
+  //     <h2 className="text-xl font-semibold">Adresses</h2>
+  //     <div style={{ display: currentStep === 3 ? "block" : "none" }}>
+  //       <MapWithErrorBoundary setFormData={setFormData} formData={formData} />
+  //     </div>
+  //   </div>
+  // );
+
   const renderStepThree = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Adresses</h2>
       <div style={{ display: currentStep === 3 ? "block" : "none" }}>
-        <MapWithErrorBoundary setFormData={setFormData} formData={formData} />
+        <MapWithErrorBoundary
+          setFormData={setFormData}
+          formData={formData}
+          isMapVisible={isMapVisible}
+        />
+        <div className="flex justify-center mt-4">
+          <p
+            className="text-orange-500 italic cursor-pointer hover:underline transition-colors duration-300 hover:text-orange-600 font-medium"
+            onClick={() => setIsMapVisible(!isMapVisible)}
+          >
+            {isMapVisible ? "cacher la carte" : "afficher la carte"}
+          </p>
+        </div>
       </div>
     </div>
   );

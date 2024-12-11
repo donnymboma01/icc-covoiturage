@@ -171,7 +171,7 @@ const RideCard = ({
                   className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <MdCancel className="mr-2" />
-                  Annuler(en développement)
+                  Annuler
                 </Button>
               </div>
             )}

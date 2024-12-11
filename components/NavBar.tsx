@@ -44,38 +44,80 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog";
+
 const NavBar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeRidesCount, setActiveRidesCount] = useState(0);
+  const [openDialog, setOpenDialog] = useState(false);
   const db = getFirestore(app);
 
   const router = useRouter();
   const { user, loading } = useAuth();
   const auth = getAuth(app);
 
-  const handleDeleteAccount = async () => {
-    if (
-      window.confirm(
-        "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible."
-      )
-    ) {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
+  const handleDeleteAccount = () => {
+    setOpenDialog(true);
+  };
 
-        await deleteDoc(doc(db, "users", user.uid));
-        await user.delete();
+  // Pour Les devs : cette méthode permet de surpprimer complètement le compte de l'utilisateur.
+  // la méthode supprime aussi les trajets et les reservations de l'utilisateur.
 
-        toast.success(
-          "Compte supprimé avec succès. Nous espérons vous revoir bientôt !"
-        );
-
-        setTimeout(() => {
-          window.location.href = "/auth/login";
-        }, 3000);
-      } catch (error) {
-        toast.error("Un problème est survenu lors de la suppression du compte");
+  const handleDeleteAccountConfirm = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+      const ridesQuery = query(
+        collection(db, "rides"),
+        where("driverId", "==", user.uid)
+      );
+      const ridesSnapshot = await getDocs(ridesQuery);
+      for (const doc of ridesSnapshot.docs) {
+        await deleteDoc(doc.ref);
       }
+
+      const bookingsQuery = query(
+        collection(db, "bookings"),
+        where("passengerId", "==", user.uid)
+      );
+      const bookingsSnapshot = await getDocs(bookingsQuery);
+      for (const doc of bookingsSnapshot.docs) {
+        await deleteDoc(doc.ref);
+      }
+
+      const churchesQuery = query(
+        collection(db, "churches"),
+        where("createdBy", "==", user.uid)
+      );
+      const churchesSnapshot = await getDocs(churchesQuery);
+      for (const doc of churchesSnapshot.docs) {
+        await deleteDoc(doc.ref);
+      }
+
+      await deleteDoc(doc(db, "users", user.uid));
+
+      await user.delete();
+
+      toast.success(
+        "Compte supprimé avec succès. Nous espérons vous revoir bientôt !"
+      );
+
+      setTimeout(() => {
+        window.location.href = "/auth/login";
+      }, 2000);
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast.error("Un problème est survenu lors de la suppression du compte");
+    } finally {
+      setOpenDialog(false);
     }
   };
 
@@ -268,7 +310,7 @@ const NavBar = () => {
                 variant="destructive"
                 size="sm"
                 onClick={handleDeleteAccount}
-                className="flex items-center gap-2 w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                className="flex items-center gap-2 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
               >
                 <MdDelete className="text-white" /> Supprimer mon compte
               </Button>
@@ -285,6 +327,43 @@ const NavBar = () => {
         </div>
       </div>
     </div>
+  );
+
+  const DeleteAccountDialog = () => (
+    <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Êtes-vous sûr de vouloir supprimer votre compte ?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>
+              Cette action est irréversible. La suppression de votre compte
+              entraînera :
+            </p>
+            <ul className="list-disc pl-4">
+              <li>La suppression de tous vos trajets publiés</li>
+              <li>La suppression de toutes vos réservations</li>
+              <li>La suppression de vos églises enregistrées</li>
+              <li>La perte définitive de votre profil</li>
+            </ul>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <Button variant="outline" onClick={() => setOpenDialog(false)}>
+            Annuler
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteAccountConfirm}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            <MdDelete className="text-white" />
+            Supprimer définitivement
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 
   if (loading) return null;
@@ -326,11 +405,19 @@ const NavBar = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-58">
-                    <Button
+                    {/* <Button
                       variant="destructive"
                       size="sm"
                       className="flex items-center gap-2 w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
                       onClick={handleDeleteAccount}
+                    >
+                      <MdDelete className="text-white" /> Supprimer mon compte
+                    </Button> */}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteAccount}
+                      className="flex items-center gap-2 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
                     >
                       <MdDelete className="text-white" /> Supprimer mon compte
                     </Button>
@@ -361,6 +448,7 @@ const NavBar = () => {
         )}
       </div>
       <MobileDrawer />
+      <DeleteAccountDialog />
     </nav>
   );
 };

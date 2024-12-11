@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 import { useState, useEffect } from "react";
@@ -67,6 +68,11 @@ const PassengerBookings = () => {
   );
 
   useEffect(() => {
+    console.log("Current bookings:", bookings);
+    console.log("Current ride details:", rideDetails);
+  }, [bookings, rideDetails]);
+
+  useEffect(() => {
     if (!bookings.length) return;
 
     const db = getFirestore();
@@ -123,17 +129,17 @@ const PassengerBookings = () => {
     return () => unsubscribe();
   }, [user]);
 
-  const handleCancelBooking = async (bookingId: string) => {
-    const db = getFirestore();
-    try {
-      await updateDoc(doc(db, "bookings", bookingId), {
-        status: "cancelled",
-        updatedAt: Timestamp.now(),
-      });
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-    }
-  };
+  // const handleCancelBooking = async (bookingId: string) => {
+  //   const db = getFirestore();
+  //   try {
+  //     await updateDoc(doc(db, "bookings", bookingId), {
+  //       status: "cancelled",
+  //       updatedAt: Timestamp.now(),
+  //     });
+  //   } catch (error) {
+  //     console.error("Error cancelling booking:", error);
+  //   }
+  // };
 
   const handleDeleteBooking = async () => {
     if (!bookingToDelete) return;
@@ -150,6 +156,42 @@ const PassengerBookings = () => {
   const isBookingPast = (departureTime: Timestamp) => {
     const now = Timestamp.now();
     return departureTime.seconds < now.seconds;
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    const db = getFirestore();
+    try {
+      const bookingDoc = await getDoc(doc(db, "bookings", bookingId));
+      const bookingData = bookingDoc.data();
+
+      if (!bookingData) {
+        console.error("No booking data found");
+        return;
+      }
+
+      await updateDoc(doc(db, "bookings", bookingId), {
+        status: "cancelled",
+        updatedAt: Timestamp.now(),
+      });
+
+      const rideRef = doc(db, "rides", bookingData.rideId);
+      const rideDoc = await getDoc(rideRef);
+      const rideData = rideDoc.data();
+
+      if (!rideData) {
+        console.error("No ride data found");
+        return;
+      }
+
+      const newSeats = (rideData.availableSeats || 0) + bookingData.seatsBooked;
+      await updateDoc(rideRef, {
+        availableSeats: newSeats,
+      });
+
+      console.log(`Updated ride ${bookingData.rideId} with ${newSeats} seats`);
+    } catch (error) {
+      console.error("Error in cancellation process:", error);
+    }
   };
 
   if (loading) return <div>Chargement de vos réservations...</div>;
@@ -257,13 +299,40 @@ const PassengerBookings = () => {
                   )}
 
                   {booking.status === "pending" && (
-                    <Badge
-                      onClick={() => handleCancelBooking(booking.id)}
-                      variant="destructive"
-                      className="mt-4 w-full sm:w-auto text-center cursor-pointer"
-                    >
-                      Annuler la réservation
-                    </Badge>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Badge
+                          variant="destructive"
+                          className="mt-4 w-full sm:w-auto text-center cursor-pointer"
+                        >
+                          Annuler la réservation
+                        </Badge>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Confirmer l'annulation
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir annuler cette réservation ?
+                            Les places seront remises à disposition pour
+                            d'autres passagers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            Non, garder la réservation
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              handleCancelBooking(booking.id);
+                            }}
+                          >
+                            Oui, annuler la réservation
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
 

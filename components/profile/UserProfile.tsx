@@ -205,8 +205,8 @@ const UserProfile = ({
     );
   };
 
-  // Example usage
-  console.log("Is iOS:", isIOSDevice());
+
+  // console.log("Is iOS:", isIOSDevice());
 
   // const handleEnableNotifications = async () => {
   //   try {
