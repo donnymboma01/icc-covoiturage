@@ -60,9 +60,7 @@ const NavBar = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [bookingsCount, setBookingsCount] = useState(0);
   const [hasNewBookings, setHasNewBookings] = useState(false);
-  const [lastViewedTimestamp, setLastViewedTimestamp] = useState(() => {
-    return localStorage.getItem("lastViewedBookings") || "0";
-  });
+  const [lastViewedTimestamp, setLastViewedTimestamp] = useState<string>("0");
   const db = getFirestore(app);
 
   const router = useRouter();
@@ -137,6 +135,9 @@ const NavBar = () => {
   };
 
   useEffect(() => {
+    const storedTimestamp = localStorage.getItem("lastViewedBookings") || "0";
+    setLastViewedTimestamp(storedTimestamp);
+    
     if (!user?.uid) return;
 
     const db = getFirestore();
@@ -271,7 +272,7 @@ const NavBar = () => {
       </Link>
       <Link
         href="/rides/history"
-        onClick={() => setIsDrawerOpen(false)} 
+        onClick={() => setIsDrawerOpen(false)}
         className="w-full"
       >
         <Button
