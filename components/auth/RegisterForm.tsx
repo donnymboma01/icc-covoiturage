@@ -227,87 +227,20 @@ const RegisterForm = () => {
             "Une erreur inattendue est survenue. Veuillez réessayer."
           );
       }
-      // toast.error("Une erreur est survenue, veuillez réessayer");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
-  //   console.log("Form submitted with values:", values);
-  //   console.log("Form validation state:", form.formState);
-  //   let userCredential;
-
-  //   try {
-  //     setIsLoading(true);
-
-  //     try {
-  //       userCredential = await createUserWithEmailAndPassword(
-  //         auth,
-  //         values.email,
-  //         values.password
-  //       );
-  //     } catch (authError: any) {
-  //       console.error("Auth creation failed:", authError);
-  //       toast.error(authError.message || "Erreur d'authentification");
-  //       return;
-  //     }
-
-  //     let profilePictureUrl = "";
-  //     if (values.profilePicture) {
-  //       try {
-  //         profilePictureUrl = await uploadImage(
-  //           values.profilePicture,
-  //           userCredential.user.uid
-  //         );
-  //       } catch (uploadError: any) {
-  //         console.error("Image upload failed:", uploadError);
-  //         await userCredential.user.delete();
-  //         toast.error("Erreur lors de l'upload de l'image");
-  //         return;
-  //       }
-  //     }
-
-  //     try {
-  //       const userDocument = {
-  //         uid: userCredential.user.uid,
-  //         email: values.email,
-  //         fullName: values.fullName,
-  //         phoneNumber: values.phoneNumber,
-  //         isDriver: values.isDriver,
-  //         createdAt: new Date(),
-  //         churchIds: [values.church],
-  //         profilePicture: profilePictureUrl || null,
-  //       };
-
-  //       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
-
-  //       if (values.isDriver && values.vehicle) {
-  //         await addDoc(collection(db, "vehicles"), {
-  //           userId: userCredential.user.uid,
-  //           ...values.vehicle,
-  //           isActive: true,
-  //         });
-  //       }
-
-  //       await auth.signOut();
-  //       toast.success("Inscription réussie");
-  //       router.push("/auth/login");
-  //     } catch (dbError: any) {
-  //       console.error("Opération dans la base de données a échoué :", dbError);
-  //       await userCredential.user.delete();
-  //       toast.error("Erreur lors de la création du profil");
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Registration error:", error);
-  //     if (userCredential?.user) {
-  //       await cleanupFailedRegistration(userCredential.user);
-  //     }
-  //     toast.error("Une erreur est survenue, veuillez réessayer");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  useEffect(() => {
+    if (!isDriver) {
+      form.setValue("vehicle.brand", "");
+      form.setValue("vehicle.model", "");
+      form.setValue("vehicle.color", "");
+      form.setValue("vehicle.seats", 1);
+      form.setValue("vehicle.licensePlate", "");
+    }
+  }, [isDriver, form]);
 
   return (
     <Form {...form}>
@@ -481,7 +414,7 @@ const RegisterForm = () => {
               name="vehicle.brand"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Marque du véhicule</FormLabel>
+                  <FormLabel>Marque du véhicule *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: Renault" />
                   </FormControl>
@@ -495,7 +428,7 @@ const RegisterForm = () => {
               name="vehicle.model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Modèle</FormLabel>
+                  <FormLabel>Modèle *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: Clio" />
                   </FormControl>
@@ -509,7 +442,7 @@ const RegisterForm = () => {
               name="vehicle.color"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Couleur</FormLabel>
+                  <FormLabel>Couleur *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: Noir" />
                   </FormControl>
@@ -523,7 +456,7 @@ const RegisterForm = () => {
               name="vehicle.seats"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre de places</FormLabel>
+                  <FormLabel>Nombre de places *</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -542,7 +475,7 @@ const RegisterForm = () => {
               name="vehicle.licensePlate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plaque d'immatriculation</FormLabel>
+                  <FormLabel>Plaque d'immatriculation *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: AB-123-CD" />
                   </FormControl>
