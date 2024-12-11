@@ -271,7 +271,7 @@ const NavBar = () => {
       </Link>
       <Link
         href="/rides/history"
-        onClick={() => setIsDrawerOpen(false)}
+        onClick={() => setIsDrawerOpen(false)} 
         className="w-full"
       >
         <Button
