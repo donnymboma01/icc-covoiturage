@@ -176,13 +176,14 @@ const MapComponent = ({
   }, [isMapVisible]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative z-0">
       <div
         className={`
-    transition-all duration-500 ease-in-out mb-6
-    ${isMapVisible ? "opacity-100 h-[500px]" : "opacity-0 h-0"}
-    overflow-hidden rounded-xl shadow-lg
-  `}
+        transition-all duration-500 ease-in-out mb-6
+        ${isMapVisible ? "opacity-100 h-[500px]" : "opacity-0 h-0"}
+        overflow-hidden rounded-xl shadow-lg
+        relative w-full max-w-full
+      `}
         style={{ visibility: isMapVisible ? "visible" : "hidden" }}
       >
         <div
