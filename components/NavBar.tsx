@@ -58,6 +58,11 @@ const NavBar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeRidesCount, setActiveRidesCount] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
+  const [bookingsCount, setBookingsCount] = useState(0);
+  const [hasNewBookings, setHasNewBookings] = useState(false);
+  const [lastViewedTimestamp, setLastViewedTimestamp] = useState(() => {
+    return localStorage.getItem("lastViewedBookings") || "0";
+  });
   const db = getFirestore(app);
 
   const router = useRouter();
@@ -134,6 +139,51 @@ const NavBar = () => {
   useEffect(() => {
     if (!user?.uid) return;
 
+    const db = getFirestore();
+    const ridesQuery = query(
+      collection(db, "rides"),
+      where("driverId", "==", user.uid)
+    );
+
+    getDocs(ridesQuery).then((ridesSnapshot) => {
+      const rideIds = ridesSnapshot.docs.map((doc) => doc.id);
+
+      if (rideIds.length === 0) return;
+
+      const bookingsQuery = query(
+        collection(db, "bookings"),
+        where("rideId", "in", rideIds),
+        where("status", "==", "pending")
+      );
+
+      const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
+        const count = snapshot.docs.length;
+        setBookingsCount(count);
+
+        // Check if there are any bookings newer than last viewed
+        const hasNew = snapshot.docs.some((doc) => {
+          const bookingTimestamp = doc.data().bookingDate?.toMillis() || 0;
+          return bookingTimestamp > parseInt(lastViewedTimestamp);
+        });
+
+        setHasNewBookings(hasNew);
+      });
+
+      return () => unsubscribe();
+    });
+  }, [user, lastViewedTimestamp]);
+
+  const handleBookingsClick = () => {
+    const now = Date.now().toString();
+    localStorage.setItem("lastViewedBookings", now);
+    setLastViewedTimestamp(now);
+    setHasNewBookings(false);
+    setIsDrawerOpen(false);
+  };
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
     const ridesRef = collection(db, "rides");
     const now = new Date();
     const q = query(
@@ -186,7 +236,7 @@ const NavBar = () => {
           <MdAddRoad /> Créer un trajet
         </Button>
       </Link>
-      <Link
+      {/* <Link
         href="/dashboard/driver/bookings"
         onClick={() => setIsDrawerOpen(false)}
         className="w-full"
@@ -196,6 +246,27 @@ const NavBar = () => {
           className="flex items-center gap-2 w-full justify-start"
         >
           <MdOutlineDirectionsCar /> Les demandes de trajet
+        </Button>
+      </Link> */}
+      <Link
+        href="/dashboard/driver/bookings"
+        onClick={handleBookingsClick}
+        className="w-full"
+      >
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 w-full justify-start"
+        >
+          <MdOutlineDirectionsCar /> Les demandes de trajet{" "}
+          {bookingsCount > 0 && (
+            <span
+              className={`ml-1 ${
+                hasNewBookings ? "text-red-600 font-bold" : ""
+              }`}
+            >
+              ({bookingsCount})
+            </span>
+          )}
         </Button>
       </Link>
       <Link
