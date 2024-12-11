@@ -37,21 +37,6 @@ const MapComponent = ({
   initialArrivalAddress = "",
   isMapVisible,
 }: MapComponentProps) => {
-  // const mapRef = useRef<HTMLDivElement>(null);
-  // const leafletMap = useRef<L.Map | null>(null);
-
-  // const [departureAddress, setDepartureAddress] = useState<string>(
-  //   initialDepartureAddress
-  // );
-  // const [arrivalAddress, setArrivalAddress] = useState<string>(
-  //   initialArrivalAddress
-  // );
-  // const [departureMarker, setDepartureMarker] = useState<L.Marker | null>(null);
-  // const [arrivalMarker, setArrivalMarker] = useState<L.Marker | null>(null);
-
-  // const [userLocation, setUserLocation] = useState<[number, number]>([
-  //   50.85, 4.35,
-  // ]);
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number]>([
@@ -124,43 +109,41 @@ const MapComponent = ({
   };
 
   useEffect(() => {
-    if (!isMapVisible || !mapRef.current) return;
+    if (!mapRef.current) return;
+
+    if (!leafletMap.current) {
+      leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(leafletMap.current);
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLocation: [number, number] = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+          setUserLocation(newLocation);
+          leafletMap.current?.setView(newLocation, 13);
+        },
+        (error) => {
+          console.warn("Erreur de géolocalisation :", error);
+        }
+      );
+    }
 
     if (leafletMap.current) {
-      leafletMap.current.remove();
-      leafletMap.current = null;
-    }
-
-    leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(leafletMap.current);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const newLocation: [number, number] = [
-          position.coords.latitude,
-          position.coords.longitude,
-        ];
-        setUserLocation(newLocation);
-        leafletMap.current?.setView(newLocation, 13);
-      },
-      (error) => {
-        console.warn("Erreur de géolocalisation :", error);
+      if (isMapVisible) {
+        setTimeout(() => {
+          leafletMap.current?.invalidateSize();
+        }, 100);
       }
-    );
-
-    if (departureMarker) {
-      departureMarker.addTo(leafletMap.current);
-    }
-    if (arrivalMarker) {
-      arrivalMarker.addTo(leafletMap.current);
     }
 
     return () => {
-      if (leafletMap.current) {
+      if (leafletMap.current && !isMapVisible) {
         leafletMap.current.remove();
         leafletMap.current = null;
       }
@@ -194,6 +177,20 @@ const MapComponent = ({
 
   return (
     <div className="space-y-6">
+      <div
+        className={`
+    transition-all duration-500 ease-in-out mb-6
+    ${isMapVisible ? "opacity-100 h-[500px]" : "opacity-0 h-0"}
+    overflow-hidden rounded-xl shadow-lg
+  `}
+        style={{ visibility: isMapVisible ? "visible" : "hidden" }}
+      >
+        <div
+          ref={mapRef}
+          className="h-full w-full rounded-xl border-2 border-gray-100"
+        />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Input
@@ -226,20 +223,6 @@ const MapComponent = ({
             Rechercher arrivée
           </Button>
         </div>
-      </div>
-
-      <div
-        className={`
-          transition-all duration-500 ease-in-out
-          ${isMapVisible ? "opacity-100 max-h-[500px]" : "opacity-0 max-h-0"}
-          overflow-hidden rounded-xl shadow-lg
-        `}
-      >
-        <div
-          ref={mapRef}
-          className="h-[500px] w-full rounded-xl border-2 border-gray-100"
-          style={{ display: isMapVisible ? "block" : "none" }}
-        />
       </div>
     </div>
   );
