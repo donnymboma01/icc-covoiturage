@@ -35,7 +35,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RideEditDialog } from "./EditRide";
-import { toast } from "sonner";
+// import { toast } from "sonner";
 
 interface Ride {
   id: string;
@@ -219,7 +219,11 @@ const RideCard = ({
         {isModifiable() && (
           <div className="flex space-x-2 pt-2">
             {ride.status === "active" && (
-              <RideEditDialog ride={ride} onSave={onUpdate} />
+              <RideEditDialog
+                ride={ride}
+                onSave={onUpdate}
+                carCapacity={ride.availableSeats}
+              />
             )}
             <AlertDialog>
               <AlertDialogTrigger asChild>

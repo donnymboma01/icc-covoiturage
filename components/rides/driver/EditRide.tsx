@@ -35,9 +35,14 @@ interface Ride {
 interface RideEditDialogProps {
   ride: Ride;
   onSave: (updatedData: Partial<Ride>) => Promise<void>;
+  carCapacity: number;
 }
 
-export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
+export function RideEditDialog({
+  ride,
+  onSave,
+  carCapacity,
+}: RideEditDialogProps) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     departureAddress: ride.departureAddress,
@@ -57,8 +62,41 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
     }
   }, [open, ride]);
 
+  const validateSeats = (seats: number) => {
+    if (seats <= 0) {
+      toast.error("Le nombre de places doit être supérieur à 0");
+      return false;
+    }
+    if (seats > carCapacity) {
+      toast.error(
+        `Vous ne pouvez pas proposer plus de ${carCapacity} places (capacité de votre véhicule)`
+      );
+      return false;
+    }
+    return true;
+  };
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   try {
+  //     await onSave({
+  //       ...formData,
+  //       departureTime: Timestamp.fromDate(formData.departureTime),
+  //     });
+  //     setOpen(false);
+  //     toast.success("Modifications enregistrées avec succès");
+  //   } catch (error) {
+  //     console.error("Error saving:", error);
+  //     toast.error("Erreur lors de l'enregistrement");
+  //   }
+  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateSeats(formData.availableSeats)) {
+      return;
+    }
+
     try {
       await onSave({
         ...formData,
@@ -70,6 +108,18 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
       console.error("Error saving:", error);
       toast.error("Erreur lors de l'enregistrement");
     }
+  };
+
+  const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (value > carCapacity) {
+      toast.error(`Maximum ${carCapacity} places disponibles`);
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      availableSeats: value,
+    }));
   };
 
   return (
@@ -154,7 +204,7 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
               </div> */}
               <div>
                 <label>Nombre des places disponibles</label>
-                <Input
+                {/* <Input
                   type="number"
                   value={formData.availableSeats}
                   onChange={(e) =>
@@ -163,6 +213,13 @@ export function RideEditDialog({ ride, onSave }: RideEditDialogProps) {
                       availableSeats: parseInt(e.target.value),
                     }))
                   }
+                /> */}
+                <Input
+                  type="number"
+                  value={formData.availableSeats}
+                  onChange={handleSeatsChange}
+                  min="1"
+                  max={carCapacity}
                 />
               </div>
             </div>
