@@ -49,32 +49,7 @@ interface Vehicle {
   seats: number;
 }
 
-// const MapWithErrorBoundary = ({
-//   setFormData,
-//   formData,
-//   isMapVisible
-// }: {
-//   setFormData: React.Dispatch<React.SetStateAction<RideFormData>>;
-//   formData: RideFormData;
-//   isMapVisible: boolean;
-// }) => {
-//   return (
-//     <ErrorBoundary
-//       fallback={
-//         <div>Une erreur est survenue lors du chargement de la carte</div>
-//       }
-//     >
-//       <MapComponent
-//         onDepartureSelect={(address) =>
-//           setFormData({ ...formData, departureAddress: address })
-//         }
-//         onArrivalSelect={(address) =>
-//           setFormData({ ...formData, arrivalAddress: address })
-//         }
-//       />
-//     </ErrorBoundary>
-//   );
-// };
+
 const MapWithErrorBoundary = ({
   setFormData,
   formData,
@@ -298,14 +273,6 @@ const CreateRideForm = () => {
     </div>
   );
 
-  // const renderStepThree = () => (
-  //   <div className="space-y-4">
-  //     <h2 className="text-xl font-semibold">Adresses</h2>
-  //     <div style={{ display: currentStep === 3 ? "block" : "none" }}>
-  //       <MapWithErrorBoundary setFormData={setFormData} formData={formData} />
-  //     </div>
-  //   </div>
-  // );
 
   const renderStepThree = () => (
     <div className="space-y-4">

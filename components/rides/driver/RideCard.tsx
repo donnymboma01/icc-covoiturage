@@ -1,7 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Timestamp } from "firebase/firestore";
+import {
+  collection,
+  query,
+  Timestamp,
+  where,
+  getDocs,
+  writeBatch,
+  getFirestore,
+} from "firebase/firestore";
 import {
   MdLocationOn,
   MdAccessTime,
@@ -27,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RideEditDialog } from "./EditRide";
+import { toast } from "sonner";
 
 interface Ride {
   id: string;
@@ -95,8 +104,55 @@ const RideCard = ({
     }
   };
 
+  const handleCancelRide = async () => {
+    const db = getFirestore();
+    try {
+      await onUpdate({
+        status: "cancelled",
+      });
+
+      const bookingsRef = collection(db, "bookings");
+      const q = query(bookingsRef, where("rideId", "==", ride.id));
+      const bookingsSnapshot = await getDocs(q);
+
+      const batch = writeBatch(db);
+      bookingsSnapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, {
+          status: "cancelled",
+          updatedAt: Timestamp.now(),
+        });
+      });
+      await batch.commit();
+      console.log("trajet annulé avec succès");
+    } catch (error) {
+      console.error("Erreur lors de l'annulation:", error);
+    }
+  };
+
+  const isModifiable = () => {
+    const now = new Date();
+    const departureDate = ride.departureTime.toDate();
+    return (
+      departureDate > now &&
+      (ride.status === "active" || ride.status === "cancelled")
+    );
+  };
+
+  const handleReactivateRide = async () => {
+    if (!isModifiable()) {
+      return;
+    }
+
+    try {
+      await onUpdate({
+        status: "active",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la réactivation:", error);
+    }
+  };
+
   const currentStatus = getRideStatus();
-  const isModifiable = currentStatus === "active";
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
@@ -160,21 +216,51 @@ const RideCard = ({
           </div>
         )}
 
-        {isModifiable && (
+        {isModifiable() && (
           <div className="flex space-x-2 pt-2">
-            {isModifiable && (
-              <div className="flex space-x-2 pt-2">
-                <RideEditDialog ride={ride} onSave={onUpdate} />
+            {ride.status === "active" && (
+              <RideEditDialog ride={ride} onSave={onUpdate} />
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <MdCancel className="mr-2" />
-                  Annuler
+                  {ride.status === "cancelled"
+                    ? "Proposer ce trajet"
+                    : "Annuler ce trajet"}
                 </Button>
-              </div>
-            )}
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {ride.status === "cancelled"
+                      ? "Réactiver le trajet"
+                      : "Annuler le trajet"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {ride.status === "cancelled"
+                      ? "Voulez-vous remettre ce trajet à disposition ?"
+                      : "Êtes-vous sûr de vouloir annuler ce trajet ?"}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={
+                      ride.status === "cancelled"
+                        ? handleReactivateRide
+                        : handleCancelRide
+                    }
+                  >
+                    Confirmer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
         {/* <AlertDialog>
