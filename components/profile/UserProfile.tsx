@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
@@ -35,6 +36,7 @@ import {
 import { app } from "../../app/config/firebase-config";
 import { useNotifications } from "@/app/hooks/useNotifications";
 import UserAvatar from "../../public/images/avatarprofile.png";
+import { getAuth, updateEmail } from "firebase/auth";
 
 interface Vehicle {
   brand: string;
@@ -79,18 +81,7 @@ const UserProfile = ({
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [churchData, setChurchData] = useState<{ name: string } | null>(null);
-  // const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-  //   if (typeof window !== "undefined") {
-  //     return Notification.permission === "granted";
-  //   }
-  //   return false;
-  // });
-  // const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-  //   if (typeof window !== "undefined" && "Notification" in window) {
-  //     return Notification.permission === "granted";
-  //   }
-  //   return false;
-  // });
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return !!user?.fcmToken;
   });
@@ -101,11 +92,41 @@ const UserProfile = ({
 
   const db = getFirestore(app);
 
+  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
+  //   try {
+  //     console.log("Updating user with data:", userData);
+  //     await onUpdateUser(userData);
+
+  //     if (userData.churchIds?.[0]) {
+  //       const churchRef = doc(db, "churches", userData.churchIds[0]);
+  //       const churchSnap = await getDoc(churchRef);
+  //       if (churchSnap.exists()) {
+  //         setChurchData(churchSnap.data() as { name: string });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating profile:", error);
+  //   }
+  // };
+
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
-      console.log("Updating user with data:", userData);
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      // Update email in Firebase Auth if it has changed
+      if (
+        userData.email &&
+        currentUser &&
+        userData.email !== currentUser.email
+      ) {
+        await updateEmail(currentUser, userData.email);
+      }
+
+      // Update user data in Firestore
       await onUpdateUser(userData);
 
+      // Update church data if needed
       if (userData.churchIds?.[0]) {
         const churchRef = doc(db, "churches", userData.churchIds[0]);
         const churchSnap = await getDoc(churchRef);
@@ -113,8 +134,11 @@ const UserProfile = ({
           setChurchData(churchSnap.data() as { name: string });
         }
       }
-    } catch (error) {
+
+      toast.success("Profil mis à jour avec succès");
+    } catch (error: any) {
       console.error("Error updating profile:", error);
+      toast.error(error.message || "Erreur lors de la mise à jour du profil");
     }
   };
 
@@ -165,39 +189,6 @@ const UserProfile = ({
     fetchChurches();
   }, [db]);
 
-  // const handleEnableNotifications = async () => {
-  //   try {
-  //     if (notificationsEnabled) {
-  //       await onUpdateUser({
-  //         fcmToken: null,
-  //       });
-  //       setNotificationsEnabled(false);
-  //       toast.success("Notifications désactivées avec succès");
-  //       return;
-  //     }
-
-  //     const permission = await Notification.requestPermission();
-  //     if (permission === "granted") {
-  //       const newToken = await requestPermission();
-
-  //       if (newToken && user?.uid) {
-  //         await onUpdateUser({
-  //           fcmToken: newToken,
-  //         });
-  //         setNotificationsEnabled(true);
-  //         toast.success("Notifications activées avec succès");
-  //       } else {
-  //         toast.error("Impossible d'obtenir le token de notification");
-  //       }
-  //     } else {
-  //       toast.error("Permission de notification refusée");
-  //     }
-  //   } catch (error) {
-  //     console.error("Erreur lors de la reception de notifications:", error);
-  //     toast.error("Erreur lors de la gestion des notifications");
-  //   }
-  // };
-
   const isIOSDevice = () => {
     return (
       typeof window !== "undefined" &&
@@ -205,62 +196,8 @@ const UserProfile = ({
     );
   };
 
-
   // console.log("Is iOS:", isIOSDevice());
 
-  // const handleEnableNotifications = async () => {
-  //   try {
-  //     if (typeof window === "undefined" || !("Notification" in window)) {
-  //       toast.error(
-  //         "Les notifications ne sont pas supportées sur cet appareil"
-  //       );
-  //       return;
-  //     }
-
-  //     if (notificationsEnabled) {
-  //       await onUpdateUser({
-  //         fcmToken: null,
-  //       });
-  //       setNotificationsEnabled(false);
-  //       toast.success("Notifications désactivées avec succès");
-  //       return;
-  //     }
-
-  //     let permission;
-  //     try {
-  //       permission = await Notification.requestPermission();
-  //     } catch (error) {
-  //       console.error("Error requesting permission:", error);
-  //       toast.error(
-  //         "Impossible de demander la permission pour les notifications"
-  //       );
-  //       return;
-  //     }
-
-  //     if (permission === "granted") {
-  //       try {
-  //         const newToken = await requestPermission();
-  //         if (newToken && user?.uid) {
-  //           await onUpdateUser({
-  //             fcmToken: newToken,
-  //           });
-  //           setNotificationsEnabled(true);
-  //           toast.success("Notifications activées avec succès");
-  //         } else {
-  //           toast.error("Impossible d'obtenir le token de notification");
-  //         }
-  //       } catch (tokenError) {
-  //         console.error("Token error:", tokenError);
-  //         toast.error("Erreur lors de l'obtention du token");
-  //       }
-  //     } else {
-  //       toast.error("Permission de notification refusée");
-  //     }
-  //   } catch (error) {
-  //     console.error("Erreur générale:", error);
-  //     toast.error("Erreur lors de la gestion des notifications");
-  //   }
-  // };
   const handleEnableNotifications = async () => {
     try {
       // Si déjà activé, permet la désactivation

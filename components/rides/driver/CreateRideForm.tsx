@@ -43,12 +43,12 @@ interface RideFormData {
   isRecurring: boolean;
   frequency?: "weekly" | "monthly";
   serviceType: string;
+  displayPhoneNumber: boolean;
 }
 
 interface Vehicle {
   seats: number;
 }
-
 
 const MapWithErrorBoundary = ({
   setFormData,
@@ -95,6 +95,7 @@ const CreateRideForm = () => {
     waypoints: [],
     isRecurring: false,
     serviceType: "",
+    displayPhoneNumber: false,
   });
   const [isMapVisible, setIsMapVisible] = useState(true);
 
@@ -174,6 +175,7 @@ const CreateRideForm = () => {
         createdAt: new Date(),
         serviceType: formData.serviceType,
         ...(formData.isRecurring && { frequency: formData.frequency }),
+        displayPhoneNumber: formData.displayPhoneNumber,
       };
 
       const docRef = await addDoc(collection(db, "rides"), rideData);
@@ -269,10 +271,32 @@ const CreateRideForm = () => {
           />
           {seatsError && <p className="text-orange-500 mt-2">{seatsError}</p>}
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="displayPhoneNumber">
+            Affichage du numéro de téléphone
+          </Label>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="displayPhoneNumber"
+              checked={formData.displayPhoneNumber}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  displayPhoneNumber: e.target.checked,
+                })
+              }
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <span className="text-sm text-gray-600">
+              Autoriser l'affichage de mon numéro de téléphone aux passagers
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
-
 
   const renderStepThree = () => (
     <div className="space-y-4">

@@ -51,6 +51,7 @@ interface Ride {
   status: "active" | "cancelled";
   price?: number;
   waypoints?: string[];
+  displayPhoneNumber: boolean;
 }
 
 interface Church {
@@ -159,9 +160,13 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             <h2 className="text-lg sm:text-xl font-semibold">
               {driver.fullName}
             </h2>
+
             <p className="text-gray-500 text-sm sm:text-base">
-              {driver.phoneNumber}
+              {ride.displayPhoneNumber ? driver.phoneNumber : ""}
             </p>
+            {/* <p className="text-gray-500 text-sm sm:text-base">
+              {driver.phoneNumber}
+            </p> */}
             {driverChurch && (
               <div className="flex items-center gap-2">
                 <MdChurch className="text-gray-500 text-lg" />
