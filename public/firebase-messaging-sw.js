@@ -17,7 +17,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-console.log("Firebase messaging : ", messaging)
+// console.log("Firebase messaging : ", messaging)
 
 messaging.onBackgroundMessage((payload) => {
   try {

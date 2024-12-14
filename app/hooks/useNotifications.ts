@@ -12,7 +12,7 @@ export const useNotifications = () => {
   const isIOSDevice = () => {
     return (
       typeof window !== "undefined" &&
-      /iPad|iPhone|iPod/.test(navigator.userAgent)
+      /iPad|iPhone|iPod/.test(navigator.userAgent) 
     );
   };
 

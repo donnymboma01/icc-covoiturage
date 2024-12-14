@@ -14,7 +14,7 @@ const firebaseConfig = {
   measurementId: "G-Q8MYSV9F7G",
 };
 
-console.log("Firebase configuration ", firebaseConfig); 
+// console.log("Firebase configuration ", firebaseConfig); 
 
 const app = initializeApp(firebaseConfig);
 // Pour Jason & Djedou : le messaging est utilisé pour les notifications.

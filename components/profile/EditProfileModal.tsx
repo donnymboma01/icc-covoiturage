@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
@@ -20,6 +21,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { toast } from "sonner";
+import { MdClose } from "react-icons/md";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -95,51 +97,62 @@ export function EditProfileModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-[800px] h-[90vh] max-h-[800px] p-0 gap-0 bg-white rounded-xl">
-        <DialogHeader className="sticky top-0 z-20 px-6 py-4 bg-white border-b">
+      <DialogContent className="fixed inset-x-0 top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[95vw] sm:max-w-[600px] md:max-w-[800px] max-h-[90vh] bg-white rounded-lg shadow-lg z-[200] flex flex-col">
+        <DialogHeader className="sticky top-0 z-[201] px-4 py-3 bg-white border-b">
           <DialogTitle className="text-xl font-semibold">
             Modifier son profil
           </DialogTitle>
+          {/* <button
+            onClick={onClose}
+            className="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-100"
+          >
+            <MdClose className="h-5 w-5" />
+          </button> */}
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex justify-center">
-              <Avatar className="h-24 w-24 border-2 border-blue-100">
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex justify-center mb-6">
+              <Avatar className="h-20 w-20 md:h-24 md:w-24 border-2 border-blue-100">
                 <AvatarImage src={userData.profilePicture || ""} />
               </Avatar>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="col-span-full">
+
+            <div className="space-y-6">
+              <div>
                 <h3 className="text-lg font-semibold mb-4">
                   Informations personnelles
                 </h3>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="fullName">Nom complet</Label>
-                    <Input
-                      id="fullName"
-                      value={userData.fullName}
-                      onChange={(e) =>
-                        setUserData({ ...userData, fullName: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="fullName">Nom complet</Label>
+                      <Input
+                        id="fullName"
+                        value={userData.fullName}
+                        onChange={(e) =>
+                          setUserData({ ...userData, fullName: e.target.value })
+                        }
+                        required
+                        className="mt-1"
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="phoneNumber">Téléphone</Label>
-                    <Input
-                      id="phoneNumber"
-                      value={userData.phoneNumber}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          phoneNumber: e.target.value,
-                        })
-                      }
-                      required
-                    />
+                    <div>
+                      <Label htmlFor="phoneNumber">Téléphone</Label>
+                      <Input
+                        id="phoneNumber"
+                        value={userData.phoneNumber}
+                        onChange={(e) =>
+                          setUserData({
+                            ...userData,
+                            phoneNumber: e.target.value,
+                          })
+                        }
+                        required
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -153,6 +166,7 @@ export function EditProfileModal({
                       }
                       required
                       disabled
+                      className="mt-1"
                     />
                   </div>
 
@@ -162,7 +176,7 @@ export function EditProfileModal({
                       value={userData.churchId}
                       onValueChange={handleChurchChange}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Sélectionnez une église" />
                       </SelectTrigger>
                       <SelectContent>
@@ -184,109 +198,130 @@ export function EditProfileModal({
               </div>
 
               {currentUser?.isDriver && (
-                <div className="col-span-full">
+                <div>
                   <h3 className="text-lg font-semibold mb-4">
                     Informations du véhicule
                   </h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Label htmlFor="brand">Marque</Label>
-                    <Input
-                      id="brand"
-                      value={userData.vehicle?.brand || ""}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          vehicle: {
-                            ...userData.vehicle,
-                            brand: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="model">Modèle</Label>
-                    <Input
-                      id="model"
-                      value={userData.vehicle?.model || ""}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          vehicle: {
-                            ...userData.vehicle,
-                            model: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="color">Couleur</Label>
-                    <Input
-                      id="color"
-                      value={userData.vehicle?.color || ""}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          vehicle: {
-                            ...userData.vehicle,
-                            color: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="seats">Nombre de places</Label>
-                    <Input
-                      id="seats"
-                      type="number"
-                      min="1"
-                      max="9"
-                      value={userData.vehicle?.seats || ""}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          vehicle: {
-                            ...userData.vehicle,
-                            seats: parseInt(e.target.value),
-                          },
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="licensePlate">
-                      Plaque d'immatriculation
-                    </Label>
-                    <Input
-                      id="licensePlate"
-                      value={userData.vehicle?.licensePlate || ""}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          vehicle: {
-                            ...userData.vehicle,
-                            licensePlate: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                    />
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor="brand">Marque</Label>
+                        <Input
+                          id="brand"
+                          value={userData.vehicle?.brand || ""}
+                          onChange={(e) =>
+                            setUserData({
+                              ...userData,
+                              vehicle: {
+                                ...userData.vehicle,
+                                brand: e.target.value,
+                              },
+                            })
+                          }
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="model">Modèle</Label>
+                        <Input
+                          id="model"
+                          value={userData.vehicle?.model || ""}
+                          onChange={(e) =>
+                            setUserData({
+                              ...userData,
+                              vehicle: {
+                                ...userData.vehicle,
+                                model: e.target.value,
+                              },
+                            })
+                          }
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div>
+                        <Label htmlFor="color">Couleur</Label>
+                        <Input
+                          id="color"
+                          value={userData.vehicle?.color || ""}
+                          onChange={(e) =>
+                            setUserData({
+                              ...userData,
+                              vehicle: {
+                                ...userData.vehicle,
+                                color: e.target.value,
+                              },
+                            })
+                          }
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="seats">Nombre de places</Label>
+                        <Input
+                          id="seats"
+                          type="number"
+                          min="1"
+                          max="9"
+                          value={userData.vehicle?.seats || ""}
+                          onChange={(e) =>
+                            setUserData({
+                              ...userData,
+                              vehicle: {
+                                ...userData.vehicle,
+                                seats: parseInt(e.target.value),
+                              },
+                            })
+                          }
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="licensePlate">
+                          Plaque d'immatriculation
+                        </Label>
+                        <Input
+                          id="licensePlate"
+                          value={userData.vehicle?.licensePlate || ""}
+                          onChange={(e) =>
+                            setUserData({
+                              ...userData,
+                              vehicle: {
+                                ...userData.vehicle,
+                                licensePlate: e.target.value,
+                              },
+                            })
+                          }
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-
-            <DialogFooter className="bottom-0 z-20 px-6 py-4 bg-white border-t">
-              <Button type="submit">Enregistrer</Button>
-            </DialogFooter>
           </form>
         </div>
+
+        <DialogFooter className="bottom-0 z-[201] px-4 py-3 bg-white border-t mt-4">
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            className="w-full sm:w-auto"
+          >
+            Enregistrer
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
