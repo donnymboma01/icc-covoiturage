@@ -68,7 +68,10 @@ const NavBar = () => {
   const auth = getAuth(app);
 
   const handleDeleteAccount = () => {
-    setOpenDialog(true);
+    setIsDrawerOpen(false);
+    setTimeout(() => {
+      setOpenDialog(true);
+    }, 100);
   };
 
   // Pour Les devs : cette méthode permet de surpprimer complètement le compte de l'utilisateur.
@@ -137,7 +140,7 @@ const NavBar = () => {
   useEffect(() => {
     const storedTimestamp = localStorage.getItem("lastViewedBookings") || "0";
     setLastViewedTimestamp(storedTimestamp);
-    
+
     if (!user?.uid) return;
 
     const db = getFirestore();
@@ -401,18 +404,54 @@ const NavBar = () => {
     </div>
   );
 
+  // const DeleteAccountDialog = () => (
+  //   <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
+  //     <AlertDialogContent>
+  //       <AlertDialogHeader>
+  //         <AlertDialogTitle>
+  //           Êtes-vous sûr de vouloir supprimer votre compte ?
+  //         </AlertDialogTitle>
+  //         <AlertDialogDescription className="space-y-2">
+  //           <p>
+  //             Cette action est irréversible. La suppression de votre compte
+  //             entraînera :
+  //           </p>
+  //           <ul className="list-disc pl-4">
+  //             <li>La suppression de tous vos trajets publiés</li>
+  //             <li>La suppression de toutes vos réservations</li>
+  //             <li>La suppression de vos églises enregistrées</li>
+  //             <li>La perte définitive de votre profil</li>
+  //           </ul>
+  //         </AlertDialogDescription>
+  //       </AlertDialogHeader>
+  //       <AlertDialogFooter>
+  //         <Button variant="outline" onClick={() => setOpenDialog(false)}>
+  //           Annuler
+  //         </Button>
+  //         <Button
+  //           variant="destructive"
+  //           onClick={handleDeleteAccountConfirm}
+  //           className="bg-red-600 hover:bg-red-700"
+  //         >
+  //           <MdDelete className="text-white" />
+  //           Supprimer définitivement
+  //         </Button>
+  //       </AlertDialogFooter>
+  //     </AlertDialogContent>
+  //   </AlertDialog>
+  // );
   const DeleteAccountDialog = () => (
     <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
-      <AlertDialogContent>
+      <AlertDialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] z-[200] max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>
             Êtes-vous sûr de vouloir supprimer votre compte ?
           </AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
-            <p>
+            <div>
               Cette action est irréversible. La suppression de votre compte
               entraînera :
-            </p>
+            </div>
             <ul className="list-disc pl-4">
               <li>La suppression de tous vos trajets publiés</li>
               <li>La suppression de toutes vos réservations</li>
@@ -520,6 +559,13 @@ const NavBar = () => {
         )}
       </div>
       <MobileDrawer />
+      {openDialog && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[150]"
+          onClick={() => setOpenDialog(false)}
+        />
+      )}
+
       <DeleteAccountDialog />
     </nav>
   );
