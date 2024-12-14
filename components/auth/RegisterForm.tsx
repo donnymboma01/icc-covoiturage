@@ -384,7 +384,7 @@ const RegisterForm = () => {
             <FormItem>
               <FormLabel>Numéro de téléphone</FormLabel>
               <FormControl>
-                <Input placeholder="+32 4 12 34 56 78" {...field} />
+                <Input placeholder="0492 34 56 78" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
