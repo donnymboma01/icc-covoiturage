@@ -19,6 +19,54 @@ export const RideSchema = z.object({
   status: z.enum(["active", "cancelled"]).default("active"),
 });
 
+// export const RegisterSchema = z
+//   .object({
+//     email: z.string().email("Email invalide"),
+//     password: z
+//       .string()
+//       .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+//     confirmPassword: z.string(),
+//     fullName: z.string().min(2, "Le nom complet est requis"),
+//     phoneNumber: z.string().min(10, "Numéro de téléphone invalide"),
+//     isDriver: z.boolean().default(false),
+//     profilePicture: z.instanceof(File).optional(),
+//     church: z.string().min(1, "Veuillez sélectionner une église"),
+//     vehicle: z
+//       .object({
+//         brand: z.string().min(1, "La marque du véhicule est requise"),
+//         model: z.string().min(1, "Le modèle du véhicule est requis"),
+//         color: z.string().min(1, "La couleur du véhicule est requise"),
+//         seats: z.number().min(1, "Le nombre de places doit être supérieur à 0"),
+//         licensePlate: z
+//           .string()
+//           .min(1, "La plaque d'immatriculation est requise"),
+//       })
+//       .optional(),
+//   })
+//   .refine((data) => data.password === data.confirmPassword, {
+//     message: "Les mots de passe ne correspondent pas",
+//     path: ["confirmPassword"],
+//   })
+//   .refine(
+//     (data) => {
+//       if (data.isDriver) {
+//         return (
+//           data.vehicle &&
+//           data.vehicle.brand &&
+//           data.vehicle.model &&
+//           data.vehicle.color &&
+//           data.vehicle.seats &&
+//           data.vehicle.licensePlate
+//         );
+//       }
+//       return true;
+//     },
+//     {
+//       message:
+//         "Les informations du véhicule sont requises pour les conducteurs",
+//       path: ["vehicle"],
+//     }
+//   );
 export const RegisterSchema = z
   .object({
     email: z.string().email("Email invalide"),
@@ -33,13 +81,11 @@ export const RegisterSchema = z
     church: z.string().min(1, "Veuillez sélectionner une église"),
     vehicle: z
       .object({
-        brand: z.string().min(1, "La marque du véhicule est requise"),
-        model: z.string().min(1, "Le modèle du véhicule est requis"),
-        color: z.string().min(1, "La couleur du véhicule est requise"),
-        seats: z.number().min(1, "Le nombre de places doit être supérieur à 0"),
-        licensePlate: z
-          .string()
-          .min(1, "La plaque d'immatriculation est requise"),
+        brand: z.string(),
+        model: z.string(),
+        color: z.string(),
+        seats: z.number(),
+        licensePlate: z.string(),
       })
       .optional(),
   })
@@ -47,26 +93,54 @@ export const RegisterSchema = z
     message: "Les mots de passe ne correspondent pas",
     path: ["confirmPassword"],
   })
-  .refine(
-    (data) => {
-      if (data.isDriver) {
-        return (
-          data.vehicle &&
-          data.vehicle.brand &&
-          data.vehicle.model &&
-          data.vehicle.color &&
-          data.vehicle.seats &&
-          data.vehicle.licensePlate
-        );
+  .superRefine((data, ctx) => {
+    if (data.isDriver) {
+      if (!data.vehicle) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Les informations du véhicule sont requises pour les conducteurs",
+          path: ["vehicle"],
+        });
+      } else {
+        if (!data.vehicle.brand) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La marque du véhicule est requise",
+            path: ["vehicle", "brand"],
+          });
+        }
+        if (!data.vehicle.model) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Le modèle du véhicule est requis",
+            path: ["vehicle", "model"],
+          });
+        }
+        if (!data.vehicle.color) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La couleur du véhicule est requise",
+            path: ["vehicle", "color"],
+          });
+        }
+        if (!data.vehicle.seats || data.vehicle.seats < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Le nombre de places doit être supérieur à 0",
+            path: ["vehicle", "seats"],
+          });
+        }
+        if (!data.vehicle.licensePlate) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La plaque d'immatriculation est requise",
+            path: ["vehicle", "licensePlate"],
+          });
+        }
       }
-      return true;
-    },
-    {
-      message:
-        "Les informations du véhicule sont requises pour les conducteurs",
-      path: ["vehicle"],
     }
-  );
+  });
 
 // export const RegisterSchema = z
 //   .object({
