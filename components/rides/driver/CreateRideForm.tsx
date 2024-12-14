@@ -44,6 +44,7 @@ interface RideFormData {
   frequency?: "weekly" | "monthly";
   serviceType: string;
   displayPhoneNumber: boolean;
+  meetingPointNote?: string;
 }
 
 interface Vehicle {
@@ -176,6 +177,7 @@ const CreateRideForm = () => {
         serviceType: formData.serviceType,
         ...(formData.isRecurring && { frequency: formData.frequency }),
         displayPhoneNumber: formData.displayPhoneNumber,
+        meetingPointNote: formData.meetingPointNote || '',
       };
 
       const docRef = await addDoc(collection(db, "rides"), rideData);
@@ -298,6 +300,26 @@ const CreateRideForm = () => {
     </div>
   );
 
+  // const renderStepThree = () => (
+  //   <div className="space-y-4">
+  //     <h2 className="text-xl font-semibold">Adresses</h2>
+  //     <div style={{ display: currentStep === 3 ? "block" : "none" }}>
+  //       <MapWithErrorBoundary
+  //         setFormData={setFormData}
+  //         formData={formData}
+  //         isMapVisible={isMapVisible}
+  //       />
+  //       <div className="flex justify-center mt-4">
+  //         <p
+  //           className="text-orange-500 italic cursor-pointer hover:underline transition-colors duration-300 hover:text-orange-600 font-medium"
+  //           onClick={() => setIsMapVisible(!isMapVisible)}
+  //         >
+  //           {isMapVisible ? "cacher la carte" : "afficher la carte"}
+  //         </p>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
   const renderStepThree = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Adresses</h2>
@@ -307,9 +329,29 @@ const CreateRideForm = () => {
           formData={formData}
           isMapVisible={isMapVisible}
         />
+
+        {/* Add meeting point note input */}
+        <div className="mt-4">
+          <Label htmlFor="meetingPointNote">Point de rencontre précis</Label>
+          <Input
+            id="meetingPointNote"
+            placeholder="Ex: Devant l'entrée principale, près de l'arrêt de bus..."
+            value={formData.meetingPointNote || ""}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                meetingPointNote: e.target.value,
+              })
+            }
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Précisez où exactement vous retrouverez vos passagers
+          </p>
+        </div>
+
         <div className="flex justify-center mt-4">
           <p
-            className="text-orange-500 italic cursor-pointer hover:underline transition-colors duration-300 hover:text-orange-600 font-medium"
+            className="text-orange-500 italic cursor-pointer hover:underline"
             onClick={() => setIsMapVisible(!isMapVisible)}
           >
             {isMapVisible ? "cacher la carte" : "afficher la carte"}

@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { MdAccessTime, MdLocationOn, MdPerson, MdChurch } from "react-icons/md";
+import { MdAccessTime, MdLocationOn, MdPerson, MdChurch, MdInfo } from "react-icons/md";
 import BookingForm from "@/components/booking/BookingForm";
 import Modal from "@/components/ui/Modal";
 import Link from "next/link";
@@ -52,6 +52,7 @@ interface Ride {
   price?: number;
   waypoints?: string[];
   displayPhoneNumber: boolean;
+  meetingPointNote?: string;
 }
 
 interface Church {
@@ -204,6 +205,16 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
               </p>
             </div>
           </div>
+
+          {ride.meetingPointNote && (
+            <div className="flex items-start gap-2 mt-2">
+              <MdInfo className="text-xl text-gray-500 mt-1" />
+              <div>
+                <p className="text-sm font-medium">Point de rencontre exacte : </p>
+                <p className="text-sm text-gray-600">{ride.meetingPointNote}</p>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">

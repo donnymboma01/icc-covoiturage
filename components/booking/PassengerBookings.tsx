@@ -49,6 +49,7 @@ interface Ride {
   departureTime: Timestamp;
   driverId: string;
   price: number;
+  meetingPointNote?: string;
 }
 
 interface Driver {
@@ -241,6 +242,28 @@ const PassengerBookings = () => {
                     </p>
                   )}
 
+                  {/* {ride && (
+                    <div className="space-y-2">
+                      <p className="truncate">
+                        <span className="font-medium">
+                          <strong>De :</strong>
+                        </span>{" "}
+                        {ride.departureAddress}
+                      </p>
+                      <p className="truncate">
+                        <span className="font-medium">
+                          <strong>À :</strong>
+                        </span>{" "}
+                        {ride.arrivalAddress}
+                      </p>
+                      <p className="break-words">
+                        <span className="font-medium">
+                          <strong>Date & Heure :</strong>
+                        </span>{" "}
+                        {ride.departureTime.toDate().toLocaleString("fr-FR")}
+                      </p>
+                    </div>
+                  )} */}
                   {ride && (
                     <div className="space-y-2">
                       <p className="truncate">
@@ -255,6 +278,14 @@ const PassengerBookings = () => {
                         </span>{" "}
                         {ride.arrivalAddress}
                       </p>
+                      {ride.meetingPointNote && (
+                        <p className="text-sm">
+                          <span className="font-medium">
+                            <strong>Point de rencontre :</strong>
+                          </span>{" "}
+                          {ride.meetingPointNote}
+                        </p>
+                      )}
                       <p className="break-words">
                         <span className="font-medium">
                           <strong>Date & Heure :</strong>
