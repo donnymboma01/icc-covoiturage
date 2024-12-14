@@ -62,30 +62,69 @@ const RidesHistory = () => {
   ) => {
     const db = getFirestore();
     try {
+      // Add validation for available seats
+      if (updatedData.availableSeats !== undefined) {
+        const bookingsRef = collection(db, "bookings");
+        const q = query(
+          bookingsRef,
+          where("rideId", "==", rideId),
+          where("status", "==", "accepted")
+        );
+        const bookingsSnapshot = await getDocs(q);
+
+        const totalBookedSeats = bookingsSnapshot.docs.reduce(
+          (total, doc) => total + doc.data().seatsBooked,
+          0
+        );
+
+        if (updatedData.availableSeats < totalBookedSeats) {
+          throw new Error(
+            "Cannot reduce seats below number of accepted bookings"
+          );
+        }
+      }
+
       const rideRef = doc(db, "rides", rideId);
       await updateDoc(rideRef, {
         ...updatedData,
         updatedAt: Timestamp.now(),
       });
-
-      if (updatedData.status === "cancelled") {
-        const bookingsRef = collection(db, "bookings");
-        const q = query(bookingsRef, where("rideId", "==", rideId));
-        const bookingsSnapshot = await getDocs(q);
-
-        const batch = writeBatch(db);
-        bookingsSnapshot.docs.forEach((doc) => {
-          batch.update(doc.ref, {
-            status: "cancelled",
-            updatedAt: Timestamp.now(),
-          });
-        });
-        await batch.commit();
-      }
     } catch (error) {
       console.error("Erreur lors de la mise à jour:", error);
+      throw error;
     }
   };
+
+  // const handleUpdateRide = async (
+  //   rideId: string,
+  //   updatedData: Partial<Ride>
+  // ) => {
+  //   const db = getFirestore();
+  //   try {
+  //     const rideRef = doc(db, "rides", rideId);
+  //     await updateDoc(rideRef, {
+  //       ...updatedData,
+  //       updatedAt: Timestamp.now(),
+  //     });
+
+  //     if (updatedData.status === "cancelled") {
+  //       const bookingsRef = collection(db, "bookings");
+  //       const q = query(bookingsRef, where("rideId", "==", rideId));
+  //       const bookingsSnapshot = await getDocs(q);
+
+  //       const batch = writeBatch(db);
+  //       bookingsSnapshot.docs.forEach((doc) => {
+  //         batch.update(doc.ref, {
+  //           status: "cancelled",
+  //           updatedAt: Timestamp.now(),
+  //         });
+  //       });
+  //       await batch.commit();
+  //     }
+  //   } catch (error) {
+  //     console.error("Erreur lors de la mise à jour:", error);
+  //   }
+  // };
 
   const fetchRides = async () => {
     if (!user?.uid) return;

@@ -104,6 +104,22 @@ const RideCard = ({
     }
   };
 
+  const handleSeatUpdate = async (newSeats: number) => {
+    if (newSeats < 1) {
+      alert("Le nombre de places doit être supérieur à 0");
+      return;
+    }
+    
+    try {
+      await onUpdate({
+        availableSeats: newSeats
+      });
+    } catch (error) {
+      alert("Impossible de modifier le nombre de places - des réservations sont déjà confirmées");
+    }
+  };
+  
+
   const handleCancelRide = async () => {
     const db = getFirestore();
     try {

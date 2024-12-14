@@ -116,6 +116,46 @@ const BookingForm = ({
     validateSeats(value);
   };
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!user) return;
+
+  //   if (!validateSeats(seats)) return;
+
+  //   setLoading(true);
+  //   try {
+  //     const userDoc = await getDoc(doc(db, "users", user.uid));
+  //     if (!userDoc.exists()) {
+  //       throw new Error("Le profil de l'utilisateur n'existe pas.");
+  //     }
+
+  //     const bookingRef = await addDoc(collection(db, "bookings"), {
+  //       rideId: ride.id,
+  //       passengerId: user.uid,
+  //       bookingDate: new Date(),
+  //       status: "pending",
+  //       seatsBooked: seats,
+  //       specialNotes: notes,
+  //     });
+
+  //     const rideRef = doc(db, "rides", ride.id);
+  //     await updateDoc(rideRef, {
+  //       availableSeats: ride.availableSeats - seats,
+  //     });
+
+  //     console.log("Début de redirection...");
+  //     onSuccess();
+  //     console.log("Booking successful, redirecting...");
+  //     window.location.href = "/dashboard/passanger/bookings";
+  //     // router.push("/dashboard/passenger/bookings");
+  //     console.log("Redirection effectuée avec succes.");
+  //   } catch (error) {
+  //     console.error("Erreur lors de la création de la réservation:", error);
+  //     setError("Une erreur est survenue lors de la réservation");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -129,6 +169,18 @@ const BookingForm = ({
         throw new Error("Le profil de l'utilisateur n'existe pas.");
       }
 
+      // Récupérer les données actuelles du trajet
+      const rideRef = doc(db, "rides", ride.id);
+      const rideDoc = await getDoc(rideRef);
+      const currentRideData = rideDoc.data();
+
+      // Vérifier que le nombre de places est toujours disponible
+
+      if (!currentRideData || currentRideData.availableSeats < seats) {
+        throw new Error("Le nombre de places demandées n'est plus disponible");
+      }
+
+      // Créer la réservation
       const bookingRef = await addDoc(collection(db, "bookings"), {
         rideId: ride.id,
         passengerId: user.uid,
@@ -138,17 +190,13 @@ const BookingForm = ({
         specialNotes: notes,
       });
 
-      const rideRef = doc(db, "rides", ride.id);
+      // Mettre à jour le nombre de places disponibles
       await updateDoc(rideRef, {
-        availableSeats: ride.availableSeats - seats,
+        availableSeats: currentRideData.availableSeats - seats,
       });
 
-      console.log("Début de redirection...");
       onSuccess();
-      console.log("Booking successful, redirecting...");
       window.location.href = "/dashboard/passanger/bookings";
-      // router.push("/dashboard/passenger/bookings");
-      console.log("Redirection effectuée avec succes.");
     } catch (error) {
       console.error("Erreur lors de la création de la réservation:", error);
       setError("Une erreur est survenue lors de la réservation");
@@ -156,7 +204,6 @@ const BookingForm = ({
       setLoading(false);
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">

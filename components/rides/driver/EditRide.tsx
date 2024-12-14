@@ -63,18 +63,26 @@ export function RideEditDialog({
   }, [open, ride]);
 
   const validateSeats = (seats: number) => {
-    if (seats <= 0) {
-      toast.error("Le nombre de places doit être supérieur à 0");
-      return false;
-    }
-    if (seats > carCapacity) {
-      toast.error(
-        `Vous ne pouvez pas proposer plus de ${carCapacity} places (capacité de votre véhicule)`
-      );
+    if (seats < 0) {
+      toast.error("Le nombre de places doit être positif");
       return false;
     }
     return true;
   };
+
+  // const validateSeats = (seats: number) => {
+  //   if (seats <= 0) {
+  //     toast.error("Le nombre de places doit être supérieur à 0");
+  //     return false;
+  //   }
+  //   if (seats > carCapacity) {
+  //     toast.error(
+  //       `Vous ne pouvez pas proposer plus de ${carCapacity} places (capacité de votre véhicule)`
+  //     );
+  //     return false;
+  //   }
+  //   return true;
+  // };
 
   // const handleSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
@@ -90,6 +98,7 @@ export function RideEditDialog({
   //     toast.error("Erreur lors de l'enregistrement");
   //   }
   // };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -98,22 +107,44 @@ export function RideEditDialog({
     }
 
     try {
-      await onSave({
-        ...formData,
+      const updatedData = {
+        availableSeats: formData.availableSeats,
         departureTime: Timestamp.fromDate(formData.departureTime),
-      });
+      };
+
+      await onSave(updatedData);
       setOpen(false);
       toast.success("Modifications enregistrées avec succès");
     } catch (error) {
-      console.error("Error saving:", error);
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error(
+        "Impossible de réduire le nombre de places - des réservations sont déjà confirmées"
+      );
     }
   };
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   if (!validateSeats(formData.availableSeats)) {
+  //     return;
+  //   }
+
+  //   try {
+  //     await onSave({
+  //       ...formData,
+  //       departureTime: Timestamp.fromDate(formData.departureTime),
+  //     });
+  //     setOpen(false);
+  //     toast.success("Modifications enregistrées avec succès");
+  //   } catch (error) {
+  //     console.error("Error saving:", error);
+  //     toast.error("Erreur lors de l'enregistrement");
+  //   }
+  // };
 
   const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    if (value > carCapacity) {
-      toast.error(`Maximum ${carCapacity} places disponibles`);
+    if (isNaN(value) || value < 0) {
+      toast.error("Le nombre de places doit être positif");
       return;
     }
     setFormData((prev) => ({
@@ -121,6 +152,18 @@ export function RideEditDialog({
       availableSeats: value,
     }));
   };
+
+  // const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = parseInt(e.target.value);
+  //   if (value > carCapacity) {
+  //     toast.error(`Maximum ${carCapacity} places disponibles`);
+  //     return;
+  //   }
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     availableSeats: value,
+  //   }));
+  // };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -218,8 +261,7 @@ export function RideEditDialog({
                   type="number"
                   value={formData.availableSeats}
                   onChange={handleSeatsChange}
-                  min="1"
-                  max={carCapacity}
+                  min="0"
                 />
               </div>
             </div>
