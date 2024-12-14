@@ -45,8 +45,9 @@ export function EditProfileModal({
     profilePicture: currentUser?.profilePicture || "",
     vehicle: currentUser?.vehicle || null,
     email: currentUser?.email || "",
-    churchId: currentUser?.churchIds?.[0] || "",
+    churchId: currentUser?.churchIds?.[0] || "", // Get first church ID from array
   });
+  const [open, setOpen] = useState(false);
 
   // const handleSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
@@ -67,32 +68,53 @@ export function EditProfileModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(userData.email)) {
-      toast.error("Veuillez entrer une adresse email valide");
-      return;
-    }
+    const dataToSubmit = {
+      ...userData,
+      churchIds: userData.churchId ? [userData.churchId] : [],
+    };
 
     try {
-      await onSubmit(userData);
-      toast.success("Modifications enregistrées avec succès");
+      await onSubmit(dataToSubmit);
+      toast.success("Modifications enregistrées");
       onClose();
-    } catch (error: any) {
-      if (error.code === "auth/requires-recent-login") {
-        toast.error(
-          "Pour des raisons de sécurité, veuillez vous reconnecter pour modifier votre email"
-        );
-      } else {
-        toast.error("Erreur lors de la modification du profil");
-      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Erreur lors de la modification");
     }
   };
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   // Email validation
+  //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  //   if (!emailRegex.test(userData.email)) {
+  //     toast.error("Veuillez entrer une adresse email valide");
+  //     return;
+  //   }
+
+  //   try {
+  //     await onSubmit(userData);
+  //     toast.success("Modifications enregistrées avec succès");
+  //     onClose();
+  //   } catch (error: any) {
+  //     if (error.code === "auth/requires-recent-login") {
+  //       toast.error(
+  //         "Pour des raisons de sécurité, veuillez vous reconnecter pour modifier votre email"
+  //       );
+  //     } else {
+  //       toast.error("Erreur lors de la modification du profil");
+  //     }
+  //   }
+  // };
 
   const handleChurchChange = (value: string) => {
-    console.log("Eglise choisie:", value);
-    setUserData({ ...userData, churchId: value });
+    console.log("Selected church ID:", value);
+    console.log("New church ID selected:", value);
+    setUserData((prev) => ({
+      ...prev,
+      churchId: value,
+      churchIds: [value], // Update both churchId and churchIds
+    }));
   };
 
   return (
@@ -172,27 +194,46 @@ export function EditProfileModal({
 
                   <div>
                     <Label htmlFor="church">Église</Label>
-                    <Select
+                    <div>
+                      <Label htmlFor="church">Église</Label>
+                      <Select
+                        value={userData.churchId}
+                        onValueChange={(value) => {
+                          console.log("Church selected:", value);
+                          setUserData((prev) => ({
+                            ...prev,
+                            churchId: value,
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Sélectionnez une église" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="z-[300]">
+                          {churches.map((church) => (
+                            <SelectItem key={church.id} value={church.id}>
+                              {church.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* <Select
                       value={userData.churchId}
                       onValueChange={handleChurchChange}
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Sélectionnez une église" />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Sélectionnez votre église" />
                       </SelectTrigger>
                       <SelectContent>
-                        {churches?.length === 0 ? (
-                          <SelectItem value="loading" disabled>
-                            Chargement des églises...
+                        {churches?.map((church) => (
+                          <SelectItem key={church.id} value={church.id}>
+                            {church.name}
                           </SelectItem>
-                        ) : (
-                          churches?.map((church) => (
-                            <SelectItem key={church.id} value={church.id}>
-                              {church.name || "Église sans nom"}
-                            </SelectItem>
-                          ))
-                        )}
+                        ))}
                       </SelectContent>
-                    </Select>
+                    </Select> */}
                   </div>
                 </div>
               </div>

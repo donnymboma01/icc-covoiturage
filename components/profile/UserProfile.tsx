@@ -111,24 +111,15 @@ const UserProfile = ({
 
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
-      const auth = getAuth();
-      const currentUser = auth.currentUser;
+      const updateData = {
+        ...userData,
+        churchIds: userData.churchIds,
+      };
 
-      // Update email in Firebase Auth if it has changed
-      if (
-        userData.email &&
-        currentUser &&
-        userData.email !== currentUser.email
-      ) {
-        await updateEmail(currentUser, userData.email);
-      }
+      await onUpdateUser(updateData);
 
-      // Update user data in Firestore
-      await onUpdateUser(userData);
-
-      // Update church data if needed
-      if (userData.churchIds?.[0]) {
-        const churchRef = doc(db, "churches", userData.churchIds[0]);
+      if (updateData.churchIds?.[0]) {
+        const churchRef = doc(db, "churches", updateData.churchIds[0]);
         const churchSnap = await getDoc(churchRef);
         if (churchSnap.exists()) {
           setChurchData(churchSnap.data() as { name: string });
@@ -138,9 +129,70 @@ const UserProfile = ({
       toast.success("Profil mis à jour avec succès");
     } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error(error.message || "Erreur lors de la mise à jour du profil");
+      toast.error("Erreur lors de la mise à jour du profil");
     }
   };
+
+  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
+  //   try {
+  //     const auth = getAuth();
+  //     const currentUser = auth.currentUser;
+
+  //     // Create properly typed update object
+  //     const updateData: Partial<UserData> = {
+  //       ...userData,
+  //       churchIds: Array.isArray(userData.churchIds) ? userData.churchIds.filter(Boolean) : userData.churchIds ? [userData.churchIds] : undefined
+  //     };
+
+  //     await onUpdateUser(updateData);
+
+  //     if (updateData.churchIds?.[0]) {
+  //       const churchRef = doc(db, "churches", updateData.churchIds[0]);
+  //       const churchSnap = await getDoc(churchRef);
+  //       if (churchSnap.exists()) {
+  //         setChurchData(churchSnap.data() as { name: string });
+  //       }
+  //     }
+
+  //     toast.success("Profil mis à jour avec succès");
+  //   } catch (error: any) {
+  //     console.error("Error updating profile:", error);
+  //     toast.error(error.message || "Erreur lors de la mise à jour du profil");
+  //   }
+  // };
+
+  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
+  //   try {
+  //     const auth = getAuth();
+  //     const currentUser = auth.currentUser;
+
+  //     // Update email in Firebase Auth if it has changed
+  //     if (
+  //       userData.email &&
+  //       currentUser &&
+  //       userData.email !== currentUser.email
+  //     ) {
+  //       await updateEmail(currentUser, userData.email);
+  //     }
+
+  //     // Update user data in Firestore
+  //     await onUpdateUser(userData);
+
+  //     // Update church data if needed
+  //     if (userData.churchIds?.[0]) {
+  //       const churchRef = doc(db, "churches", userData.churchIds[0]);
+  //       const churchSnap = await getDoc(churchRef);
+  //       if (churchSnap.exists()) {
+  //         setChurchData(churchSnap.data() as { name: string });
+  //       }
+  //     }
+
+  //     toast.success("Profil mis à jour avec succès");
+  //   } catch (error: any) {
+  //     console.error("Error updating profile:", error);
+  //     toast.error(error.message || "Erreur lors de la mise à jour du profil");
+  //   }
+  // };
 
   useEffect(() => {
     setNotificationsEnabled(isEnabled);
