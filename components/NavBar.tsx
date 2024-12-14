@@ -17,7 +17,11 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/app/hooks/useAuth";
 import { app } from "@/app/config/firebase-config";
-import { signOut, getAuth } from "firebase/auth";
+import {
+  signOut,
+  getAuth,
+
+} from "firebase/auth";
 import {
   MdDirectionsCar,
   MdPerson,

@@ -48,74 +48,74 @@ const Profile = () => {
   //   }
   // };
 
-  const handleUpdateUser = async (data: Partial<UserData>) => {
-    const user = auth.currentUser;
-    if (user) {
-      const userRef = doc(db, "users", user.uid);
-
-      try {
-        if (data.email && data.email !== user.email) {
-          await sendEmailVerification(user);
-          toast.success(
-            "Un email de vérification vous a été envoyé. Veuillez vérifier votre nouvelle adresse email."
-          );
-        }
-
-        // Update other user data in Firestore
-        const { email, ...otherData } = data;
-        await updateDoc(userRef, otherData);
-
-        setUserData((prevData) =>
-          prevData
-            ? {
-                ...prevData,
-                ...otherData,
-              }
-            : null
-        );
-      } catch (error: any) {
-        console.error("Error updating user:", error);
-        toast.error("Une erreur est survenue lors de la mise à jour du profil");
-        throw error;
-      }
-    }
-  };
   // const handleUpdateUser = async (data: Partial<UserData>) => {
   //   const user = auth.currentUser;
   //   if (user) {
   //     const userRef = doc(db, "users", user.uid);
 
   //     try {
-  //       // Update email in Firebase Auth if it has changed
   //       if (data.email && data.email !== user.email) {
-  //         await updateEmail(user, data.email);
+  //         await sendEmailVerification(user);
+  //         toast.success(
+  //           "Un email de vérification vous a été envoyé. Veuillez vérifier votre nouvelle adresse email."
+  //         );
   //       }
 
-  //       // Update user data in Firestore
-  //       await updateDoc(userRef, data);
+  //       // Update other user data in Firestore
+  //       const { email, ...otherData } = data;
+  //       await updateDoc(userRef, otherData);
 
-  //       // Update local state
   //       setUserData((prevData) =>
   //         prevData
   //           ? {
   //               ...prevData,
-  //               ...data,
+  //               ...otherData,
   //             }
   //           : null
   //       );
-
-  //       toast.success("Profil mis à jour avec succès");
   //     } catch (error: any) {
   //       console.error("Error updating user:", error);
-  //       if (error.code === "auth/requires-recent-login") {
-  //         toast.error("Veuillez vous reconnecter pour modifier votre email");
-  //       } else {
-  //         toast.error("Erreur lors de la mise à jour du profil");
-  //       }
+  //       toast.error("Une erreur est survenue lors de la mise à jour du profil");
   //       throw error;
   //     }
   //   }
   // };
+  const handleUpdateUser = async (data: Partial<UserData>) => {
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+
+      try {
+        // Update email in Firebase Auth if it has changed
+        if (data.email && data.email !== user.email) {
+          await updateEmail(user, data.email);
+        }
+
+        // Update user data in Firestore
+        await updateDoc(userRef, data);
+
+        // Update local state
+        setUserData((prevData) =>
+          prevData
+            ? {
+                ...prevData,
+                ...data,
+              }
+            : null
+        );
+
+        toast.success("Profil mis à jour avec succès");
+      } catch (error: any) {
+        console.error("Error updating user:", error);
+        if (error.code === "auth/requires-recent-login") {
+          toast.error("Veuillez vous reconnecter pour modifier votre email");
+        } else {
+          toast.error("Erreur lors de la mise à jour du profil");
+        }
+        throw error;
+      }
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
