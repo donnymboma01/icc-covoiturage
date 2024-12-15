@@ -157,32 +157,74 @@ export function EditProfileModal({
     });
   };
 
+  // const handleImageUpload = async (
+  //   event: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   const file = event.target.files?.[0];
+  //   if (!file) return;
+
+  //   if (file.size > 15 * 1024 * 1024) {
+  //     toast.error("L'image doit faire moins de 15MB");
+  //     return;
+  //   }
+
+  //   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  //   if (!allowedTypes.includes(file.type)) {
+  //     toast.error("Format d'image non supporté");
+  //     return;
+  //   }
+
+  //   try {
+  //     const compressedFile = await compressImage(file);
+
+  //     const storage = getStorage();
+  //     const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
+
+  //     toast.loading("Téléchargement en cours...");
+
+  //     await uploadBytes(storageRef, compressedFile);
+  //     const downloadURL = await getDownloadURL(storageRef);
+
+  //     setUserData((prev) => ({
+  //       ...prev,
+  //       profilePicture: downloadURL,
+  //     }));
+
+  //     toast.dismiss();
+  //     toast.success("Photo mise à jour");
+
+  //     setTimeout(() => {
+  //       window.location.reload();
+  //     }, 1000);
+  //   } catch (error) {
+  //     toast.error("Erreur lors du téléchargement");
+  //     console.error(error);
+  //   }
+  // };
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("L'image doit faire moins de 15MB");
-      return;
-    }
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Format d'image non supporté");
-      return;
-    }
-
     try {
-      const compressedFile = await compressImage(file);
+      // Création immédiate de l'aperçu
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+
+      // Affichage du toast de chargement
+      const loadingToast = toast.loading("Téléchargement en cours...");
 
       const storage = getStorage();
-      const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
+      // Utilisation d'un timestamp pour éviter les problèmes de cache
+      const fileName = `${Date.now()}_${file.name}`;
+      const storageRef = ref(
+        storage,
+        `profile-pictures/${currentUser.uid}/${fileName}`
+      );
 
-      toast.loading("Téléchargement en cours...");
-
-      await uploadBytes(storageRef, compressedFile);
+      // Upload direct sans compression
+      await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
 
       setUserData((prev) => ({
@@ -190,17 +232,16 @@ export function EditProfileModal({
         profilePicture: downloadURL,
       }));
 
-      toast.dismiss();
-      toast.success("Photo mise à jour");
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Nettoyage
+      URL.revokeObjectURL(previewUrl);
+      toast.dismiss(loadingToast);
+      toast.success("Photo mise à jour avec succès");
     } catch (error) {
-      toast.error("Erreur lors du téléchargement");
-      console.error(error);
+      console.error("Upload error:", error);
+      toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
     }
   };
+
   // const handleSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
 
