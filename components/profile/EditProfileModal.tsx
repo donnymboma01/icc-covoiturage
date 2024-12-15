@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "../ui/select";
 import { toast } from "sonner";
-import { MdClose } from "react-icons/md";
+import { MdClose, MdAddAPhoto } from "react-icons/md";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export function EditProfileModal({
     churchId: currentUser?.churchIds?.[0] || "", // Get first church ID from array
   });
   const [open, setOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // const handleSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
@@ -66,6 +68,7 @@ export function EditProfileModal({
   //   }
   // };
 
+  // Le bon code
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const dataToSubmit = {
@@ -75,11 +78,67 @@ export function EditProfileModal({
 
     try {
       await onSubmit(dataToSubmit);
+      window.location.reload();
       toast.success("Modifications enregistrées");
       onClose();
     } catch (error) {
       console.error("Error:", error);
       toast.error("Erreur lors de la modification");
+    }
+  };
+
+  // const handleImageUpload = async (
+  //   event: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   const file = event.target.files?.[0];
+  //   if (!file) return;
+
+  //   try {
+  //     const storage = getStorage();
+  //     const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
+
+  //     await uploadBytes(storageRef, file);
+  //     const downloadURL = await getDownloadURL(storageRef);
+
+  //     setUserData((prev) => ({
+  //       ...prev,
+  //       profilePicture: downloadURL,
+  //     }));
+
+  //     toast.success("Photo de profil mise à jour");
+  //     console.log("La photo a été modifiée avec succès");
+  //   } catch (error) {
+  //     console.error("Error uploading image:", error);
+  //     toast.error("Erreur lors du téléchargement de l'image");
+  //   }
+  // };
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Créer l'aperçu
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+
+    try {
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
+
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      setUserData((prev) => ({
+        ...prev,
+        profilePicture: downloadURL,
+      }));
+
+      toast.success("Photo de profil mise à jour");
+      console.log("La photo de profil a été modifiée avec succès");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Erreur lors du téléchargement de l'image");
     }
   };
   // const handleSubmit = async (e: React.FormEvent) => {
@@ -134,10 +193,36 @@ export function EditProfileModal({
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex justify-center mb-6">
+            {/* <div className="flex justify-center mb-6">
               <Avatar className="h-20 w-20 md:h-24 md:w-24 border-2 border-blue-100">
                 <AvatarImage src={userData.profilePicture || ""} />
               </Avatar>
+            </div> */}
+            <div className="flex justify-center mb-6 relative">
+              <div className="relative group">
+                {/* <Avatar className="h-20 w-20 md:h-24 md:w-24 border-2 border-blue-100">
+                  <AvatarImage src={userData.profilePicture || ""} />
+                </Avatar> */}
+                <Avatar className="h-20 w-20 md:h-24 md:w-24 border-2 border-blue-100">
+                  <AvatarImage
+                    src={imagePreview || userData.profilePicture || ""}
+                  />
+                </Avatar>
+
+                <label
+                  htmlFor="profile-picture"
+                  className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-white hover:bg-blue-700 cursor-pointer transition-colors"
+                >
+                  <MdAddAPhoto size={20} />
+                  <input
+                    type="file"
+                    id="profile-picture"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="space-y-6">
