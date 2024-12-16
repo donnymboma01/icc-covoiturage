@@ -300,26 +300,6 @@ const CreateRideForm = () => {
     </div>
   );
 
-  // const renderStepThree = () => (
-  //   <div className="space-y-4">
-  //     <h2 className="text-xl font-semibold">Adresses</h2>
-  //     <div style={{ display: currentStep === 3 ? "block" : "none" }}>
-  //       <MapWithErrorBoundary
-  //         setFormData={setFormData}
-  //         formData={formData}
-  //         isMapVisible={isMapVisible}
-  //       />
-  //       <div className="flex justify-center mt-4">
-  //         <p
-  //           className="text-orange-500 italic cursor-pointer hover:underline transition-colors duration-300 hover:text-orange-600 font-medium"
-  //           onClick={() => setIsMapVisible(!isMapVisible)}
-  //         >
-  //           {isMapVisible ? "cacher la carte" : "afficher la carte"}
-  //         </p>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
   const renderStepThree = () => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Adresses</h2>

@@ -40,7 +40,7 @@ export interface Ride {
 const RidesHistory = () => {
   const [rides, setRides] = useState<Ride[]>([]);
   const { user } = useAuth();
-  const [filter, setFilter] = useState<"all" | "active" | "cancelled">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "cancelled">("active");
   const db = getFirestore(app);
 
   // const handleUpdateRide = async (

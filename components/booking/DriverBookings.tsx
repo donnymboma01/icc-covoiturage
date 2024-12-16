@@ -181,6 +181,49 @@ const DriverBookings = () => {
     });
   }, [bookings]);
 
+  // const handleBookingAction = async (
+  //   booking: Booking,
+  //   status: "accepted" | "rejected"
+  // ) => {
+  //   if (status === "rejected") {
+  //     setSelectedBooking(booking);
+  //     setIsRejectDialogOpen(true);
+  //     return;
+  //   }
+
+  //   const db = getFirestore();
+  //   try {
+  //     const rideRef = doc(db, "rides", booking.rideId);
+  //     const rideDoc = await getDoc(rideRef);
+
+  //     if (!rideDoc.exists()) {
+  //       console.error("Trajet nonn trouvé");
+  //       return;
+  //     }
+
+  //     const currentSeats = rideDoc.data().availableSeats;
+
+  //     if (currentSeats < booking.seatsBooked) {
+  //       alert("Pas assez de places disponibles pour cette réservation");
+  //       return;
+  //     }
+
+
+  //     await updateDoc(doc(db, "bookings", booking.id), {
+  //       status,
+  //       updatedAt: Timestamp.now(),
+  //     });
+
+  //     // Le problème venait d'ici, merci Jason.
+  //     await updateDoc(rideRef, {
+  //       availableSeats: currentSeats - booking.seatsBooked,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error updating booking:", error);
+  //   }
+  // };
+
+
   const handleBookingAction = async (
     booking: Booking,
     status: "accepted" | "rejected"
@@ -193,30 +236,11 @@ const DriverBookings = () => {
 
     const db = getFirestore();
     try {
-      const rideRef = doc(db, "rides", booking.rideId);
-      const rideDoc = await getDoc(rideRef);
-
-      if (!rideDoc.exists()) {
-        console.error("Ride not found");
-        return;
-      }
-
-      const currentSeats = rideDoc.data().availableSeats;
-
-      if (currentSeats < booking.seatsBooked) {
-        alert("Pas assez de places disponibles pour cette réservation");
-        return;
-      }
-
-      // Si ok, procéder à la mise à jour
       await updateDoc(doc(db, "bookings", booking.id), {
         status,
         updatedAt: Timestamp.now(),
       });
-
-      await updateDoc(rideRef, {
-        availableSeats: currentSeats - booking.seatsBooked,
-      });
+ 
     } catch (error) {
       console.error("Error updating booking:", error);
     }
