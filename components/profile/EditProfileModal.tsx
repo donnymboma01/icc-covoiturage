@@ -89,36 +89,45 @@ export function EditProfileModal({
     }
   };
 
-  // const handleImageUpload = async (
-  //   event: React.ChangeEvent<HTMLInputElement>
-  // ) => {
-  //   const file = event.target.files?.[0];
-  //   if (!file) return;
+  // const compressImage = async (file: File): Promise<Blob> => {
+  //   return new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => {
+  //       const img = new Image();
+  //       img.onload = () => {
+  //         const canvas = document.createElement("canvas");
+  //         const ctx = canvas.getContext("2d")!;
 
-  //   // Créer l'aperçu
-  //   const previewUrl = URL.createObjectURL(file);
-  //   setImagePreview(previewUrl);
+  //         let width = img.width;
+  //         let height = img.height;
+  //         const maxSize = 1200;
 
-  //   try {
-  //     const storage = getStorage();
-  //     const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
+  //         if (width > height && width > maxSize) {
+  //           height *= maxSize / width;
+  //           width = maxSize;
+  //         } else if (height > maxSize) {
+  //           width *= maxSize / height;
+  //           height = maxSize;
+  //         }
 
-  //     await uploadBytes(storageRef, file);
-  //     const downloadURL = await getDownloadURL(storageRef);
+  //         canvas.width = width;
+  //         canvas.height = height;
+  //         ctx.drawImage(img, 0, 0, width, height);
 
-  //     setUserData((prev) => ({
-  //       ...prev,
-  //       profilePicture: downloadURL,
-  //     }));
-
-  //     toast.success("Photo de profil mise à jour");
-  //     console.log("La photo de profil a été modifiée avec succès");
-  //   } catch (error) {
-  //     console.error("Error uploading image:", error);
-  //     toast.error("Erreur lors du téléchargement de l'image");
-  //   }
+  //         canvas.toBlob(
+  //           (blob) => {
+  //             if (blob) resolve(blob);
+  //             else reject(new Error("Échec de la compression"));
+  //           },
+  //           "image/jpeg",
+  //           0.8
+  //         );
+  //       };
+  //       img.src = e.target?.result as string;
+  //     };
+  //     reader.readAsDataURL(file);
+  //   });
   // };
-
   const compressImage = async (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -128,9 +137,10 @@ export function EditProfileModal({
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d")!;
 
+          const maxSize = 800;
+
           let width = img.width;
           let height = img.height;
-          const maxSize = 1200;
 
           if (width > height && width > maxSize) {
             height *= maxSize / width;
@@ -147,10 +157,10 @@ export function EditProfileModal({
           canvas.toBlob(
             (blob) => {
               if (blob) resolve(blob);
-              else reject(new Error("Échec de la compression"));
+              else reject(new Error("Compression failed"));
             },
             "image/jpeg",
-            0.8
+            0.7
           );
         };
         img.src = e.target?.result as string;
@@ -159,6 +169,41 @@ export function EditProfileModal({
     });
   };
 
+  // const handleImageUpload = async (
+  //   event: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   const file = event.target.files?.[0];
+  //   if (!file) return;
+
+  //   try {
+  //     const previewUrl = URL.createObjectURL(file);
+  //     setImagePreview(previewUrl);
+
+  //     const loadingToast = toast.loading("Téléchargement en cours...");
+
+  //     const storage = getStorage();
+  //     const fileName = `${Date.now()}_${file.name}`;
+  //     const storageRef = ref(
+  //       storage,
+  //       `profile-pictures/${currentUser.uid}/${fileName}`
+  //     );
+
+  //     await uploadBytes(storageRef, file);
+  //     const downloadURL = await getDownloadURL(storageRef);
+
+  //     setUserData((prev) => ({
+  //       ...prev,
+  //       profilePicture: downloadURL,
+  //     }));
+
+  //     URL.revokeObjectURL(previewUrl);
+  //     toast.dismiss(loadingToast);
+  //     toast.success("Photo mise à jour avec succès");
+  //   } catch (error) {
+  //     console.error("Probleme de telechargement: ", error);
+  //     toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
+  //   }
+  // };
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -166,10 +211,11 @@ export function EditProfileModal({
     if (!file) return;
 
     try {
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
-
       const loadingToast = toast.loading("Téléchargement en cours...");
+
+      const compressedImage = await compressImage(file);
+      const previewUrl = URL.createObjectURL(compressedImage);
+      setImagePreview(previewUrl);
 
       const storage = getStorage();
       const fileName = `${Date.now()}_${file.name}`;
@@ -178,7 +224,7 @@ export function EditProfileModal({
         `profile-pictures/${currentUser.uid}/${fileName}`
       );
 
-      await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, compressedImage);
       const downloadURL = await getDownloadURL(storageRef);
 
       setUserData((prev) => ({
@@ -190,7 +236,7 @@ export function EditProfileModal({
       toast.dismiss(loadingToast);
       toast.success("Photo mise à jour avec succès");
     } catch (error) {
-      console.error("Probleme de telechargement: ", error);
+      console.error("Erreur de téléchargement:", error);
       toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
     }
   };
