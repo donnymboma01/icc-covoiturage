@@ -62,6 +62,19 @@ body {
   }
 }
 
+@keyframes shine {
+  0% {
+    filter: brightness(100%);
+  }
+  50% {
+    filter: brightness(120%);
+  }
+  100% {
+    filter: brightness(100%);
+  }
+}
+
+
 @layer base {
   * {
     @apply border-border;

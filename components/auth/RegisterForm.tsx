@@ -78,6 +78,8 @@ const RegisterForm = () => {
       phoneNumber: "",
       isDriver: false,
       church: "",
+      isStar: false,
+      ministry: "",
       profilePicture: undefined,
       vehicle: {
         brand: "",
@@ -175,6 +177,8 @@ const RegisterForm = () => {
         isDriver: values.isDriver,
         createdAt: new Date(),
         churchIds: [values.church],
+        isStar: values.isStar,
+        ministry: values.isStar ? values.ministry : null,
         profilePicture: profilePictureUrl || null,
       };
 
@@ -390,6 +394,41 @@ const RegisterForm = () => {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="isStar"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <FormLabel>
+                Je suis S.T.A.R (Serviteur Travaillant Activement pour le
+                Royaume)
+              </FormLabel>
+            </FormItem>
+          )}
+        />
+
+        {form.watch("isStar") && (
+          <FormField
+            control={form.control}
+            name="ministry"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Votre ministère/département</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Ex: Chorale, Accueil, etc." />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

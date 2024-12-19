@@ -4,10 +4,19 @@ import {
 } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import { sendNotification } from "./Notifications";
+import * as nodemailer from "nodemailer";
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 export const onNewRideRequest = onDocumentCreated(
   {
@@ -63,6 +72,37 @@ export const onRideRequestUpdate = onDocumentUpdated(
         );
       } catch (error) {
         console.error("Error sending notification:", error);
+      }
+    }
+  }
+);
+
+export const onNewFeedback = onDocumentCreated(
+  {
+    document: "feedback/{feedbackId}",
+    region: "europe-west1",
+  },
+  async (event) => {
+    const feedback = event.data?.data();
+    if (feedback) {
+      const mailOptions = {
+        from: process.env.GMAIL_USER,
+        to: process.env.ADMIN_EMAIL,
+        subject: `Nouveau feedback ${feedback.isUrgent ? "🚨 URGENT" : ""}`,
+        html: `
+          <h2>Nouveau feedback reçu</h2>
+          <p><strong>Type d'utilisateur:</strong> ${feedback.userType}</p>
+          <p><strong>Type de problème:</strong> ${feedback.problemType}</p>
+          <p><strong>Description:</strong> ${feedback.description}</p>
+          <p><strong>Urgent:</strong> ${feedback.isUrgent ? "Oui" : "Non"}</p>
+          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+        `,
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+      } catch (error) {
+        console.error("Erreur lors de l'envoi du email:", error);
       }
     }
   }

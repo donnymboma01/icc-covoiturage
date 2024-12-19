@@ -130,17 +130,6 @@ const PassengerBookings = () => {
     return () => unsubscribe();
   }, [user]);
 
-  // const handleCancelBooking = async (bookingId: string) => {
-  //   const db = getFirestore();
-  //   try {
-  //     await updateDoc(doc(db, "bookings", bookingId), {
-  //       status: "cancelled",
-  //       updatedAt: Timestamp.now(),
-  //     });
-  //   } catch (error) {
-  //     console.error("Error cancelling booking:", error);
-  //   }
-  // };
 
   const handleDeleteBooking = async () => {
     if (!bookingToDelete) return;
@@ -242,28 +231,6 @@ const PassengerBookings = () => {
                     </p>
                   )}
 
-                  {/* {ride && (
-                    <div className="space-y-2">
-                      <p className="truncate">
-                        <span className="font-medium">
-                          <strong>De :</strong>
-                        </span>{" "}
-                        {ride.departureAddress}
-                      </p>
-                      <p className="truncate">
-                        <span className="font-medium">
-                          <strong>À :</strong>
-                        </span>{" "}
-                        {ride.arrivalAddress}
-                      </p>
-                      <p className="break-words">
-                        <span className="font-medium">
-                          <strong>Date & Heure :</strong>
-                        </span>{" "}
-                        {ride.departureTime.toDate().toLocaleString("fr-FR")}
-                      </p>
-                    </div>
-                  )} */}
                   {ride && (
                     <div className="space-y-2">
                       <p className="truncate">

@@ -79,6 +79,8 @@ export const RegisterSchema = z
     isDriver: z.boolean().default(false),
     profilePicture: z.instanceof(File).optional(),
     church: z.string().min(1, "Veuillez sélectionner une église"),
+    isStar: z.boolean().default(false),
+    ministry: z.string().optional(),
     vehicle: z
       .object({
         brand: z.string(),

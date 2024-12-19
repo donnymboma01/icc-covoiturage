@@ -18,7 +18,14 @@ import { fr } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { MdAccessTime, MdLocationOn, MdPerson, MdChurch, MdInfo } from "react-icons/md";
+import {
+  MdAccessTime,
+  MdLocationOn,
+  MdPerson,
+  MdChurch,
+  MdInfo,
+  MdVerified,
+} from "react-icons/md";
 import BookingForm from "@/components/booking/BookingForm";
 import Modal from "@/components/ui/Modal";
 import Link from "next/link";
@@ -30,6 +37,7 @@ interface RideDetailsProps {
 }
 
 interface Driver {
+  isStar: string | boolean | undefined;
   uid: string;
   fullName: string;
   phoneNumber?: string;
@@ -158,8 +166,9 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             />
           </Avatar>
           <div className="text-center sm:text-left">
-            <h2 className="text-lg sm:text-xl font-semibold">
+            <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
               {driver.fullName}
+              {driver.isStar && <MdVerified className="text-amber-500" />}
             </h2>
 
             <p className="text-gray-500 text-sm sm:text-base">
@@ -210,7 +219,9 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             <div className="flex items-start gap-2 mt-2">
               <MdInfo className="text-xl text-gray-500 mt-1" />
               <div>
-                <p className="text-sm font-medium">Point de rencontre exacte : </p>
+                <p className="text-sm font-medium">
+                  Point de rencontre exacte :{" "}
+                </p>
                 <p className="text-sm text-gray-600">{ride.meetingPointNote}</p>
               </div>
             </div>

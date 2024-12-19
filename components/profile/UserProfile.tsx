@@ -17,6 +17,7 @@ import {
   MdEdit,
   MdAdd,
   MdLocationOn,
+  MdFlag,
   MdVerified,
   MdStar,
   MdNotifications,
@@ -36,6 +37,7 @@ import {
 import { app } from "../../app/config/firebase-config";
 import { useNotifications } from "@/app/hooks/useNotifications";
 import UserAvatar from "../../public/images/avatarprofile.png";
+import FeedbackModal from "../feedback/FeedbackModal";
 import { getAuth, updateEmail } from "firebase/auth";
 
 interface Vehicle {
@@ -47,6 +49,7 @@ interface Vehicle {
 }
 
 export interface UserData {
+  ministry: string | boolean | undefined;
   uid: string;
   profilePicture?: string;
   fullName: string;
@@ -56,6 +59,7 @@ export interface UserData {
   vehicle?: Vehicle;
   fcmToken?: string | null;
   churchIds?: string[];
+  isStar: string | boolean | undefined;
 }
 
 const verses = [
@@ -81,6 +85,7 @@ const UserProfile = ({
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [churchData, setChurchData] = useState<{ name: string } | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return !!user?.fcmToken;
@@ -91,23 +96,6 @@ const UserProfile = ({
   );
 
   const db = getFirestore(app);
-
-  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
-  //   try {
-  //     console.log("Updating user with data:", userData);
-  //     await onUpdateUser(userData);
-
-  //     if (userData.churchIds?.[0]) {
-  //       const churchRef = doc(db, "churches", userData.churchIds[0]);
-  //       const churchSnap = await getDoc(churchRef);
-  //       if (churchSnap.exists()) {
-  //         setChurchData(churchSnap.data() as { name: string });
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating profile:", error);
-  //   }
-  // };
 
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
@@ -133,84 +121,30 @@ const UserProfile = ({
     }
   };
 
-  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
-  //   try {
-  //     const auth = getAuth();
-  //     const currentUser = auth.currentUser;
-
-  //     // Create properly typed update object
-  //     const updateData: Partial<UserData> = {
-  //       ...userData,
-  //       churchIds: Array.isArray(userData.churchIds) ? userData.churchIds.filter(Boolean) : userData.churchIds ? [userData.churchIds] : undefined
-  //     };
-
-  //     await onUpdateUser(updateData);
-
-  //     if (updateData.churchIds?.[0]) {
-  //       const churchRef = doc(db, "churches", updateData.churchIds[0]);
-  //       const churchSnap = await getDoc(churchRef);
-  //       if (churchSnap.exists()) {
-  //         setChurchData(churchSnap.data() as { name: string });
-  //       }
-  //     }
-
-  //     toast.success("Profil mis à jour avec succès");
-  //   } catch (error: any) {
-  //     console.error("Error updating profile:", error);
-  //     toast.error(error.message || "Erreur lors de la mise à jour du profil");
-  //   }
-  // };
-
-  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
-  //   try {
-  //     const auth = getAuth();
-  //     const currentUser = auth.currentUser;
-
-  //     // Update email in Firebase Auth if it has changed
-  //     if (
-  //       userData.email &&
-  //       currentUser &&
-  //       userData.email !== currentUser.email
-  //     ) {
-  //       await updateEmail(currentUser, userData.email);
-  //     }
-
-  //     // Update user data in Firestore
-  //     await onUpdateUser(userData);
-
-  //     // Update church data if needed
-  //     if (userData.churchIds?.[0]) {
-  //       const churchRef = doc(db, "churches", userData.churchIds[0]);
-  //       const churchSnap = await getDoc(churchRef);
-  //       if (churchSnap.exists()) {
-  //         setChurchData(churchSnap.data() as { name: string });
-  //       }
-  //     }
-
-  //     toast.success("Profil mis à jour avec succès");
-  //   } catch (error: any) {
-  //     console.error("Error updating profile:", error);
-  //     toast.error(error.message || "Erreur lors de la mise à jour du profil");
-  //   }
-  // };
-
   useEffect(() => {
     setNotificationsEnabled(isEnabled);
   }, [isEnabled]);
 
-  // Pour Jason & Djedou: Nous allons utiliser cette fonction pour
-  // vérifier les informations d'un utilisateur avant de lui attribuer une certification.
+
   const isVerifiedUser = (user: UserData | null): boolean => {
     if (!user) return false;
 
     const phoneNumberRegex = /^\d+$/;
 
+    const hasValidProfilePicture = Boolean(
+      user.profilePicture &&
+        user.profilePicture !== "" &&
+        !user.profilePicture.includes("avatarprofile.png")
+    );
+
     return Boolean(
       user.fullName &&
-        user.profilePicture &&
+        hasValidProfilePicture &&
         user.email &&
         user.phoneNumber &&
-        phoneNumberRegex.test(user.phoneNumber)
+        phoneNumberRegex.test(user.phoneNumber) &&
+        user.isStar &&
+        (!user.isDriver || (user.isDriver && user.vehicle?.licensePlate))
     );
   };
 
@@ -252,7 +186,6 @@ const UserProfile = ({
 
   const handleEnableNotifications = async () => {
     try {
-      // Si déjà activé, permet la désactivation
       if (notificationsEnabled) {
         await onUpdateUser({
           fcmToken: null,
@@ -262,7 +195,6 @@ const UserProfile = ({
         return;
       }
 
-      // Gestion spécifique pour iOS
       if (isIOSDevice()) {
         try {
           const newToken = await requestPermission();
@@ -282,7 +214,6 @@ const UserProfile = ({
         return;
       }
 
-      // Gestion pour les autres appareils
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         const newToken = await requestPermission();
@@ -346,7 +277,7 @@ const UserProfile = ({
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentVerseIndex((prevIndex) => (prevIndex + 1) % verses.length);
-    }, 50000);
+    }, 20000);
 
     return () => clearInterval(interval);
   }, []);
@@ -355,57 +286,99 @@ const UserProfile = ({
     <main className="container mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         <Card className="p-4 sm:p-8 relative bg-gradient-to-r from-blue-600 to-blue-800">
-          <Button
-            variant="ghost"
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white"
-            onClick={() => setIsEditing(true)}
-          >
-            <FaUserEdit className="mr-2" />
-            <span className="hidden sm:inline">Modifier</span>
-          </Button>
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
+            <Button
+              variant="ghost"
+              className="text-white"
+              onClick={() => setShowFeedbackModal(true)}
+            >
+              <MdFlag className="mr-2" />
+              <span className="hidden sm:inline">Signaler</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-white"
+              onClick={() => setIsEditing(true)}
+            >
+              <FaUserEdit className="mr-2" />
+              <span className="hidden sm:inline">Modifier</span>
+            </Button>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
             <div className="relative">
               <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
                 <AvatarImage src={user?.profilePicture || UserAvatar.src} />
               </Avatar>
-              {/* <button
-                onClick={() => setIsEditing(true)}
-                className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-white hover:bg-blue-700 transition-colors"
-              >
-                <MdEdit size={20} />
-              </button> */}
             </div>
 
             <div className="text-white text-center sm:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+              {/* <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-2">
                 {user?.fullName}
+                {user?.isStar && (
+                  <MdVerified className="text-amber-500 text-xl" />
+                )}
+              </h1> */}
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-2">
+                {user?.fullName}
+                {isVerifiedUser(user) && (
+                  <MdVerified className="text-amber-500 text-xl" />
+                )}
               </h1>
+
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3 mb-4">
                 <Badge className="bg-slate-800 ">
                   {user?.isDriver ? "Conducteur" : "Passager"}
                 </Badge>
-                {/* {isVerifiedUser(user) && (
-                  <Badge className="bg-slate-800">
-                    <MdVerified className="mr-1" /> Vérifié
+
+                {/* {isVerifiedUser(user) ? (
+                  <Badge
+                    className="bg-amber-400 hover:bg-amber-500 text-black border-2 border-amber-600 shadow-md"
+                    style={{
+                      animation: "shine 1.5s ease-in-out infinite",
+                    }}
+                  >
+                    <MdVerified className="mr-1 text-amber-700" />
+                    Certifié S.T.A.R
+                  </Badge>
+                ) : (
+                  <Badge className="bg-gray-200 text-gray-600">
+                    Non certifié
                   </Badge>
                 )} */}
-                <Badge className="bg-slate-800">
-                  <MdVerified className="mr-1" /> Vérifié
-                </Badge>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
+
+              {/* <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
                 <MdLocationOn className="text-yellow-400" />
                 <span className="text-sm sm:text-base">
                   {churchData?.name || "Église non spécifiée"}
                 </span>
+              </div> */}
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
+                  <MdLocationOn className="text-yellow-400" />
+                  <span className="text-sm sm:text-base">
+                    {churchData?.name || "Église non spécifiée"}
+                  </span>
+                </div>
+
+                {user?.isStar && user?.ministry && (
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <MdStar className="text-yellow-400" />
+                    <span className="text-sm sm:text-base">
+                      {user.ministry}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2">
+
+              {/* <div className="flex items-center justify-center sm:justify-start gap-2">
                 <MdStar className="text-yellow-400" />
                 <span className="text-sm sm:text-base">
                   Membre depuis {new Date().getFullYear()}
                 </span>
-              </div>
+              </div> */}
             </div>
           </div>
         </Card>
@@ -436,22 +409,6 @@ const UserProfile = ({
                 </div>
               </div>
 
-              {/*           
-              <Button
-                onClick={handleEnableNotifications}
-                className="flex items-center justify-center gap-2 w-full p-4"
-                style={{
-                  touchAction: "manipulation",
-                  WebkitTapHighlightColor: "transparent",
-                }}
-              >
-                <MdNotifications size={20} />
-                <span className="text-sm">
-                  {notificationsEnabled
-                    ? "Désactiver les notifications"
-                    : "Activer les notifications"}
-                </span>
-              </Button> */}
               <Button
                 onClick={handleEnableNotifications}
                 className="flex items-center justify-center gap-2 w-full p-4"
@@ -539,6 +496,15 @@ const UserProfile = ({
           isOpen={showDriverForm}
           onClose={() => setShowDriverForm(false)}
           onSubmit={handleBecomeDriver}
+        />
+      )}
+
+      {showFeedbackModal && (
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          userId={user?.uid || ""}
+          userType={user?.isDriver ? "driver" : "passenger"}
         />
       )}
     </main>

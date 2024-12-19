@@ -1,4 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +13,8 @@ import {
   getDocs,
   writeBatch,
   getFirestore,
+  doc,
+  onSnapshot,
 } from "firebase/firestore";
 import {
   MdLocationOn,
@@ -64,6 +70,8 @@ const RideCard = ({
   onUpdate,
 }: RideCardProps & { onDelete: () => void }) => {
   const departureDate = ride.departureTime.toDate();
+  const [currentRide, setCurrentRide] = useState(ride);
+  const db = getFirestore();
 
   const getRideStatus = () => {
     if (ride.status === "cancelled") return "cancelled";
@@ -109,16 +117,33 @@ const RideCard = ({
       alert("Le nombre de places doit être supérieur à 0");
       return;
     }
-    
+
     try {
       await onUpdate({
-        availableSeats: newSeats
+        availableSeats: newSeats,
       });
     } catch (error) {
-      alert("Impossible de modifier le nombre de places - des réservations sont déjà confirmées");
+      alert(
+        "Impossible de modifier le nombre de places - des réservations sont déjà confirmées"
+      );
     }
   };
-  
+
+  useEffect(() => {
+    const rideRef = doc(db, "rides", ride.id);
+
+    const unsubscribe = onSnapshot(rideRef, (doc) => {
+      if (doc.exists()) {
+        const updatedRideData = doc.data();
+        setCurrentRide((current) => ({
+          ...current,
+          availableSeats: updatedRideData.availableSeats,
+        }));
+      }
+    });
+
+    return () => unsubscribe();
+  }, [ride.id]);
 
   const handleCancelRide = async () => {
     const db = getFirestore();
@@ -210,8 +235,11 @@ const RideCard = ({
 
           <div className="flex items-center space-x-2">
             <MdAirlineSeatReclineNormal className="text-gray-500" />
-            <span className="text-sm text-gray-600">
+            {/* <span className="text-sm text-gray-600">
               {ride.availableSeats} places disponibles
+            </span> */}
+            <span className="text-sm text-gray-600">
+              {currentRide.availableSeats} places disponibles
             </span>
           </div>
         </div>

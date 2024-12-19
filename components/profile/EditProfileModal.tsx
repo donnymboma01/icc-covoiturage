@@ -46,7 +46,9 @@ export function EditProfileModal({
     profilePicture: currentUser?.profilePicture || "",
     vehicle: currentUser?.vehicle || null,
     email: currentUser?.email || "",
-    churchId: currentUser?.churchIds?.[0] || "", // Get first church ID from array
+    churchId: currentUser?.churchIds?.[0] || "",
+    isStar: currentUser?.isStar || false,
+    ministry: currentUser?.ministry || "",
   });
   const [open, setOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -157,50 +159,6 @@ export function EditProfileModal({
     });
   };
 
-  // const handleImageUpload = async (
-  //   event: React.ChangeEvent<HTMLInputElement>
-  // ) => {
-  //   const file = event.target.files?.[0];
-  //   if (!file) return;
-
-  //   if (file.size > 15 * 1024 * 1024) {
-  //     toast.error("L'image doit faire moins de 15MB");
-  //     return;
-  //   }
-
-  //   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-  //   if (!allowedTypes.includes(file.type)) {
-  //     toast.error("Format d'image non supporté");
-  //     return;
-  //   }
-
-  //   try {
-  //     const compressedFile = await compressImage(file);
-
-  //     const storage = getStorage();
-  //     const storageRef = ref(storage, `profile-pictures/${currentUser.uid}`);
-
-  //     toast.loading("Téléchargement en cours...");
-
-  //     await uploadBytes(storageRef, compressedFile);
-  //     const downloadURL = await getDownloadURL(storageRef);
-
-  //     setUserData((prev) => ({
-  //       ...prev,
-  //       profilePicture: downloadURL,
-  //     }));
-
-  //     toast.dismiss();
-  //     toast.success("Photo mise à jour");
-
-  //     setTimeout(() => {
-  //       window.location.reload();
-  //     }, 1000);
-  //   } catch (error) {
-  //     toast.error("Erreur lors du téléchargement");
-  //     console.error(error);
-  //   }
-  // };
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -208,22 +166,18 @@ export function EditProfileModal({
     if (!file) return;
 
     try {
-      // Création immédiate de l'aperçu
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
 
-      // Affichage du toast de chargement
       const loadingToast = toast.loading("Téléchargement en cours...");
 
       const storage = getStorage();
-      // Utilisation d'un timestamp pour éviter les problèmes de cache
       const fileName = `${Date.now()}_${file.name}`;
       const storageRef = ref(
         storage,
         `profile-pictures/${currentUser.uid}/${fileName}`
       );
 
-      // Upload direct sans compression
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
 
@@ -232,40 +186,14 @@ export function EditProfileModal({
         profilePicture: downloadURL,
       }));
 
-      // Nettoyage
       URL.revokeObjectURL(previewUrl);
       toast.dismiss(loadingToast);
       toast.success("Photo mise à jour avec succès");
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Probleme de telechargement: ", error);
       toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
     }
   };
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   // Email validation
-  //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  //   if (!emailRegex.test(userData.email)) {
-  //     toast.error("Veuillez entrer une adresse email valide");
-  //     return;
-  //   }
-
-  //   try {
-  //     await onSubmit(userData);
-  //     toast.success("Modifications enregistrées avec succès");
-  //     onClose();
-  //   } catch (error: any) {
-  //     if (error.code === "auth/requires-recent-login") {
-  //       toast.error(
-  //         "Pour des raisons de sécurité, veuillez vous reconnecter pour modifier votre email"
-  //       );
-  //     } else {
-  //       toast.error("Erreur lors de la modification du profil");
-  //     }
-  //   }
-  // };
 
   const handleChurchChange = (value: string) => {
     console.log("Selected church ID:", value);
@@ -273,7 +201,7 @@ export function EditProfileModal({
     setUserData((prev) => ({
       ...prev,
       churchId: value,
-      churchIds: [value], // Update both churchId and churchIds
+      churchIds: [value],
     }));
   };
 
@@ -284,26 +212,12 @@ export function EditProfileModal({
           <DialogTitle className="text-xl font-semibold">
             Modifier son profil
           </DialogTitle>
-          {/* <button
-            onClick={onClose}
-            className="absolute right-4 top-4 p-1 rounded-full hover:bg-gray-100"
-          >
-            <MdClose className="h-5 w-5" />
-          </button> */}
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* <div className="flex justify-center mb-6">
-              <Avatar className="h-20 w-20 md:h-24 md:w-24 border-2 border-blue-100">
-                <AvatarImage src={userData.profilePicture || ""} />
-              </Avatar>
-            </div> */}
             <div className="flex justify-center mb-6 relative">
               <div className="relative group">
-                {/* <Avatar className="h-20 w-20 md:h-24 md:w-24 border-2 border-blue-100">
-                  <AvatarImage src={userData.profilePicture || ""} />
-                </Avatar> */}
                 <Avatar className="h-20 w-20 md:h-24 md:w-24 border-2 border-blue-100">
                   <AvatarImage
                     src={imagePreview || userData.profilePicture || ""}
@@ -379,7 +293,6 @@ export function EditProfileModal({
                   </div>
 
                   <div>
-                    <Label htmlFor="church">Église</Label>
                     <div>
                       <Label htmlFor="church">Église</Label>
                       <Select
@@ -405,21 +318,39 @@ export function EditProfileModal({
                       </Select>
                     </div>
 
-                    {/* <Select
-                      value={userData.churchId}
-                      onValueChange={handleChurchChange}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Sélectionnez votre église" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {churches?.map((church) => (
-                          <SelectItem key={church.id} value={church.id}>
-                            {church.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select> */}
+                    <div className="flex items-center gap-2 mt-4">
+                      <input
+                        type="checkbox"
+                        id="isStar"
+                        checked={userData.isStar}
+                        onChange={(e) =>
+                          setUserData({ ...userData, isStar: e.target.checked })
+                        }
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <Label htmlFor="isStar">
+                        Je suis S.T.A.R (Serviteur Travaillant Activement pour
+                        le Royaume)
+                      </Label>
+                    </div>
+
+                    {userData.isStar && (
+                      <div>
+                        <Label htmlFor="ministry">Ministère/Département</Label>
+                        <Input
+                          id="ministry"
+                          value={userData.ministry}
+                          onChange={(e) =>
+                            setUserData({
+                              ...userData,
+                              ministry: e.target.value,
+                            })
+                          }
+                          placeholder="Ex: Chorale, Accueil, etc."
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

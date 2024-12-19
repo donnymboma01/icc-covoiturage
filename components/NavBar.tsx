@@ -20,7 +20,8 @@ import { app } from "@/app/config/firebase-config";
 import {
   signOut,
   getAuth,
-
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from "firebase/auth";
 import {
   MdDirectionsCar,
@@ -41,6 +42,8 @@ import {
   onSnapshot,
   deleteDoc,
   doc,
+  writeBatch,
+  getDoc,
 } from "firebase/firestore";
 import {
   Popover,
@@ -67,7 +70,7 @@ const NavBar = () => {
   const [lastViewedTimestamp, setLastViewedTimestamp] = useState<string>("0");
   const db = getFirestore(app);
 
-  const router = useRouter();
+  // const router = useRouter();
   const { user, loading } = useAuth();
   const auth = getAuth(app);
 
@@ -85,6 +88,37 @@ const NavBar = () => {
     try {
       const user = auth.currentUser;
       if (!user) return;
+
+      const password = prompt(
+        "Pour confirmer, veuillez entrer votre mot de passe:"
+      );
+      if (!password) return;
+
+      const credential = EmailAuthProvider.credential(user.email!, password);
+      await reauthenticateWithCredential(user, credential);
+
+      const activeBookingsQuery = query(
+        collection(db, "bookings"),
+        where("passengerId", "==", user.uid),
+        where("status", "==", "accepted")
+      );
+      const activeBookingsSnapshot = await getDocs(activeBookingsQuery);
+
+      const batch = writeBatch(db);
+      for (const bookingDoc of activeBookingsSnapshot.docs) {
+        const bookingData = bookingDoc.data();
+        const rideRef = doc(db, "rides", bookingData.rideId);
+        const rideDoc = await getDoc(rideRef);
+
+        if (rideDoc.exists()) {
+          const currentSeats = rideDoc.data().availableSeats;
+          batch.update(rideRef, {
+            availableSeats: currentSeats + bookingData.seatsBooked,
+          });
+        }
+      }
+      await batch.commit();
+
       const ridesQuery = query(
         collection(db, "rides"),
         where("driverId", "==", user.uid)
@@ -123,9 +157,16 @@ const NavBar = () => {
       setTimeout(() => {
         window.location.href = "/auth/login";
       }, 2000);
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      toast.error("Un problème est survenu lors de la suppression du compte");
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "auth/wrong-password"
+      ) {
+        toast.error("Mot de passe incorrect");
+      } else {
+        toast.error("Un problème est survenu lors de la suppression du compte");
+      }
     } finally {
       setOpenDialog(false);
     }
@@ -408,42 +449,6 @@ const NavBar = () => {
     </div>
   );
 
-  // const DeleteAccountDialog = () => (
-  //   <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
-  //     <AlertDialogContent>
-  //       <AlertDialogHeader>
-  //         <AlertDialogTitle>
-  //           Êtes-vous sûr de vouloir supprimer votre compte ?
-  //         </AlertDialogTitle>
-  //         <AlertDialogDescription className="space-y-2">
-  //           <p>
-  //             Cette action est irréversible. La suppression de votre compte
-  //             entraînera :
-  //           </p>
-  //           <ul className="list-disc pl-4">
-  //             <li>La suppression de tous vos trajets publiés</li>
-  //             <li>La suppression de toutes vos réservations</li>
-  //             <li>La suppression de vos églises enregistrées</li>
-  //             <li>La perte définitive de votre profil</li>
-  //           </ul>
-  //         </AlertDialogDescription>
-  //       </AlertDialogHeader>
-  //       <AlertDialogFooter>
-  //         <Button variant="outline" onClick={() => setOpenDialog(false)}>
-  //           Annuler
-  //         </Button>
-  //         <Button
-  //           variant="destructive"
-  //           onClick={handleDeleteAccountConfirm}
-  //           className="bg-red-600 hover:bg-red-700"
-  //         >
-  //           <MdDelete className="text-white" />
-  //           Supprimer définitivement
-  //         </Button>
-  //       </AlertDialogFooter>
-  //     </AlertDialogContent>
-  //   </AlertDialog>
-  // );
   const DeleteAccountDialog = () => (
     <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
       <AlertDialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] z-[200] max-w-md">
@@ -451,18 +456,18 @@ const NavBar = () => {
           <AlertDialogTitle>
             Êtes-vous sûr de vouloir supprimer votre compte ?
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <div>
+          <div className="space-y-2">
+            <AlertDialogDescription>
               Cette action est irréversible. La suppression de votre compte
               entraînera :
-            </div>
+            </AlertDialogDescription>
             <ul className="list-disc pl-4">
               <li>La suppression de tous vos trajets publiés</li>
               <li>La suppression de toutes vos réservations</li>
               <li>La suppression de vos églises enregistrées</li>
               <li>La perte définitive de votre profil</li>
             </ul>
-          </AlertDialogDescription>
+          </div>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <Button variant="outline" onClick={() => setOpenDialog(false)}>
