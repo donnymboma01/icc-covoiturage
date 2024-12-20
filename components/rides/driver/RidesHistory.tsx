@@ -40,10 +40,10 @@ export interface Ride {
 const RidesHistory = () => {
   const [rides, setRides] = useState<Ride[]>([]);
   const { user } = useAuth();
-  const [filter, setFilter] = useState<"all" | "active" | "cancelled">("active");
+  const [filter, setFilter] = useState<"all" | "active" | "cancelled">(
+    "active"
+  );
   const db = getFirestore(app);
-
-  
 
   const handleUpdateRide = async (
     rideId: string,
@@ -51,7 +51,6 @@ const RidesHistory = () => {
   ) => {
     const db = getFirestore();
     try {
-   
       if (updatedData.availableSeats !== undefined) {
         const bookingsRef = collection(db, "bookings");
         const q = query(
@@ -83,8 +82,6 @@ const RidesHistory = () => {
       throw error;
     }
   };
-
-
 
   const fetchRides = async () => {
     if (!user?.uid) return;
@@ -129,8 +126,6 @@ const RidesHistory = () => {
     return () => unsubscribe();
   }, [user]);
 
-
-
   const filteredRides = rides.filter((ride) => {
     const departureDate = ride.departureTime.toDate();
     const now = new Date();
@@ -158,23 +153,28 @@ const RidesHistory = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Mes trajets publiés</h1>
+    <div className="container max-w-3xl mx-auto px-4 py-6">
+      <h1 className="text-xl md:text-2xl font-semibold mb-4">
+        Mes trajets publiés
+      </h1>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-1.5 mb-4">
         <Badge
+          className="text-xs cursor-pointer"
           variant={filter === "all" ? "default" : "outline"}
           onClick={() => setFilter("all")}
         >
           Tous
         </Badge>
         <Badge
+          className="text-xs cursor-pointer"
           variant={filter === "active" ? "default" : "outline"}
           onClick={() => setFilter("active")}
         >
           Actifs
         </Badge>
         <Badge
+          className="text-xs cursor-pointer"
           variant={filter === "cancelled" ? "default" : "outline"}
           onClick={() => setFilter("cancelled")}
         >
@@ -182,7 +182,7 @@ const RidesHistory = () => {
         </Badge>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3">
         {filteredRides.map((ride) => (
           <RideCard
             key={ride.id}

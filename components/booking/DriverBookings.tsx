@@ -32,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 const REJECTION_REASONS = [
@@ -46,6 +47,14 @@ interface RejectDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (reason: string) => void;
+}
+
+interface AcceptDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (note: string) => void;
+  noteValue: string;
+  onNoteChange: (value: string) => void;
 }
 
 interface Booking {
@@ -75,6 +84,9 @@ const DriverBookings = () => {
   const [loading, setLoading] = useState(true);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  const [isAcceptDialogOpen, setIsAcceptDialogOpen] = useState(false);
+  const [meetingNote, setMeetingNote] = useState("");
 
   const [passengerDetails, setPassengerDetails] = useState<{
     [key: string]: Passenger;
@@ -193,37 +205,14 @@ const DriverBookings = () => {
 
   //   const db = getFirestore();
   //   try {
-  //     const rideRef = doc(db, "rides", booking.rideId);
-  //     const rideDoc = await getDoc(rideRef);
-
-  //     if (!rideDoc.exists()) {
-  //       console.error("Trajet nonn trouvé");
-  //       return;
-  //     }
-
-  //     const currentSeats = rideDoc.data().availableSeats;
-
-  //     if (currentSeats < booking.seatsBooked) {
-  //       alert("Pas assez de places disponibles pour cette réservation");
-  //       return;
-  //     }
-
-
   //     await updateDoc(doc(db, "bookings", booking.id), {
   //       status,
   //       updatedAt: Timestamp.now(),
   //     });
-
-  //     // Le problème venait d'ici, merci Jason.
-  //     await updateDoc(rideRef, {
-  //       availableSeats: currentSeats - booking.seatsBooked,
-  //     });
   //   } catch (error) {
-  //     console.error("Error updating booking:", error);
+  //     console.error("Erreur lors de la mise à jour de la reservation: ", error);
   //   }
   // };
-
-
   const handleBookingAction = async (
     booking: Booking,
     status: "accepted" | "rejected"
@@ -234,15 +223,9 @@ const DriverBookings = () => {
       return;
     }
 
-    const db = getFirestore();
-    try {
-      await updateDoc(doc(db, "bookings", booking.id), {
-        status,
-        updatedAt: Timestamp.now(),
-      });
- 
-    } catch (error) {
-      console.error("Error updating booking:", error);
+    if (status === "accepted") {
+      setSelectedBooking(booking);
+      setIsAcceptDialogOpen(true);
     }
   };
 
@@ -270,11 +253,69 @@ const DriverBookings = () => {
       setIsRejectDialogOpen(false);
       setSelectedBooking(null);
     } catch (error) {
-      console.error("Error updating booking:", error);
+      console.error("Erreur lors de la mise à jour de la reservation:", error);
+    }
+  };
+
+  const handleAcceptBooking = async (booking: Booking) => {
+    const db = getFirestore();
+    try {
+      await updateDoc(doc(db, "bookings", booking.id), {
+        status: "accepted",
+        updatedAt: Timestamp.now(),
+      });
+
+      await updateDoc(doc(db, "rides", booking.rideId), {
+        meetingPointNote: meetingNote,
+      });
+
+      setIsAcceptDialogOpen(false);
+      setMeetingNote("");
+    } catch (error) {
+      console.error("Erreur lors de l'acceptation:", error);
     }
   };
 
   if (loading) return <div>Chargement des réservations...</div>;
+
+  // const AcceptDialog = () => {
+  //   return (
+  //     <Dialog open={isAcceptDialogOpen} onOpenChange={setIsAcceptDialogOpen}>
+  //       <DialogContent className="sm:max-w-[425px]">
+  //         <DialogHeader>
+  //           <DialogTitle>Ajouter une note pour le passager</DialogTitle>
+  //           <DialogDescription>
+  //             Précisez le point de rencontre exact ou toute information utile
+  //             pour faciliter la rencontre.
+  //           </DialogDescription>
+  //         </DialogHeader>
+  //         <div className="grid gap-4 py-4">
+  //           <textarea
+  //             className="min-h-[100px] p-3 border rounded-md"
+  //             placeholder="Ex: Je serai garé sur le parking de l'église, voiture bleue Peugeot 208. Vous pouvez me retrouver près de l'entrée principale."
+  //             value={meetingNote}
+  //             onChange={(e) => setMeetingNote(e.target.value)}
+  //           />
+  //         </div>
+  //         <DialogFooter>
+  //           <Button
+  //             variant="outline"
+  //             onClick={() => setIsAcceptDialogOpen(false)}
+  //           >
+  //             Annuler
+  //           </Button>
+  //           <Button
+  //             onClick={() =>
+  //               selectedBooking && handleAcceptBooking(selectedBooking)
+  //             }
+  //           >
+  //             Confirmer
+  //           </Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
+  //   );
+  // };
 
   return (
     <div className="space-y-4 w-full px-4 sm:px-6 md:px-8">
@@ -385,6 +426,16 @@ const DriverBookings = () => {
         onClose={() => setIsRejectDialogOpen(false)}
         onConfirm={handleConfirmReject}
       />
+
+      <AcceptDialog
+        isOpen={isAcceptDialogOpen}
+        onClose={() => setIsAcceptDialogOpen(false)}
+        onConfirm={() =>
+          selectedBooking && handleAcceptBooking(selectedBooking)
+        }
+        noteValue={meetingNote}
+        onNoteChange={setMeetingNote}
+      />
     </div>
   );
 };
@@ -428,6 +479,42 @@ const RejectDialog = ({ isOpen, onClose, onConfirm }: RejectDialogProps) => {
           >
             Confirmer le refus
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const AcceptDialog = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  noteValue,
+  onNoteChange,
+}: AcceptDialogProps) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Ajouter une note pour le passager</DialogTitle>
+          <DialogDescription>
+            Précisez le point de rencontre exact ou toute information utile pour
+            faciliter la rencontre.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <textarea
+            className="min-h-[100px] p-3 border rounded-md"
+            placeholder="Ex: Je serai garé sur le parking de l'église, voiture bleue Peugeot 208. Vous pouvez me retrouver près de l'entrée principale."
+            value={noteValue}
+            onChange={(e) => onNoteChange(e.target.value)}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button onClick={() => onConfirm(noteValue)}>Confirmer</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

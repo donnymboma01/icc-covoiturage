@@ -171,55 +171,7 @@ const BookingForm = ({
     }
   };
 
-  // Pour me rappeler : ce code marchait mais avec un problème sur le nombre des places.
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (!user) return;
-
-  //   if (!validateSeats(seats)) return;
-
-  //   setLoading(true);
-  //   try {
-  //     const userDoc = await getDoc(doc(db, "users", user.uid));
-  //     if (!userDoc.exists()) {
-  //       throw new Error("Le profil de l'utilisateur n'existe pas.");
-  //     }
-
-  //     // Récupérer les données actuelles du trajet
-  //     const rideRef = doc(db, "rides", ride.id);
-  //     const rideDoc = await getDoc(rideRef);
-  //     const currentRideData = rideDoc.data();
-
-  //     // Vérifier que le nombre de places est toujours disponible
-
-  //     if (!currentRideData || currentRideData.availableSeats < seats) {
-  //       throw new Error("Le nombre de places demandées n'est plus disponible");
-  //     }
-
-  //     // Créer la réservation
-  //     const bookingRef = await addDoc(collection(db, "bookings"), {
-  //       rideId: ride.id,
-  //       passengerId: user.uid,
-  //       bookingDate: new Date(),
-  //       status: "pending",
-  //       seatsBooked: seats,
-  //       specialNotes: notes,
-  //     });
-
-  //     await updateDoc(rideRef, {
-  //       availableSeats: currentRideData.availableSeats - seats,
-  //     });
-
-  //     onSuccess();
-  //     window.location.href = "/dashboard/passanger/bookings";
-  //   } catch (error) {
-  //     console.error("Erreur lors de la création de la réservation:", error);
-  //     setError("Une erreur est survenue lors de la réservation");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
+ 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">

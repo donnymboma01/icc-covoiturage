@@ -130,7 +130,6 @@ const PassengerBookings = () => {
     return () => unsubscribe();
   }, [user]);
 
-
   const handleDeleteBooking = async () => {
     if (!bookingToDelete) return;
 
@@ -169,7 +168,7 @@ const PassengerBookings = () => {
       const rideData = rideDoc.data();
 
       if (!rideData) {
-        console.error("No ride data found");
+        console.error("aucun trajet trouvé");
         return;
       }
 
@@ -178,9 +177,11 @@ const PassengerBookings = () => {
         availableSeats: newSeats,
       });
 
-      console.log(`Updated ride ${bookingData.rideId} with ${newSeats} seats`);
+      console.log(
+        `Mise à jour du trajet ${bookingData.rideId} avec ${newSeats} places disponibles`
+      );
     } catch (error) {
-      console.error("Error in cancellation process:", error);
+      console.error("Erreru lors de la suppression:", error);
     }
   };
 
@@ -245,20 +246,22 @@ const PassengerBookings = () => {
                         </span>{" "}
                         {ride.arrivalAddress}
                       </p>
-                      {ride.meetingPointNote && (
+                      {/* {ride.meetingPointNote && (
                         <p className="text-sm">
                           <span className="font-medium">
                             <strong>Point de rencontre :</strong>
                           </span>{" "}
                           {ride.meetingPointNote}
                         </p>
-                      )}
+                      )} */}
                       <p className="break-words">
                         <span className="font-medium">
                           <strong>Date & Heure :</strong>
                         </span>{" "}
                         {ride.departureTime.toDate().toLocaleString("fr-FR")}
                       </p>
+
+                      {/*  */}
                     </div>
                   )}
 
@@ -284,6 +287,17 @@ const PassengerBookings = () => {
                           />
                         )}
                       </div>
+                      {booking.status === "accepted" &&
+                        ride.meetingPointNote && (
+                          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <p className="text-sm font-medium text-blue-800 mb-1">
+                              <strong>Note du conducteur :</strong>
+                            </p>
+                            <p className="text-sm text-blue-700 whitespace-pre-wrap">
+                              {ride.meetingPointNote}
+                            </p>
+                          </div>
+                        )}
                     </div>
                   )}
 

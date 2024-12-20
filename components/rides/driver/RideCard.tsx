@@ -200,32 +200,35 @@ const RideCard = ({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <MdLocationOn className="text-blue-500 text-xl" />
+            <MdLocationOn className="text-blue-500 text-xl hidden sm:block" />
+            <MdLocationOn className="text-blue-500 text-lg block sm:hidden" />
             <div>
-              <h3 className="font-semibold text-lg text-gray-800">
+              <h3 className="text-base text-gray-800 sm:mb-1 mb-0.5">
                 {ride.departureAddress}
               </h3>
-              <div className="h-4 border-l-2 border-dashed border-gray-300 ml-2" />
-              <h3 className="font-semibold text-lg text-gray-800">
-                {ride.arrivalAddress}
-              </h3>
+              <div className="h-4 border-l-2 border-dashed border-gray-300 ml-2 hidden sm:block" />
+              <div className="h-2 border-l border-dashed border-gray-300 ml-2 block sm:hidden" />
+              <h3 className="text-base text-gray-800">{ride.arrivalAddress}</h3>
             </div>
           </div>
-          <Badge variant={getStatusVariant(currentStatus)}>
+
+          <Badge
+            className="sm:text-base text-sm whitespace-nowrap"
+            variant={getStatusVariant(currentStatus)}
+          >
             {getStatusLabel(currentStatus)}
           </Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 grid-cols-1 gap-2 sm:gap-4">
           <div className="flex items-center space-x-2">
-            <MdAccessTime className="text-gray-500" />
-            <span className="text-sm text-gray-600">
+            <MdAccessTime className="text-gray-500 flex-shrink-0" />
+            <span className="text-sm sm:text-base text-gray-600">
               {departureDate.toLocaleDateString("fr-FR", {
-                weekday: "long",
+                weekday: "short",
                 day: "numeric",
-                month: "long",
-              })}
-              <br />
+                month: "short",
+              })}{" "}
               {departureDate.toLocaleTimeString("fr-FR", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -235,33 +238,23 @@ const RideCard = ({
 
           <div className="flex items-center space-x-2">
             <MdAirlineSeatReclineNormal className="text-gray-500" />
-            {/* <span className="text-sm text-gray-600">
-              {ride.availableSeats} places disponibles
-            </span> */}
-            <span className="text-sm text-gray-600">
+            <span className="text-sm sm:text-base text-gray-600">
               {currentRide.availableSeats} places disponibles
             </span>
           </div>
         </div>
 
         {ride.isRecurring && (
-          <div className="flex items-center space-x-2 text-blue-600">
-            <MdRepeat />
-            <span className="text-sm">
-              Trajet {ride.frequency === "weekly" ? "hebdomadaire" : "mensuel"}
+          <div className="flex items-center space-x-1.5 text-blue-600 text-xs">
+            <MdRepeat className="flex-shrink-0" />
+            <span>
+              {ride.frequency === "weekly" ? "Hebdomadaire" : "Mensuel"}
             </span>
           </div>
         )}
 
-        {currentStatus === "expired" && (
-          <div className="flex items-center space-x-2 text-amber-600 bg-amber-50 p-2 rounded-lg">
-            <MdWarning />
-            <span className="text-sm">Ce trajet est déjà passé</span>
-          </div>
-        )}
-
         {isModifiable() && (
-          <div className="flex space-x-2 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             {ride.status === "active" && (
               <RideEditDialog
                 ride={ride}
@@ -274,15 +267,15 @@ const RideCard = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                  className="text-xs w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0"
                 >
-                  <MdCancel className="mr-2" />
+                  <MdCancel className="mr-1" />
                   {ride.status === "cancelled"
                     ? "Proposer ce trajet"
                     : "Annuler ce trajet"}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>
                     {ride.status === "cancelled"
@@ -311,37 +304,6 @@ const RideCard = ({
             </AlertDialog>
           </div>
         )}
-        {/* <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="flex-1 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-            >
-              <MdDelete /> Supprimer
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogPortal>
-            <AlertDialogOverlay />
-            <AlertDialogContent className="sm:max-w-[425px]">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                <AlertDialogDescription>
-                  <span>
-                    Êtes-vous sûr de vouloir supprimer ce trajet ? Cette action
-                    est irréversible.
-                  </span>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete}>
-                  Confirmer la suppression
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialogPortal>
-        </AlertDialog> */}
       </div>
     </div>
   );
