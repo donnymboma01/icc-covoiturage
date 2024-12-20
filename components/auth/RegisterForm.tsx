@@ -294,6 +294,13 @@ const RegisterForm = () => {
               </div>
               <div className="flex-1 text-sm text-muted-foreground">
                 <p className="font-medium">Choisissez une photo de profil</p>
+                <p>
+                  {" "}
+                  <strong>
+                    La photo de profil est obligatoire pour les conducteurs !
+                  </strong>{" "}
+                  
+                </p>
                 <p>JPG, PNG. Taille maximale 10MB</p>
               </div>
             </div>
