@@ -42,7 +42,6 @@ export default function Home() {
         </div>
 
         <div className="flex justify-center items-center gap-6 mt-12 md:mt-16">
-          {/* Texte aligné en bas */}
           <div className="flex flex-col items-center gap-2">
             <Link href="/dashboard/passanger" className="text-center">
               <div className="text-base hover:bg-gradient-to-r hover:from-red-700/80 hover:to-orange-400 bg-gradient-to-r from-red-800/80 to-orange-500 text-white py-1.5 px-10 max-md:px-8 rounded-full">
