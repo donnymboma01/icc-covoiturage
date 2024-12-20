@@ -45,6 +45,7 @@ interface Ride {
 interface Driver {
   fullName: string;
   profilePicture?: string;
+  isStar: string | boolean | undefined;
 }
 
 const db = getFirestore(app);

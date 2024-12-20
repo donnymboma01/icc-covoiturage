@@ -415,6 +415,7 @@ const DriverBookings = () => {
               </div>
             </Card>
           ))} */}
+
           {bookings.map((booking) => (
             <Card key={booking.id} className="p-3 sm:p-4">
               <div className="space-y-3">
@@ -454,6 +455,15 @@ const DriverBookings = () => {
                           .toLocaleString("fr-FR")}
                       </p>
                     </div>
+
+                    <p className="text-sm">
+                      Places demandées : {booking.seatsBooked}
+                    </p>
+                    {booking.specialNotes && (
+                      <p className="text-sm break-words">
+                        Notes : {booking.specialNotes}
+                      </p>
+                    )}
 
                     {isRideExpired(rideDetails[booking.rideId].departureTime) &&
                       booking.status === "pending" && (
@@ -518,14 +528,14 @@ const DriverBookings = () => {
                   </>
                 )}
 
-                <p className="text-sm">
+                {/* <p className="text-sm">
                   Places demandées : {booking.seatsBooked}
                 </p>
                 {booking.specialNotes && (
                   <p className="text-sm break-words">
                     Notes : {booking.specialNotes}
                   </p>
-                )}
+                )} */}
               </div>
             </Card>
           ))}
