@@ -3,7 +3,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MdInfo } from "react-icons/md";
-import { FaCar } from "react-icons/fa"; // Import de l'icône voiture
+import { FaCar } from "react-icons/fa"; 
 import Covoiturage from "../../public/images/covoiturage.png";
 import LogoICC from "../../public/images/image.png";
 
