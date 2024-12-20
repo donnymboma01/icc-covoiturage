@@ -102,32 +102,32 @@ const DriverBookings = () => {
   };
 
   const filterButtons = (
-    <div className="flex gap-2 mb-4">
+    <div className="flex flex-wrap gap-1.5 mb-4">
       <Badge
         onClick={() => setFilter("pending")}
         variant={filter === "pending" ? "default" : "outline"}
-        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
       >
         En attente
       </Badge>
       <Badge
         onClick={() => setFilter("accepted")}
         variant={filter === "accepted" ? "default" : "outline"}
-        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
       >
         Acceptées
       </Badge>
       <Badge
         onClick={() => setFilter("rejected")}
         variant={filter === "rejected" ? "default" : "outline"}
-        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
       >
         Refusées
       </Badge>
       <Badge
         onClick={() => setFilter("archived")}
         variant={filter === "archived" ? "default" : "outline"}
-        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
       >
         Archivées
       </Badge>
@@ -527,15 +527,6 @@ const DriverBookings = () => {
                     )}
                   </>
                 )}
-
-                {/* <p className="text-sm">
-                  Places demandées : {booking.seatsBooked}
-                </p>
-                {booking.specialNotes && (
-                  <p className="text-sm break-words">
-                    Notes : {booking.specialNotes}
-                  </p>
-                )} */}
               </div>
             </Card>
           ))}
