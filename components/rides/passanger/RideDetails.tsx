@@ -215,7 +215,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             </div>
           </div>
 
-          {ride.meetingPointNote && (
+          {/* {ride.meetingPointNote && (
             <div className="flex items-start gap-2 mt-2">
               <MdInfo className="text-xl text-gray-500 mt-1" />
               <div>
@@ -225,7 +225,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
                 <p className="text-sm text-gray-600">{ride.meetingPointNote}</p>
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">

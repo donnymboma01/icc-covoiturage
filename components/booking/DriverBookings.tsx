@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useState, useEffect } from "react";
@@ -61,7 +62,7 @@ interface Booking {
   id: string;
   rideId: string;
   passengerId: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "archived";
   seatsBooked: number;
   specialNotes: string;
   bookingDate: Timestamp;
@@ -93,8 +94,12 @@ const DriverBookings = () => {
   }>({});
   const [rideDetails, setRideDetails] = useState<{ [key: string]: Ride }>({});
   const [filter, setFilter] = useState<
-    "pending" | "accepted" | "rejected" | "all"
+    "pending" | "accepted" | "rejected" | "all" | "archived"
   >("pending");
+
+  const isRideExpired = (departureTime: Timestamp) => {
+    return departureTime.toDate() < new Date();
+  };
 
   const filterButtons = (
     <div className="flex gap-2 mb-4">
@@ -119,8 +124,38 @@ const DriverBookings = () => {
       >
         Refusées
       </Badge>
+      <Badge
+        onClick={() => setFilter("archived")}
+        variant={filter === "archived" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-4 py-2 text-sm font-medium"
+      >
+        Archivées
+      </Badge>
     </div>
   );
+
+  useEffect(() => {
+    const archiveExpiredBookings = async () => {
+      const db = getFirestore();
+      bookings.forEach(async (booking) => {
+        const ride = rideDetails[booking.rideId];
+        if (
+          ride &&
+          isRideExpired(ride.departureTime) &&
+          booking.status === "pending"
+        ) {
+          await updateDoc(doc(db, "bookings", booking.id), {
+            status: "archived",
+            updatedAt: Timestamp.now(),
+          });
+        }
+      });
+    };
+
+    if (Object.keys(rideDetails).length > 0) {
+      archiveExpiredBookings();
+    }
+  }, [rideDetails]);
 
   useEffect(() => {
     if (!user) return;
@@ -278,45 +313,6 @@ const DriverBookings = () => {
 
   if (loading) return <div>Chargement des réservations...</div>;
 
-  // const AcceptDialog = () => {
-  //   return (
-  //     <Dialog open={isAcceptDialogOpen} onOpenChange={setIsAcceptDialogOpen}>
-  //       <DialogContent className="sm:max-w-[425px]">
-  //         <DialogHeader>
-  //           <DialogTitle>Ajouter une note pour le passager</DialogTitle>
-  //           <DialogDescription>
-  //             Précisez le point de rencontre exact ou toute information utile
-  //             pour faciliter la rencontre.
-  //           </DialogDescription>
-  //         </DialogHeader>
-  //         <div className="grid gap-4 py-4">
-  //           <textarea
-  //             className="min-h-[100px] p-3 border rounded-md"
-  //             placeholder="Ex: Je serai garé sur le parking de l'église, voiture bleue Peugeot 208. Vous pouvez me retrouver près de l'entrée principale."
-  //             value={meetingNote}
-  //             onChange={(e) => setMeetingNote(e.target.value)}
-  //           />
-  //         </div>
-  //         <DialogFooter>
-  //           <Button
-  //             variant="outline"
-  //             onClick={() => setIsAcceptDialogOpen(false)}
-  //           >
-  //             Annuler
-  //           </Button>
-  //           <Button
-  //             onClick={() =>
-  //               selectedBooking && handleAcceptBooking(selectedBooking)
-  //             }
-  //           >
-  //             Confirmer
-  //           </Button>
-  //         </DialogFooter>
-  //       </DialogContent>
-  //     </Dialog>
-  //   );
-  // };
-
   return (
     <div className="space-y-4 w-full px-4 sm:px-6 md:px-8">
       <h2 className="text-xl sm:text-2xl font-bold mb-4">
@@ -329,7 +325,7 @@ const DriverBookings = () => {
         <p className="text-sm sm:text-base">Aucune demande en attente</p>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {bookings.map((booking) => (
+          {/* {bookings.map((booking) => (
             <Card key={booking.id} className="p-3 sm:p-4">
               <div className="space-y-3">
                 {passengerDetails[booking.passengerId] && (
@@ -416,6 +412,120 @@ const DriverBookings = () => {
                     </Badge>
                   )}
                 </div>
+              </div>
+            </Card>
+          ))} */}
+          {bookings.map((booking) => (
+            <Card key={booking.id} className="p-3 sm:p-4">
+              <div className="space-y-3">
+                {passengerDetails[booking.passengerId] && (
+                  <div className="mb-2">
+                    <h3 className="font-semibold text-sm sm:text-base">
+                      Passager :
+                    </h3>
+                    <p className="text-sm">
+                      {passengerDetails[booking.passengerId].fullName}
+                    </p>
+                    {passengerDetails[booking.passengerId].phoneNumber && (
+                      <p className="text-sm">
+                        Téléphone :{" "}
+                        {passengerDetails[booking.passengerId].phoneNumber}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {rideDetails[booking.rideId] && (
+                  <>
+                    <div className="mb-2">
+                      <h3 className="font-semibold text-sm sm:text-base">
+                        Détails du trajet :
+                      </h3>
+                      <p className="text-sm truncate">
+                        De : {rideDetails[booking.rideId].departureAddress}
+                      </p>
+                      <p className="text-sm truncate">
+                        À : {rideDetails[booking.rideId].arrivalAddress}
+                      </p>
+                      <p className="text-sm">
+                        Départ :{" "}
+                        {rideDetails[booking.rideId].departureTime
+                          .toDate()
+                          .toLocaleString("fr-FR")}
+                      </p>
+                    </div>
+
+                    {isRideExpired(rideDetails[booking.rideId].departureTime) &&
+                      booking.status === "pending" && (
+                        <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <p className="text-sm text-amber-800 font-medium">
+                            Ce trajet est déjà passé. La demande a été
+                            automatiquement archivée.
+                          </p>
+                        </div>
+                      )}
+
+                    {!isRideExpired(
+                      rideDetails[booking.rideId].departureTime
+                    ) && (
+                      <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                        {booking.status === "pending" && (
+                          <>
+                            <Badge
+                              onClick={() =>
+                                handleBookingAction(booking, "accepted")
+                              }
+                              variant="default"
+                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto"
+                            >
+                              Accepter
+                            </Badge>
+                            <Badge
+                              onClick={() =>
+                                handleBookingAction(booking, "rejected")
+                              }
+                              variant="destructive"
+                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+                            >
+                              Refuser
+                            </Badge>
+                          </>
+                        )}
+                        {booking.status === "accepted" && (
+                          <Badge
+                            onClick={() =>
+                              handleBookingAction(booking, "rejected")
+                            }
+                            variant="destructive"
+                            className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
+                          >
+                            Refuser
+                          </Badge>
+                        )}
+                        {booking.status === "rejected" && (
+                          <Badge
+                            onClick={() =>
+                              handleBookingAction(booking, "accepted")
+                            }
+                            variant="default"
+                            className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
+                          >
+                            Accepter
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <p className="text-sm">
+                  Places demandées : {booking.seatsBooked}
+                </p>
+                {booking.specialNotes && (
+                  <p className="text-sm break-words">
+                    Notes : {booking.specialNotes}
+                  </p>
+                )}
               </div>
             </Card>
           ))}

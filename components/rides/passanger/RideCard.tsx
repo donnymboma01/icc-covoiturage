@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MdAccessTime, MdLocationOn } from "react-icons/md";
+import { MdAccessTime, MdLocationOn, MdVerified } from "react-icons/md";
 
 interface RideCardProps {
   ride: {
@@ -20,6 +20,7 @@ interface RideCardProps {
     price?: number;
   };
   driver: {
+    isStar: string | boolean | undefined;
     fullName: string;
     profilePicture?: string;
   };
@@ -57,7 +58,7 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
         <div className="flex-1 space-y-2 w-full">
           <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-2">
             <div className="text-center sm:text-left">
-              <h3 className="font-medium">{driver.fullName}</h3>
+              <h3 className="font-medium flex items-center gap-2">{driver.fullName} {driver.isStar && <MdVerified className="text-amber-500" />}</h3>
               <p className="text-xs sm:text-sm text-slate-500">
                 {format(ride.departureTime, "EEEE d MMMM", { locale: fr })}
               </p>
