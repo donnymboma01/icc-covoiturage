@@ -125,7 +125,6 @@ const UserProfile = ({
     setNotificationsEnabled(isEnabled);
   }, [isEnabled]);
 
-
   const isVerifiedUser = (user: UserData | null): boolean => {
     if (!user) return false;
 
@@ -287,21 +286,21 @@ const UserProfile = ({
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         <Card className="p-4 sm:p-8 relative bg-gradient-to-r from-blue-600 to-blue-800">
           <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
-            <Button
+            {/* <Button
               variant="ghost"
               className="text-white"
               onClick={() => setShowFeedbackModal(true)}
             >
               <MdFlag className="mr-2" />
               <span className="hidden sm:inline">Signaler</span>
-            </Button>
+            </Button> */}
             <Button
               variant="ghost"
-              className="text-white"
+              className="text-white flex flex-col items-center"
               onClick={() => setIsEditing(true)}
             >
-              <FaUserEdit className="mr-2" />
-              <span className="hidden sm:inline">Modifier</span>
+              <FaUserEdit className="text-xl mb-1" />
+              <span className="text-xs">Modifier</span>
             </Button>
           </div>
 
@@ -372,13 +371,6 @@ const UserProfile = ({
                   </div>
                 )}
               </div>
-
-              {/* <div className="flex items-center justify-center sm:justify-start gap-2">
-                <MdStar className="text-yellow-400" />
-                <span className="text-sm sm:text-base">
-                  Membre depuis {new Date().getFullYear()}
-                </span>
-              </div> */}
             </div>
           </div>
         </Card>
