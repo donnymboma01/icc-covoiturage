@@ -50,6 +50,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import NotificationBell from "./NotificationBell";
 
 import {
   AlertDialog,
@@ -68,9 +69,14 @@ const NavBar = () => {
   const [bookingsCount, setBookingsCount] = useState(0);
   const [hasNewBookings, setHasNewBookings] = useState(false);
   const [lastViewedTimestamp, setLastViewedTimestamp] = useState<string>("0");
+  const [hasNewReservationStatus, setHasNewReservationStatus] = useState(false);
+  const [newStatusCount, setNewStatusCount] = useState(0);
+  const [latestReservationStatus, setLatestReservationStatus] = useState<
+    "accepted" | "rejected" | "cancelled" | undefined
+  >();
+
   const db = getFirestore(app);
 
-  // const router = useRouter();
   const { user, loading } = useAuth();
   const auth = getAuth(app);
 
@@ -81,8 +87,46 @@ const NavBar = () => {
     }, 100);
   };
 
-  // Pour Les devs : cette méthode permet de surpprimer complètement le compte de l'utilisateur.
-  // la méthode supprime aussi les trajets et les reservations de l'utilisateur.
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const bookingsRef = collection(db, "bookings");
+    const q = query(
+      bookingsRef,
+      where("passengerId", "==", user.uid),
+      where("status", "in", ["accepted", "rejected", "cancelled"]),
+      where("viewed", "==", false)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log("Réservations nouvelles :", snapshot.docs.length);
+      const newStatuses = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          status: data.status,
+          timestamp: data.lastStatusUpdate?.toMillis() || 0,
+        };
+      });
+
+      newStatuses.sort((a, b) => b.timestamp - a.timestamp);
+
+      const count = newStatuses.length;
+
+      if (count > 0) {
+        setHasNewReservationStatus(true);
+        setNewStatusCount(count);
+        setLatestReservationStatus(
+          newStatuses[0].status as "accepted" | "rejected" | "cancelled"
+        );
+      } else {
+        setHasNewReservationStatus(false);
+        setNewStatusCount(0);
+        setLatestReservationStatus(undefined);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user, db]);
 
   const handleDeleteAccountConfirm = async () => {
     try {
@@ -182,6 +226,27 @@ const NavBar = () => {
     }
   };
 
+  const handleViewBookings = async () => {
+    if (!user?.uid) return;
+
+    const bookingsRef = collection(db, "bookings");
+    const q = query(
+      bookingsRef,
+      where("passengerId", "==", user.uid),
+      where("viewed", "==", false)
+    );
+
+    const snapshot = await getDocs(q);
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, { viewed: true });
+    });
+
+    await batch.commit();
+    setIsDrawerOpen(false);
+  };
+
   useEffect(() => {
     const storedTimestamp = localStorage.getItem("lastViewedBookings") || "0";
     setLastViewedTimestamp(storedTimestamp);
@@ -209,7 +274,6 @@ const NavBar = () => {
         const count = snapshot.docs.length;
         setBookingsCount(count);
 
-        // Check if there are any bookings newer than last viewed
         const hasNew = snapshot.docs.some((doc) => {
           const bookingTimestamp = doc.data().bookingDate?.toMillis() || 0;
           return bookingTimestamp > parseInt(lastViewedTimestamp);
@@ -297,7 +361,7 @@ const NavBar = () => {
           <MdOutlineDirectionsCar /> Les demandes de trajet
         </Button>
       </Link> */}
-      <Link
+      {/* <Link
         href="/dashboard/driver/bookings"
         onClick={handleBookingsClick}
         className="w-full"
@@ -317,7 +381,21 @@ const NavBar = () => {
             </span>
           )}
         </Button>
+      </Link> */}
+      <Link
+        href="/dashboard/driver/bookings"
+        onClick={handleBookingsClick}
+        className="w-full"
+      >
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 w-full justify-start relative group"
+        >
+          <NotificationBell count={bookingsCount} hasNew={hasNewBookings} />
+          <span className="ml-2">Les demandes de trajet</span>
+        </Button>
       </Link>
+
       <Link
         href="/rides/history"
         onClick={() => setIsDrawerOpen(false)}
@@ -343,7 +421,8 @@ const NavBar = () => {
           <MdBookmarkAdd /> Trouver un trajet
         </Button>
       </Link>
-      <Link
+
+      {/* <Link
         href="/dashboard/passanger/bookings"
         onClick={() => setIsDrawerOpen(false)}
         className="w-full"
@@ -353,6 +432,31 @@ const NavBar = () => {
           className="flex items-center gap-2 w-full justify-start"
         >
           <MdEventSeat /> Mes réservations
+        </Button>
+      </Link> */}
+      <Link
+        href="/dashboard/passanger/bookings"
+        onClick={() => {
+          setIsDrawerOpen(false);
+          handleViewBookings();
+        }}
+        className="w-full"
+      >
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 w-full justify-start"
+        >
+          {hasNewReservationStatus ? (
+            <NotificationBell
+              count={newStatusCount}
+              hasNew={true}
+              type="reservation"
+              status={latestReservationStatus}
+            />
+          ) : (
+            <MdEventSeat />
+          )}
+          Mes réservations
         </Button>
       </Link>
     </div>
@@ -372,7 +476,7 @@ const NavBar = () => {
           <MdBookmarkAdd /> Trouver un trajet
         </Button>
       </Link>
-      <Link
+      {/* <Link
         href="/dashboard/passanger/bookings"
         onClick={() => setIsDrawerOpen(false)}
         className="w-full"
@@ -382,6 +486,28 @@ const NavBar = () => {
           className="flex items-center gap-2 w-full justify-start"
         >
           <MdEventSeat /> Mes réservations
+        </Button>
+      </Link> */}
+      <Link
+        href="/dashboard/passanger/bookings"
+        onClick={() => setIsDrawerOpen(false)}
+        className="w-full"
+      >
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2 w-full justify-start"
+        >
+          {hasNewReservationStatus ? (
+            <NotificationBell
+              count={newStatusCount}
+              hasNew={true}
+              type="reservation"
+              status={latestReservationStatus}
+            />
+          ) : (
+            <MdEventSeat />
+          )}
+          Mes réservations
         </Button>
       </Link>
     </div>

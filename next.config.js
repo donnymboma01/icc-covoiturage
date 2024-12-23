@@ -12,7 +12,6 @@ const nextConfig = {
   },
   experimental: {},
   serverExternalPackages: ["firebase-admin"],
-  
   images: {
     remotePatterns: [
       {
@@ -23,6 +22,8 @@ const nextConfig = {
       },
     ],
   },
+  output: 'standalone', 
 };
+
 
 module.exports = nextConfig;
