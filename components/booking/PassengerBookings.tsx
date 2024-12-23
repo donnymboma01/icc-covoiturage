@@ -99,24 +99,26 @@ const PassengerBookings = () => {
 
   const filterBookings = (bookings: Booking[]) => {
     const now = new Date();
-    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(now.setHours(23, 59, 59, 999));
-
+  
     return {
       current: bookings.filter((booking) => {
-        const rideDate = rideDetails[booking.rideId]?.departureTime.toDate();
-        return rideDate >= startOfDay && rideDate <= endOfDay;
+        const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
+        return rideDateTime > now;
       }),
       upcoming: bookings.filter((booking) => {
-        const rideDate = rideDetails[booking.rideId]?.departureTime.toDate();
-        return rideDate > endOfDay;
+        const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        return rideDateTime >= tomorrow;
       }),
       past: bookings.filter((booking) => {
-        const rideDate = rideDetails[booking.rideId]?.departureTime.toDate();
-        return rideDate < startOfDay;
+        const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
+        return rideDateTime <= now;
       }),
     };
   };
+  
 
   useEffect(() => {
     console.log("Current bookings:", bookings);
