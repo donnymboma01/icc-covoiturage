@@ -110,7 +110,7 @@ const PassengerBookings = () => {
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0, 0, 0, 0);
-        return rideDateTime >= tomorrow;
+        return rideDateTime >= tomorrow; 
       }),
       past: bookings.filter((booking) => {
         const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
