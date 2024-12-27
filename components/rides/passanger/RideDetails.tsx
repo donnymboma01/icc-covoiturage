@@ -146,7 +146,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
   }, [driver]);
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return <div>Chargement...</div>; 
   }
 
   if (!ride || !driver) {
