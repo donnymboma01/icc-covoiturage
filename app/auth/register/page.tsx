@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 import PageLayout from "@/components/PageLayout";
 import RegisterForm from "@/components/auth/RegisterForm";
