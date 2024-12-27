@@ -18,9 +18,17 @@ import { fr } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { MdAccessTime, MdLocationOn, MdPerson, MdChurch } from "react-icons/md";
+import {
+  MdAccessTime,
+  MdLocationOn,
+  MdPerson,
+  MdChurch,
+  MdInfo,
+  MdVerified,
+} from "react-icons/md";
 import BookingForm from "@/components/booking/BookingForm";
 import Modal from "@/components/ui/Modal";
+import Link from "next/link";
 
 const db = getFirestore(app);
 
@@ -29,6 +37,7 @@ interface RideDetailsProps {
 }
 
 interface Driver {
+  isStar: string | boolean | undefined;
   uid: string;
   fullName: string;
   phoneNumber?: string;
@@ -50,6 +59,8 @@ interface Ride {
   status: "active" | "cancelled";
   price?: number;
   waypoints?: string[];
+  displayPhoneNumber: boolean;
+  meetingPointNote?: string;
 }
 
 interface Church {
@@ -91,17 +102,6 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             setDriver(driverData);
           }
 
-          // Fetch church data
-          // const churchDoc = await getDoc(
-          //   doc(db, "churches", rideData.churchId)
-          // );
-          // if (churchDoc.exists()) {
-          //   setChurch({
-          //     id: churchDoc.id,
-          //     name: churchDoc.data().name,
-          //   });
-          // }
-          // Inside fetchRideDetails function
           if (rideData.churchId) {
             const churchDoc = await getDoc(
               doc(db, "churches", rideData.churchId)
@@ -146,7 +146,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
   }, [driver]);
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return <div>Chargement...</div>; 
   }
 
   if (!ride || !driver) {
@@ -165,18 +165,26 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
               alt={driver.fullName}
             />
           </Avatar>
-          <div className="text-center sm:text-left">
-            <h2 className="text-lg sm:text-xl font-semibold">
-              {driver.fullName}
-            </h2>
-            <p className="text-gray-500 text-sm sm:text-base">
-              {driver.phoneNumber}
+
+          <div className="flex flex-col items-center sm:items-start w-full">
+            <div className="flex items-center justify-center sm:justify-start gap-2 w-full">
+              <h2 className="text-lg sm:text-xl font-semibold text-center sm:text-left break-words max-w-[80%]">
+                {driver.fullName}
+              </h2>
+              {driver.isStar && (
+                <MdVerified className="text-amber-500 flex-shrink-0 h-5 w-5 sm:h-6 sm:w-6" />
+              )}
+            </div>
+
+            <p className="text-gray-500 text-sm sm:text-base text-center sm:text-left">
+              {ride.displayPhoneNumber ? driver.phoneNumber : ""}
             </p>
+
             {driverChurch && (
-              <div className="flex items-center gap-2">
-                <MdChurch className="text-gray-500 text-lg" />
+              <div className="flex items-center justify-center sm:justify-start gap-2 w-full">
+                <MdChurch className="text-gray-500 text-lg flex-shrink-0" />
                 <p className="text-gray-500 text-sm sm:text-base">
-                  Membre de {driverChurch.name}
+                  {driverChurch.name}
                 </p>
               </div>
             )}
@@ -184,12 +192,13 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
         </div>
 
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <div className="flex items-center gap-2">
             <MdAccessTime className="text-xl text-gray-500" />
-            <div className="text-sm sm:text-base">
+            <div className="text-sm sm:text-base flex flex-wrap items-center gap-1">
               <p className="font-medium">
                 {format(departureDate, "EEEE d MMMM yyyy", { locale: fr })}
               </p>
+              <span className="text-gray-600">à</span>
               <p className="text-gray-600">{format(departureDate, "HH:mm")}</p>
             </div>
           </div>
@@ -198,16 +207,28 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             <div className="flex items-start gap-2">
               <MdLocationOn className="text-xl text-gray-500 mt-1" />
               <p className="text-sm sm:text-base break-words flex-1">
-                Départ: {ride.departureAddress}
+                De : {ride.departureAddress}
               </p>
             </div>
             <div className="flex items-start gap-2">
               <MdLocationOn className="text-xl text-gray-500 mt-1" />
               <p className="text-sm sm:text-base break-words flex-1">
-                Arrivée: {ride.arrivalAddress}
+                À : {ride.arrivalAddress}
               </p>
             </div>
           </div>
+
+          {/* {ride.meetingPointNote && (
+            <div className="flex items-start gap-2 mt-2">
+              <MdInfo className="text-xl text-gray-500 mt-1" />
+              <div>
+                <p className="text-sm font-medium">
+                  Point de rencontre exacte :{" "}
+                </p>
+                <p className="text-sm text-gray-600">{ride.meetingPointNote}</p>
+              </div>
+            </div>
+          )} */}
 
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
@@ -227,6 +248,15 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
           >
             {ride.availableSeats > 0 ? "Réserver" : "Complet"}
           </Button>
+          <p className="mt-4 text-center">
+            <Link
+              href="/dashboard/passanger"
+              className="text-orange-500 italic hover:underline hover:text-orange-600"
+            >
+              Retourner vers la page de recherche
+            </Link>
+          </p>
+
           <Modal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}

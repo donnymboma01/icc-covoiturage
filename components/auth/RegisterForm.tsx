@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useState, useEffect } from "react";
-// import fs from "fs/promises";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -46,6 +45,8 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadImageToFirebase } from "@/utils/custom-functions";
+import { cleanupFailedRegistration } from "@/utils/custom-functions";
 
 interface VehicleDoc {
   userId: string;
@@ -66,17 +67,19 @@ const RegisterForm = () => {
   const router = useRouter();
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       fullName: "",
       phoneNumber: "",
       isDriver: false,
       church: "",
+      isStar: false,
+      ministry: "",
       profilePicture: undefined,
       vehicle: {
         brand: "",
@@ -90,20 +93,6 @@ const RegisterForm = () => {
 
   const isDriver = form.watch("isDriver");
 
-  // useEffect(() => {
-  //   const fetchChurches = async () => {
-  //     const churchesCollection = collection(db, "churches");
-  //     const churchesSnapshot = await getDocs(churchesCollection);
-  //     const churchesList = churchesSnapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       name: doc.data().name,
-  //     }));
-  //     setChurches(churchesList);
-  //   };
-
-  //   fetchChurches();
-  // }, [db]);
-  // Replace the existing useEffect with this improved version
   useEffect(() => {
     const fetchChurches = async () => {
       const churchesCollection = collection(db, "churches");
@@ -148,93 +137,19 @@ const RegisterForm = () => {
   };
 
   const uploadImage = async (file: File, userId: string) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("userId", userId);
-
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-    return data.filepath;
+    try {
+      const path = `profile-pictures/${userId}/${file.name}`;
+      const downloadURL = await uploadImageToFirebase(file, path);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      throw error;
+    }
   };
 
-  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
-  //   let userCredential;
-
-  //   try {
-  //     setIsLoading(true);
-
-  //     userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       values.email,
-  //       values.password
-  //     );
-
-  //     try {
-  //       await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  //       let profilePictureUrl = "";
-  //       if (values.profilePicture) {
-  //         profilePictureUrl = await uploadImage(
-  //           values.profilePicture,
-  //           userCredential.user.uid
-  //         );
-  //       }
-
-  //       const churchRef = await addDoc(collection(db, "churches"), {
-  //         name: values.church,
-  //         adminUserIds: [],
-  //         contactEmail: "",
-  //         contactPhone: "",
-  //         address: "",
-  //       });
-
-  //       const userDocument = {
-  //         uid: userCredential.user.uid,
-  //         email: values.email,
-  //         fullName: values.fullName,
-  //         phoneNumber: values.phoneNumber,
-  //         isDriver: values.isDriver,
-  //         createdAt: new Date(),
-  //         churchIds: [churchRef.id],
-  //         profilePicture: profilePictureUrl || null,
-  //       };
-
-  //       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
-
-  //       if (values.isDriver && values.vehicle) {
-  //         const vehicleDoc = {
-  //           userId: userCredential.user.uid,
-  //           ...values.vehicle,
-  //           isActive: true,
-  //         };
-  //         await addDoc(collection(db, "vehicles"), vehicleDoc);
-  //       }
-
-  //       await auth.signOut();
-  //       toast.success("Inscription réussie");
-  //       router.push("/auth/login");
-  //     } catch (innerError) {
-  //       if (userCredential?.user) {
-  //         await userCredential.user.delete();
-  //       }
-  //       throw innerError;
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Registration error:", error);
-  //     if (userCredential?.user) {
-  //       await userCredential.user.delete();
-  //     }
-  //     toast.error("Une erreur est survenue, veuillez essayer plus tard");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+    console.log("Form submitted with values:", values);
+    console.log("Form validation state:", form.formState);
     let userCredential;
 
     try {
@@ -246,62 +161,101 @@ const RegisterForm = () => {
         values.password
       );
 
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      let profilePictureUrl = "";
+      if (values.profilePicture) {
+        profilePictureUrl = await uploadImage(
+          values.profilePicture,
+          userCredential.user.uid
+        );
+      }
 
-        let profilePictureUrl = "";
-        if (values.profilePicture) {
-          profilePictureUrl = await uploadImage(
-            values.profilePicture,
-            userCredential.user.uid
-          );
-        }
+      const userDocument = {
+        uid: userCredential.user.uid,
+        email: values.email,
+        fullName: values.fullName,
+        phoneNumber: values.phoneNumber,
+        isDriver: values.isDriver,
+        createdAt: new Date(),
+        churchIds: [values.church],
+        isStar: values.isStar,
+        ministry: values.isStar ? values.ministry : null,
+        profilePicture: profilePictureUrl || null,
+      };
 
-        const userDocument = {
-          uid: userCredential.user.uid,
-          email: values.email,
-          fullName: values.fullName,
-          phoneNumber: values.phoneNumber,
-          isDriver: values.isDriver,
-          createdAt: new Date(),
-          churchIds: [values.church],
-          profilePicture: profilePictureUrl || null,
+      await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
+
+      if (values.isDriver && values.vehicle) {
+        const vehicleDoc = {
+          userId: userCredential.user.uid,
+          ...values.vehicle,
+          isActive: true,
         };
+        await addDoc(collection(db, "vehicles"), vehicleDoc);
+      }
 
-        await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
+      await auth.signOut();
 
-        if (values.isDriver && values.vehicle) {
-          const vehicleDoc = {
-            userId: userCredential.user.uid,
-            ...values.vehicle,
-            isActive: true,
-          };
-          await addDoc(collection(db, "vehicles"), vehicleDoc);
-        }
-
-        await auth.signOut();
+      setTimeout(() => {
         toast.success("Inscription réussie");
         router.push("/auth/login");
-      } catch (innerError) {
-        if (userCredential?.user) {
-          await userCredential.user.delete();
-        }
-        throw innerError;
-      }
-    } catch (error: any) {
-      console.error("Registration error:", error);
+      }, 1000);
+    } catch (authError: any) {
+      console.log("Detailed error:", authError); 
+      console.error("Registration error:", authError);
       if (userCredential?.user) {
-        await userCredential.user.delete();
+        await cleanupFailedRegistration(userCredential.user);
       }
-      toast.error("Une erreur est survenue, veuillez essayer plus tard");
+      switch (authError.code) {
+        case "auth/email-already-in-use":
+          toast.error(
+            "L'adresse e-mail que vous avez saisie est déjà associée à un autre profil."
+          );
+          break;
+        case "auth/weak-password":
+          toast.error(
+            "Le mot de passe est trop faible. Veuillez en choisir un plus sécurisé."
+          );
+          break;
+        case "auth/invalid-email":
+          toast.error(
+            "L'adresse e-mail saisie est invalide. Veuillez vérifier et réessayer."
+          );
+          break;
+        case "auth/network-request-failed":
+          toast.error(
+            "Erreur réseau. Vérifiez votre connexion internet et réessayez."
+          );
+          break;
+        default:
+          console.error("Erreur d'authentification :", authError);
+          toast.error(
+            "Une erreur inattendue est survenue. Veuillez réessayer."
+          );
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (!isDriver) {
+      form.setValue("vehicle.brand", "");
+      form.setValue("vehicle.model", "");
+      form.setValue("vehicle.color", "");
+      form.setValue("vehicle.seats", 1);
+      form.setValue("vehicle.licensePlate", "");
+    }
+  }, [isDriver, form]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log("Form validation errors:", errors);
+          toast.error("Veuillez remplir tous les champs correctement");
+        })}
+        className="space-y-6"
+      >
         <FormItem>
           <FormLabel>Photo de profil</FormLabel>
           <FormControl>
@@ -341,6 +295,13 @@ const RegisterForm = () => {
               </div>
               <div className="flex-1 text-sm text-muted-foreground">
                 <p className="font-medium">Choisissez une photo de profil</p>
+                <p>
+                  {" "}
+                  <strong>
+                    La photo de profil est obligatoire pour les conducteurs !
+                  </strong>{" "}
+                  
+                </p>
                 <p>JPG, PNG. Taille maximale 10MB</p>
               </div>
             </div>
@@ -390,6 +351,20 @@ const RegisterForm = () => {
 
         <FormField
           control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirmer le mot de passe</FormLabel>
+              <FormControl>
+                <Input placeholder="••••••••" type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="church"
           render={({ field }) => (
             <FormItem>
@@ -421,12 +396,47 @@ const RegisterForm = () => {
             <FormItem>
               <FormLabel>Numéro de téléphone</FormLabel>
               <FormControl>
-                <Input placeholder="+32 4 12 34 56 78" {...field} />
+                <Input placeholder="0492 34 56 78" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="isStar"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <FormLabel>
+                Je suis S.T.A.R (Serviteur Travaillant Activement pour le
+                Royaume)
+              </FormLabel>
+            </FormItem>
+          )}
+        />
+
+        {form.watch("isStar") && (
+          <FormField
+            control={form.control}
+            name="ministry"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Votre ministère/département</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Ex: Chorale, Accueil, etc." />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
@@ -451,7 +461,7 @@ const RegisterForm = () => {
               name="vehicle.brand"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Marque du véhicule</FormLabel>
+                  <FormLabel>Marque du véhicule *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: Renault" />
                   </FormControl>
@@ -465,7 +475,7 @@ const RegisterForm = () => {
               name="vehicle.model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Modèle</FormLabel>
+                  <FormLabel>Modèle *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: Clio" />
                   </FormControl>
@@ -479,7 +489,7 @@ const RegisterForm = () => {
               name="vehicle.color"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Couleur</FormLabel>
+                  <FormLabel>Couleur *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: Noir" />
                   </FormControl>
@@ -493,7 +503,7 @@ const RegisterForm = () => {
               name="vehicle.seats"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre de places</FormLabel>
+                  <FormLabel>Nombre de places *</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -512,7 +522,7 @@ const RegisterForm = () => {
               name="vehicle.licensePlate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plaque d'immatriculation</FormLabel>
+                  <FormLabel>Plaque d'immatriculation *</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Ex: AB-123-CD" />
                   </FormControl>
@@ -523,7 +533,90 @@ const RegisterForm = () => {
           </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <div className="mt-8 rounded-lg border border-slate-200 bg-white p-8">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between font-semibold text-slate-800">
+              <span>
+                Consentement loi RGPD (Réglement sur la Protection des Données)
+              </span>
+              <span className="transition group-open:rotate-180">
+                <svg
+                  fill="none"
+                  height="24"
+                  shapeRendering="geometricPrecision"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  width="24"
+                >
+                  <path d="M6 9l6 6 6-6"></path>
+                </svg>
+              </span>
+            </summary>
+            <div className="mt-4 space-y-4 text-slate-600">
+              <p>
+                Les informations personnelles figurant dans le présent
+                formulaire sont traitées avec confidentialité par Impact Centre
+                Chrétien et conformément au règlement 2016/679 du Parlement
+                européen et du Conseil du 27 avril 2016 relatif à la protection
+                des personnes physiques à légard du traitement des données à
+                caractère personnel et à la libre circulation de ces données
+                (RGPD).
+              </p>
+
+              <p>
+                Ces données personnelles sont nécessaires pour vous informer et
+                vous inscrire aux différentes activités organisées par l'Eglise
+                et à des fins de gestion interne. Elles seront conservées
+                pendant la durée nécessaire pour atteindre les finalités visées
+                ci-dessus.
+              </p>
+
+              <p>
+                En tant que personne concernée, vous avez le droit, à tout
+                moment, de consulter, de mettre à jour, de rectifier vos données
+                personnelles ou d'en demander la suppression.
+              </p>
+
+              <p>
+                Si vous souhaitez exercer un ou plusieurs des droits
+                susmentionnés ou obtenir de plus amples informations sur la
+                protection de vos données personnelles, vous pouvez envoyer un
+                e-mail à l'adresse contact@impactcentrechretien.be.
+              </p>
+
+              <p>
+                J'accepte que mes données personnelles récoltées via ce
+                formulaire soient traitées par Impact Centre Chrétien pour les
+                finalités d'information et d'inscriptions aux événements de
+                l'Eglise et pour le suivi de la gestion interne;
+              </p>
+
+              <p>
+                J'autorise la prise et la diffusion de photos ou de fragments
+                d'images me concernant sur les sites web et les réseaux sociaux
+                des églises connectées Impact Centre Chrétien.
+              </p>
+
+              <p>
+                J'accepte de recevoir des informations de la part d'Impact
+                Centre Chrétien.
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isLoading}
+          onTouchStart={(e) => {
+            console.log("Button touched");
+            e.currentTarget.click();
+          }}
+        >
           {isLoading ? "Inscription en cours..." : "S'inscrire"}
         </Button>
       </form>

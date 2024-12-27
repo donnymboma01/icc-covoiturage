@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -30,7 +31,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { MdAccessTime, MdLocationOn, MdPerson, MdEuro } from "react-icons/md";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, Clock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const db = getFirestore(app);
 
@@ -70,6 +75,9 @@ const BookingForm = ({
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+
+  // const router = useRouter();
 
   const validateSeats = (value: number | string) => {
     if (value === "" || value === undefined) {
@@ -113,6 +121,69 @@ const BookingForm = ({
     validateSeats(value);
   };
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!user) return;
+
+  //   if (!validateSeats(seats)) return;
+
+  //   setLoading(true);
+  //   try {
+  //     const userDoc = await getDoc(doc(db, "users", user.uid));
+  //     if (!userDoc.exists()) {
+  //       throw new Error("Le profil de l'utilisateur n'existe pas.");
+  //     }
+
+  //     const rideRef = doc(db, "rides", ride.id);
+  //     const rideDoc = await getDoc(rideRef);
+  //     const currentRideData = rideDoc.data();
+
+  //     if (!currentRideData) {
+  //       throw new Error("Le trajet n'existe plus");
+  //     }
+
+  //     const currentAvailableSeats = currentRideData.availableSeats;
+  //     if (currentAvailableSeats < seats) {
+  //       setError(
+  //         `Désolé, il ne reste que ${currentAvailableSeats} place(s) disponible(s)`
+  //       );
+  //       return;
+  //     }
+
+  //     const bookingRef = await addDoc(collection(db, "bookings"), {
+  //       rideId: ride.id,
+  //       passengerId: user.uid,
+  //       bookingDate: new Date(),
+  //       status: "pending",
+  //       seatsBooked: seats,
+  //       specialNotes: notes,
+  //     });
+
+  //     await updateDoc(rideRef, {
+  //       availableSeats: currentAvailableSeats - seats,
+  //     });
+
+  //     onSuccess();
+  //     setShowSuccessDialog(true);
+  //     setLoading(false);
+  //     toast.success("Votre reservation a bien été prise en compte");
+
+  //     setTimeout(() => {
+  //       window.location.replace("/dashboard/passanger/bookings");
+  //     }, 8000);
+  //     // window.location.href = "/dashboard/passanger/bookings";
+
+  //     // setTimeout(() => {
+  //     //   window.location.href = "/dashboard/passanger/bookings";
+  //     // }, 9000);
+  //   } catch (error) {
+  //     console.error("Erreur lors de la création de la réservation:", error);
+  //     setError("Une erreur est survenue lors de la réservation");
+  //     toast.error("Une erreur est survenue lors de la réservation");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -126,7 +197,23 @@ const BookingForm = ({
         throw new Error("Le profil de l'utilisateur n'existe pas.");
       }
 
-      const bookingRef = await addDoc(collection(db, "bookings"), {
+      const rideRef = doc(db, "rides", ride.id);
+      const rideDoc = await getDoc(rideRef);
+      const currentRideData = rideDoc.data();
+
+      if (!currentRideData) {
+        throw new Error("Le trajet n'existe plus");
+      }
+
+      const currentAvailableSeats = currentRideData.availableSeats;
+      if (currentAvailableSeats < seats) {
+        setError(
+          `Désolé, il ne reste que ${currentAvailableSeats} place(s) disponible(s)`
+        );
+        return;
+      }
+
+      await addDoc(collection(db, "bookings"), {
         rideId: ride.id,
         passengerId: user.uid,
         bookingDate: new Date(),
@@ -135,62 +222,105 @@ const BookingForm = ({
         specialNotes: notes,
       });
 
-      const rideRef = doc(db, "rides", ride.id);
       await updateDoc(rideRef, {
-        availableSeats: ride.availableSeats - seats,
+        availableSeats: currentAvailableSeats - seats,
       });
 
-      onSuccess();
+      setShowSuccessDialog(true);
+      toast.success("Votre reservation a bien été prise en compte");
+
+      const redirectTimer = setTimeout(() => {
+        window.location.href = "/dashboard/passanger/bookings";
+      }, 5000);
+
+      return () => clearTimeout(redirectTimer);
     } catch (error) {
       console.error("Erreur lors de la création de la réservation:", error);
       setError("Une erreur est survenue lors de la réservation");
+      toast.error("Une erreur est survenue lors de la réservation");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="seats">Nombre de places</Label>
-        <Input
-          id="seats"
-          type="number"
-          min={1}
-          max={ride.availableSeats}
-          value={seats}
-          onChange={handleSeatsChange}
-          required
-          pattern="[0-9]*"
-          className={error ? "border-red-500" : ""}
-        />
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="seats">Nombre de places</Label>
+          <Input
+            id="seats"
+            type="number"
+            min={1}
+            max={ride.availableSeats}
+            value={seats}
+            onChange={handleSeatsChange}
+            required
+            pattern="[0-9]*"
+            className={error ? "border-red-500" : ""}
+          />
 
-        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-        <p className="text-sm text-gray-500">
-          Places disponibles: {ride.availableSeats}
-        </p>
-      </div>
+          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          <p className="text-sm text-gray-500">
+            Places disponibles: {ride.availableSeats}
+          </p>
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="notes">Ecrivez un message pour le conducteur</Label>
-        <Textarea
-          id="notes"
-          placeholder="Informations complémentaires pour le conducteur..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="notes">Ecrivez un message pour le conducteur</Label>
+          <Textarea
+            id="notes"
+            placeholder="Informations complémentaires pour le conducteur..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={
-          loading || !!error || seats <= 0 || seats > ride.availableSeats
-        }
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={
+            loading || !!error || seats <= 0 || seats > ride.availableSeats
+          }
+        >
+          {loading ? "Réservation en cours..." : "Confirmer la réservation"}
+        </Button>
+      </form>
+
+      <Dialog
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        modal={true}
       >
-        {loading ? "Réservation en cours..." : "Confirmer la réservation"}
-      </Button>
-    </form>
+        <DialogContent className="sm:max-w-md text-center">
+          <div className="flex flex-col items-center space-y-4 py-6">
+            <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
+            <DialogTitle className="text-2xl font-bold text-green-600">
+              Réservation confirmée !
+            </DialogTitle>
+
+            <div className="flex items-center space-x-2 text-amber-600">
+              <Clock className="h-5 w-5" />
+              <p className="text-lg font-medium">Rappel important</p>
+            </div>
+
+            <p className="text-gray-600 px-4">
+              Pour le confort de tous les passagers et du conducteur, merci
+              d'être présent(e)
+              <span className="font-bold"> 15 minutes avant</span> l'heure de
+              départ prévue.
+            </p>
+
+            <div className="mt-4">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto" />
+              <p className="text-sm text-gray-500 mt-2">
+                Redirection vers vos réservations...
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

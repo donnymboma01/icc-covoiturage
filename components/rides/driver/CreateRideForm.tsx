@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 "use client";
@@ -7,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   addDoc,
@@ -24,6 +25,17 @@ import { toast } from "sonner";
 import ChurchSelector from "./ChrurchSelector";
 import RideSummary from "./RidesSummary";
 import { ErrorBoundary } from "react-error-boundary";
+import { geohashForLocation } from "geofire-common";
+import { getCoordinates } from "../../../utils/geocoding";
+
+export const prepareRideLocation = async (address: string) => {
+  const coordinates = await getCoordinates(address);
+  return {
+    lat: coordinates.lat,
+    lng: coordinates.lng,
+    geohash: geohashForLocation([coordinates.lat, coordinates.lng]),
+  };
+};
 
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -42,14 +54,22 @@ interface RideFormData {
   isRecurring: boolean;
   frequency?: "weekly" | "monthly";
   serviceType: string;
+  displayPhoneNumber: boolean;
+  meetingPointNote?: string;
+}
+
+interface Vehicle {
+  seats: number;
 }
 
 const MapWithErrorBoundary = ({
   setFormData,
   formData,
+  isMapVisible,
 }: {
   setFormData: React.Dispatch<React.SetStateAction<RideFormData>>;
   formData: RideFormData;
+  isMapVisible: boolean;
 }) => {
   return (
     <ErrorBoundary
@@ -64,6 +84,7 @@ const MapWithErrorBoundary = ({
         onArrivalSelect={(address) =>
           setFormData({ ...formData, arrivalAddress: address })
         }
+        isMapVisible={isMapVisible}
       />
     </ErrorBoundary>
   );
@@ -74,6 +95,8 @@ const CreateRideForm = () => {
   const router = useRouter();
   const db = getFirestore(app);
   const [currentStep, setCurrentStep] = useState(1);
+  const [vehicleSeats, setVehicleSeats] = useState<number>(0);
+  const [seatsError, setSeatsError] = useState<string>("");
   const [formData, setFormData] = useState<RideFormData>({
     churchId: "",
     churchName: "",
@@ -84,7 +107,9 @@ const CreateRideForm = () => {
     waypoints: [],
     isRecurring: false,
     serviceType: "",
+    displayPhoneNumber: false,
   });
+  const [isMapVisible, setIsMapVisible] = useState(true);
 
   const handleNext = () => {
     setCurrentStep((prev) => prev + 1);
@@ -94,15 +119,53 @@ const CreateRideForm = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
+  const loadVehicleData = async () => {
+    if (!user?.uid) return;
+
+    try {
+      const vehicleQuery = query(
+        collection(db, "vehicles"),
+        where("userId", "==", user.uid),
+        where("isActive", "==", true)
+      );
+      const vehicleSnapshot = await getDocs(vehicleQuery);
+
+      if (!vehicleSnapshot.empty) {
+        const vehicleData = vehicleSnapshot.docs[0].data() as Vehicle;
+        setVehicleSeats(vehicleData.seats);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement du véhicule:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadVehicleData();
+  }, [user]);
+
   const handleCreateRide = async () => {
     if (!user?.isDriver) {
       toast.error("Vous devez être conducteur pour créer un trajet");
       return;
     }
 
+    if (formData.availableSeats > vehicleSeats) {
+      toast.error(
+        "Le nombre de places proposées dépasse la capacité de votre véhicule"
+      );
+      return;
+    }
+
     console.log("User status:", user?.isDriver);
 
     try {
+      const departureLocation = await prepareRideLocation(
+        formData.departureAddress
+      );
+      const arrivalLocation = await prepareRideLocation(
+        formData.arrivalAddress
+      );
+
       console.log("User:", user);
       const vehicleQuery = query(
         collection(db, "vehicles"),
@@ -122,6 +185,8 @@ const CreateRideForm = () => {
         churchName: formData.churchName,
         departureAddress: formData.departureAddress,
         arrivalAddress: formData.arrivalAddress,
+        departureLocation,
+        arrivalLocation,
         departureTime: formData.departureTime,
         availableSeats: formData.availableSeats,
         isRecurring: formData.isRecurring,
@@ -131,6 +196,8 @@ const CreateRideForm = () => {
         createdAt: new Date(),
         serviceType: formData.serviceType,
         ...(formData.isRecurring && { frequency: formData.frequency }),
+        displayPhoneNumber: formData.displayPhoneNumber,
+        meetingPointNote: formData.meetingPointNote || "",
       };
 
       const docRef = await addDoc(collection(db, "rides"), rideData);
@@ -138,6 +205,8 @@ const CreateRideForm = () => {
       toast.success("Votre trajet a été créé");
 
       router.push("/rides/history");
+      console.log("Departure Location:", departureLocation);
+      console.log("Arrival Location:", arrivalLocation);
     } catch (error: unknown) {
       console.error("Détails complets de l'erreur:", error);
       if (error instanceof Error) {
@@ -207,14 +276,47 @@ const CreateRideForm = () => {
             type="number"
             id="seats"
             min="1"
+            max={vehicleSeats}
             value={formData.availableSeats}
-            onChange={(e) =>
+            onChange={(e) => {
+              const seats = parseInt(e.target.value);
+              if (seats > vehicleSeats) {
+                setSeatsError(
+                  `Vous ne pouvez pas proposer plus de ${vehicleSeats} places (capacité de votre véhicule)`
+                );
+              } else {
+                setSeatsError("");
+              }
               setFormData({
                 ...formData,
-                availableSeats: parseInt(e.target.value),
-              })
-            }
+                availableSeats: seats,
+              });
+            }}
           />
+          {seatsError && <p className="text-orange-500 mt-2">{seatsError}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="displayPhoneNumber">
+            Affichage du numéro de téléphone
+          </Label>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="displayPhoneNumber"
+              checked={formData.displayPhoneNumber}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  displayPhoneNumber: e.target.checked,
+                })
+              }
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <span className="text-sm text-gray-600">
+              Autoriser l'affichage de mon numéro de téléphone aux passagers
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -224,7 +326,39 @@ const CreateRideForm = () => {
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Adresses</h2>
       <div style={{ display: currentStep === 3 ? "block" : "none" }}>
-        <MapWithErrorBoundary setFormData={setFormData} formData={formData} />
+        <MapWithErrorBoundary
+          setFormData={setFormData}
+          formData={formData}
+          isMapVisible={isMapVisible}
+        />
+
+        {/* Add meeting point note input */}
+        <div className="mt-4">
+          <Label htmlFor="meetingPointNote">Point de rencontre précis</Label>
+          <Input
+            id="meetingPointNote"
+            placeholder="Ex: Devant l'entrée principale, près de l'arrêt de bus..."
+            value={formData.meetingPointNote || ""}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                meetingPointNote: e.target.value,
+              })
+            }
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Précisez où exactement vous retrouverez vos passagers
+          </p>
+        </div>
+
+        <div className="flex justify-center mt-4">
+          <p
+            className="text-orange-500 italic cursor-pointer hover:underline"
+            onClick={() => setIsMapVisible(!isMapVisible)}
+          >
+            {isMapVisible ? "cacher la carte" : "afficher la carte"}
+          </p>
+        </div>
       </div>
     </div>
   );

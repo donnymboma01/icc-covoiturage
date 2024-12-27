@@ -1,8 +1,7 @@
-"use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 import PageLayout from "@/components/PageLayout";
-//import RideHistory from "@/components/rides/driver/RidesHistory";
-import dynamic from "next/dynamic";
+// import FeedbackModal from "@/components/feedback/FeedbackModal";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,28 +11,23 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-const RideHistory = dynamic(
-  () => import("@/components/rides/driver/RidesHistory"),
-  {
-    ssr: false,
-  }
-);
-
-const RidesHistoryPage = () => {
+const FeddBack = () => {
   return (
     <PageLayout
-      title="historique des trajets"
-      description="Cette page permet de voir l'historique des trajets"
+      title="Envoyez nous un feedback sur votre trajet "
+      description="Envoyez nous un feedback"
     >
-      <div className="flex flex-col gap-4">
-        <CustomBreadcrumb name="Historique des trajets" />
-        <RideHistory />
+      <CustomBreadcrumb name="Feedback" />
+      <div className="max-w-[800px] mx-auto p-2">
+        {/* <FeedbackModal isOpen={false} onClose={function (): void {
+          throw new Error("Function not implemented.");
+        } } userId={""} userType={"driver"} /> */}
       </div>
     </PageLayout>
   );
 };
 
-export default RidesHistoryPage;
+export default FeddBack;
 
 const CustomBreadcrumb = ({ name }: { name: string }) => {
   return (

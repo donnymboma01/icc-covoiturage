@@ -1,7 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
-import { getAuth } from "firebase/auth";
+import { getAuth, updateEmail, sendEmailVerification } from "firebase/auth";
 import {
   getFirestore,
   doc,
@@ -15,6 +17,7 @@ import {
 import { app } from "../config/firebase-config";
 import UserProfile from "../../components/profile/UserProfile";
 import { UserData } from "../../components/profile/UserProfile";
+import { toast } from "sonner";
 
 const Profile = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -22,20 +25,95 @@ const Profile = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  // const handleUpdateUser = async (data: Partial<UserData>) => {
+  //   const user = auth.currentUser;
+  //   if (user) {
+  //     console.log("Updating user with data:", data); // Debug log
+  //     const userRef = doc(db, "users", user.uid);
+  //     try {
+  //       await updateDoc(userRef, data);
+  //       console.log("Update successful"); // Debug log
+
+  //       setUserData((prevData) =>
+  //         prevData
+  //           ? {
+  //               ...prevData,
+  //               ...data,
+  //             }
+  //           : null
+  //       );
+  //     } catch (error) {
+  //       console.error("Error updating user:", error); // Debug log
+  //     }
+  //   }
+  // };
+
+  // const handleUpdateUser = async (data: Partial<UserData>) => {
+  //   const user = auth.currentUser;
+  //   if (user) {
+  //     const userRef = doc(db, "users", user.uid);
+
+  //     try {
+  //       if (data.email && data.email !== user.email) {
+  //         await sendEmailVerification(user);
+  //         toast.success(
+  //           "Un email de vérification vous a été envoyé. Veuillez vérifier votre nouvelle adresse email."
+  //         );
+  //       }
+
+  //       // Update other user data in Firestore
+  //       const { email, ...otherData } = data;
+  //       await updateDoc(userRef, otherData);
+
+  //       setUserData((prevData) =>
+  //         prevData
+  //           ? {
+  //               ...prevData,
+  //               ...otherData,
+  //             }
+  //           : null
+  //       );
+  //     } catch (error: any) {
+  //       console.error("Error updating user:", error);
+  //       toast.error("Une erreur est survenue lors de la mise à jour du profil");
+  //       throw error;
+  //     }
+  //   }
+  // };
   const handleUpdateUser = async (data: Partial<UserData>) => {
     const user = auth.currentUser;
     if (user) {
       const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, data);
 
-      setUserData((prevData) =>
-        prevData
-          ? {
-              ...prevData,
-              ...data,
-            }
-          : null
-      );
+      try {
+        // Update email in Firebase Auth if it has changed
+        if (data.email && data.email !== user.email) {
+          await updateEmail(user, data.email);
+        }
+
+        // Update user data in Firestore
+        await updateDoc(userRef, data);
+
+        // Update local state
+        setUserData((prevData) =>
+          prevData
+            ? {
+                ...prevData,
+                ...data,
+              }
+            : null
+        );
+
+        toast.success("Profil mis à jour avec succès");
+      } catch (error: any) {
+        console.error("Error updating user:", error);
+        if (error.code === "auth/requires-recent-login") {
+          toast.error("Veuillez vous reconnecter pour modifier votre email");
+        } else {
+          toast.error("Erreur lors de la mise à jour du profil");
+        }
+        throw error;
+      }
     }
   };
 

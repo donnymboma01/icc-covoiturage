@@ -15,6 +15,7 @@ interface RideSummaryProps {
     availableSeats: number;
     price?: number;
     serviceType: string;
+    meetingPointNote?: string;
   };
 }
 
@@ -72,10 +73,19 @@ const RideSummary = ({ formData }: RideSummaryProps) => {
             <p className="text-lg">{formData.availableSeats}</p>
           </div>
 
-          <div>
+          {formData.meetingPointNote && (
+            <div>
+              <h3 className="text-sm font-medium text-slate-500">
+                Point de rencontre
+              </h3>
+              <p className="text-lg">{formData.meetingPointNote}</p>
+            </div>
+          )}
+
+          {/* <div>
             <h3 className="text-sm font-medium text-slate-500">Église</h3>
             <p className="text-lg">{formData.churchName}</p>
-          </div>
+          </div> */}
         </div>
       </Card>
     </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 import { useState, useEffect } from "react";
@@ -13,6 +14,7 @@ import {
   getDoc,
   updateDoc,
   deleteDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { useAuth } from "@/app/hooks/useAuth";
@@ -31,15 +33,39 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+const handleBookingStatusUpdate = async (
+  bookingId: string,
+  newStatus: string
+) => {
+  const db = getFirestore();
+  const bookingRef = doc(db, "bookings", bookingId);
+  await updateDoc(bookingRef, {
+    status: newStatus,
+    lastStatusUpdate: serverTimestamp(),
+    viewed: false,
+  });
+};
+
+// interface Booking {
+//   id: string;
+//   rideId: string;
+//   passengerId: string;
+//   status: "pending" | "accepted" | "rejected";
+//   seatsBooked: number;
+//   specialNotes: string;
+//   bookingDate: Timestamp;
+//   rejectionReason?: string;
+// }
 interface Booking {
   id: string;
   rideId: string;
   passengerId: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "cancelled";
   seatsBooked: number;
   specialNotes: string;
   bookingDate: Timestamp;
   rejectionReason?: string;
+  viewed: boolean;
 }
 
 interface Ride {
@@ -48,6 +74,7 @@ interface Ride {
   departureTime: Timestamp;
   driverId: string;
   price: number;
+  meetingPointNote?: string;
 }
 
 interface Driver {
@@ -65,6 +92,38 @@ const PassengerBookings = () => {
   const [driverDetails, setDriverDetails] = useState<{ [key: string]: Driver }>(
     {}
   );
+
+  const [activeTab, setActiveTab] = useState<"current" | "upcoming" | "past">(
+    "current"
+  );
+
+  const filterBookings = (bookings: Booking[]) => {
+    const now = new Date();
+  
+    return {
+      current: bookings.filter((booking) => {
+        const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
+        return rideDateTime > now;
+      }),
+      upcoming: bookings.filter((booking) => {
+        const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        return rideDateTime >= tomorrow; 
+      }),
+      past: bookings.filter((booking) => {
+        const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
+        return rideDateTime <= now;
+      }),
+    };
+  };
+  
+
+  useEffect(() => {
+    console.log("Current bookings:", bookings);
+    console.log("Current ride details:", rideDetails);
+  }, [bookings, rideDetails]);
 
   useEffect(() => {
     if (!bookings.length) return;
@@ -99,6 +158,29 @@ const PassengerBookings = () => {
     });
   }, [bookings, rideDetails]);
 
+  // useEffect(() => {
+  //   if (!user) return;
+
+  //   const db = getFirestore();
+  //   const q = query(
+  //     collection(db, "bookings"),
+  //     where("passengerId", "==", user.uid)
+  //   );
+
+  //   const unsubscribe = onSnapshot(q, (snapshot) => {
+  //     const bookingsData = snapshot.docs.map(
+  //       (doc) =>
+  //         ({
+  //           id: doc.id,
+  //           ...doc.data(),
+  //         } as Booking)
+  //     );
+  //     setBookings(bookingsData);
+  //     setLoading(false);
+  //   });
+
+  //   return () => unsubscribe();
+  // }, [user]);
   useEffect(() => {
     if (!user) return;
 
@@ -109,31 +191,27 @@ const PassengerBookings = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const bookingsData = snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          } as Booking)
-      );
+      const bookingsData = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          rideId: data.rideId,
+          passengerId: data.passengerId,
+          status: data.status,
+          seatsBooked: data.seatsBooked,
+          specialNotes: data.specialNotes,
+          bookingDate: data.bookingDate,
+          rejectionReason: data.rejectionReason,
+          viewed: data.viewed ?? false,
+        } as Booking;
+      });
+
       setBookings(bookingsData);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [user]);
-
-  const handleCancelBooking = async (bookingId: string) => {
-    const db = getFirestore();
-    try {
-      await updateDoc(doc(db, "bookings", bookingId), {
-        status: "cancelled",
-        updatedAt: Timestamp.now(),
-      });
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-    }
-  };
 
   const handleDeleteBooking = async () => {
     if (!bookingToDelete) return;
@@ -152,41 +230,118 @@ const PassengerBookings = () => {
     return departureTime.seconds < now.seconds;
   };
 
+  const handleCancelBooking = async (bookingId: string) => {
+    const db = getFirestore();
+    try {
+      const bookingDoc = await getDoc(doc(db, "bookings", bookingId));
+      const bookingData = bookingDoc.data();
+
+      if (!bookingData) {
+        console.error("No booking data found");
+        return;
+      }
+
+      await updateDoc(doc(db, "bookings", bookingId), {
+        status: "cancelled",
+        updatedAt: Timestamp.now(),
+      });
+
+      const rideRef = doc(db, "rides", bookingData.rideId);
+      const rideDoc = await getDoc(rideRef);
+      const rideData = rideDoc.data();
+
+      if (!rideData) {
+        console.error("aucun trajet trouvé");
+        return;
+      }
+
+      const newSeats = (rideData.availableSeats || 0) + bookingData.seatsBooked;
+      await updateDoc(rideRef, {
+        availableSeats: newSeats,
+      });
+
+      console.log(
+        `Mise à jour du trajet ${bookingData.rideId} avec ${newSeats} places disponibles`
+      );
+    } catch (error) {
+      console.error("Erreru lors de la suppression:", error);
+    }
+  };
+
   if (loading) return <div>Chargement de vos réservations...</div>;
 
   return (
     <div className="space-y-4 w-full px-4 sm:px-6 md:px-8">
       <h2 className="text-xl sm:text-2xl font-bold mb-4">Mes Réservations</h2>
+
+      <div className="flex space-x-2 mb-6">
+        <Badge
+          variant={activeTab === "current" ? "default" : "outline"}
+          className="cursor-pointer hover:bg-primary/80 transition-colors px-4 py-2"
+          onClick={() => setActiveTab("current")}
+        >
+          En cours ({filterBookings(bookings).current.length})
+        </Badge>
+        <Badge
+          variant={activeTab === "upcoming" ? "default" : "outline"}
+          className="cursor-pointer hover:bg-primary/80 transition-colors px-4 py-2"
+          onClick={() => setActiveTab("upcoming")}
+        >
+          À venir ({filterBookings(bookings).upcoming.length})
+        </Badge>
+        <Badge
+          variant={activeTab === "past" ? "default" : "outline"}
+          className="cursor-pointer hover:bg-primary/80 transition-colors px-4 py-2"
+          onClick={() => setActiveTab("past")}
+        >
+          Passée(s) ({filterBookings(bookings).past.length})
+        </Badge>
+      </div>
+
       {bookings.length === 0 ? (
         <p className="text-sm sm:text-base">
-          <strong> Vous n'avez pas encore de réservations</strong>
+          <strong>Vous n'avez pas encore de réservations</strong>
         </p>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {bookings.map((booking) => {
+          {filterBookings(bookings)[activeTab].map((booking) => {
             const ride = rideDetails[booking.rideId];
             const driver = ride ? driverDetails[ride.driverId] : null;
 
             return (
-              <Card key={booking.id} className="p-3 sm:p-4">
-                <div className="space-y-2 text-sm sm:text-base">
-                  <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
-                    <StatusBadge status={booking.status} />
-                    {booking.status === "rejected" &&
-                      booking.rejectionReason && (
-                        <p className="text-sm text-red-600">
-                          <strong>Raison du refus :</strong>{" "}
-                          {booking.rejectionReason}
-                        </p>
-                      )}
-                    <p>
-                      <strong>Places réservées : </strong>
-                      {booking.seatsBooked}
-                    </p>
+              <Card key={booking.id} className="p-4 sm:p-6">
+                <div className="space-y-4 text-sm sm:text-base">
+                  <div className="flex flex-col space-y-2 mb-2">
+                    <div className="flex items-center justify-between">
+                      <StatusBadge status={booking.status} />
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          <strong>Réservé le :</strong>
+                        </span>{" "}
+                        {booking.bookingDate
+                          .toDate()
+                          .toLocaleDateString("fr-FR")}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          <strong>Places réservées :</strong>
+                        </span>{" "}
+                        {booking.seatsBooked}
+                      </p>
+                    </div>
                   </div>
 
+                  {booking.status === "rejected" && booking.rejectionReason && (
+                    <p className="text-sm text-red-600">
+                      <strong>Raison du refus :</strong>{" "}
+                      {booking.rejectionReason}
+                    </p>
+                  )}
+
                   {ride && (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <p className="truncate">
                         <span className="font-medium">
                           <strong>De :</strong>
@@ -195,13 +350,13 @@ const PassengerBookings = () => {
                       </p>
                       <p className="truncate">
                         <span className="font-medium">
-                          <strong>À : </strong>
+                          <strong>À :</strong>
                         </span>{" "}
                         {ride.arrivalAddress}
                       </p>
                       <p className="break-words">
                         <span className="font-medium">
-                          <strong>Départ :</strong>
+                          <strong>Date & Heure :</strong>
                         </span>{" "}
                         {ride.departureTime.toDate().toLocaleString("fr-FR")}
                       </p>
@@ -209,7 +364,7 @@ const PassengerBookings = () => {
                   )}
 
                   {driver && (
-                    <div className="space-y-1 mt-2 border-t pt-2">
+                    <div className="space-y-2 mt-4 border-t pt-4">
                       <p className="font-medium text-gray-700">
                         <strong>Informations conducteur :</strong>
                       </p>
@@ -220,22 +375,29 @@ const PassengerBookings = () => {
                           {driver.phoneNumber}
                         </p>
                       )}
-                      {driver.profilePicture && (
-                        <Image
-                          src={driver.profilePicture}
-                          alt={`Photo de ${driver.fullName}`}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      )}
+                      <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
+                        {driver.profilePicture && (
+                          <Image
+                            src={driver.profilePicture}
+                            alt={`Photo de ${driver.fullName}`}
+                            layout="fill"
+                            objectFit="cover"
+                          />
+                        )}
+                      </div>
+                      {booking.status === "accepted" &&
+                        ride.meetingPointNote && (
+                          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <p className="text-sm font-medium text-blue-800 mb-1">
+                              <strong>Note du conducteur :</strong>
+                            </p>
+                            <p className="text-sm text-blue-700 whitespace-pre-wrap">
+                              {ride.meetingPointNote}
+                            </p>
+                          </div>
+                        )}
                     </div>
                   )}
-
-                  <p className="text-sm">
-                    <span className="font-medium">
-                      <strong>Réservé le :</strong>
-                    </span>{" "}
-                    {booking.bookingDate.toDate().toLocaleDateString("fr-FR")}
-                  </p>
 
                   {booking.specialNotes && (
                     <p className="text-sm break-words">
@@ -246,49 +408,74 @@ const PassengerBookings = () => {
                     </p>
                   )}
 
-                  {booking.status === "pending" && (
-                    <Badge
-                      onClick={() => handleCancelBooking(booking.id)}
-                      variant="destructive"
-                      className="mt-2 w-full sm:w-auto text-center cursor-pointer"
-                    >
-                      Annuler la réservation
-                    </Badge>
+                  {activeTab !== "past" && booking.status === "pending" && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Badge
+                          variant="destructive"
+                          className="mt-4 w-full sm:w-auto text-center cursor-pointer"
+                        >
+                          Annuler la réservation
+                        </Badge>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Confirmer l'annulation
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir annuler cette réservation ?
+                            Les places seront remises à disposition pour
+                            d'autres passagers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            Non, garder la réservation
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleCancelBooking(booking.id)}
+                          >
+                            Oui, annuler la réservation
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  {activeTab === "past" && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Badge
+                          variant="destructive"
+                          className="mt-4 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
+                          onClick={() => setBookingToDelete(booking.id)}
+                        >
+                          Supprimer la réservation
+                        </Badge>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Cette action est irréversible. La réservation sera
+                            définitivement supprimée.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel
+                            onClick={() => setBookingToDelete(null)}
+                          >
+                            Annuler
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteBooking}>
+                            Confirmer la suppression
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
-                {(booking.status === "rejected" ||
-                  (ride && isBookingPast(ride.departureTime))) && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Badge
-                        variant="destructive"
-                        className="mt-2 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
-                        onClick={() => setBookingToDelete(booking.id)}
-                      >
-                        Supprimer la réservation
-                      </Badge>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Cette action est irréversible. La réservation sera
-                          définitivement supprimée.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel
-                          onClick={() => setBookingToDelete(null)}
-                        >
-                          Annuler
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteBooking}>
-                          Confirmer la suppression
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
               </Card>
             );
           })}
@@ -296,6 +483,233 @@ const PassengerBookings = () => {
       )}
     </div>
   );
+
+  // return (
+  //   <div className="space-y-4 w-full px-4 sm:px-6 md:px-8">
+  //     <h2 className="text-xl sm:text-2xl font-bold mb-4">Mes Réservations</h2>
+
+  //     <div className="flex space-x-2 mb-4">
+  //       <Badge
+  //         variant={activeTab === "current" ? "default" : "outline"}
+  //         className="cursor-pointer"
+  //         onClick={() => setActiveTab("current")}
+  //       >
+  //         En cours
+  //       </Badge>
+  //       <Badge
+  //         variant={activeTab === "upcoming" ? "default" : "outline"}
+  //         className="cursor-pointer"
+  //         onClick={() => setActiveTab("upcoming")}
+  //       >
+  //         À venir
+  //       </Badge>
+  //       <Badge
+  //         variant={activeTab === "past" ? "default" : "outline"}
+  //         className="cursor-pointer"
+  //         onClick={() => setActiveTab("past")}
+  //       >
+  //         Passée(s)
+  //       </Badge>
+  //     </div>
+
+  //     {bookings.length === 0 ? (
+  //       <p className="text-sm sm:text-base">
+  //         <strong> Vous n'avez pas encore de réservations</strong>
+  //       </p>
+  //     ) : (
+  //       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  //         {bookings.map((booking) => {
+  //           const ride = rideDetails[booking.rideId];
+  //           const driver = ride ? driverDetails[ride.driverId] : null;
+
+  //           return (
+  //             <Card key={booking.id} className="p-4 sm:p-6">
+  //               <div className="space-y-4 text-sm sm:text-base">
+  //                 <div className="flex flex-col space-y-2 mb-2">
+  //                   <div className="flex items-center justify-between">
+  //                     <StatusBadge status={booking.status} />
+  //                   </div>
+  //                   <div className="flex flex-col space-y-1">
+  //                     <p className="text-sm">
+  //                       <span className="font-medium">
+  //                         <strong>Réservé le :</strong>
+  //                       </span>{" "}
+  //                       {booking.bookingDate
+  //                         .toDate()
+  //                         .toLocaleDateString("fr-FR")}
+  //                     </p>
+  //                     <p className="text-sm">
+  //                       <span className="font-medium">
+  //                         <strong>Places réservées :</strong>
+  //                       </span>{" "}
+  //                       {booking.seatsBooked}
+  //                     </p>
+  //                   </div>
+  //                 </div>
+
+  //                 {booking.status === "rejected" && booking.rejectionReason && (
+  //                   <p className="text-sm text-red-600">
+  //                     <strong>Raison du refus :</strong>{" "}
+  //                     {booking.rejectionReason}
+  //                   </p>
+  //                 )}
+
+  //                 {ride && (
+  //                   <div className="space-y-2">
+  //                     <p className="truncate">
+  //                       <span className="font-medium">
+  //                         <strong>De :</strong>
+  //                       </span>{" "}
+  //                       {ride.departureAddress}
+  //                     </p>
+  //                     <p className="truncate">
+  //                       <span className="font-medium">
+  //                         <strong>À :</strong>
+  //                       </span>{" "}
+  //                       {ride.arrivalAddress}
+  //                     </p>
+  //                     {/* {ride.meetingPointNote && (
+  //                       <p className="text-sm">
+  //                         <span className="font-medium">
+  //                           <strong>Point de rencontre :</strong>
+  //                         </span>{" "}
+  //                         {ride.meetingPointNote}
+  //                       </p>
+  //                     )} */}
+  //                     <p className="break-words">
+  //                       <span className="font-medium">
+  //                         <strong>Date & Heure :</strong>
+  //                       </span>{" "}
+  //                       {ride.departureTime.toDate().toLocaleString("fr-FR")}
+  //                     </p>
+
+  //                     {/*  */}
+  //                   </div>
+  //                 )}
+
+  //                 {driver && (
+  //                   <div className="space-y-2 mt-4 border-t pt-4">
+  //                     <p className="font-medium text-gray-700">
+  //                       <strong>Informations conducteur :</strong>
+  //                     </p>
+  //                     <p>{driver.fullName}</p>
+  //                     {driver.phoneNumber && (
+  //                       <p className="text-sm">
+  //                         <span className="font-medium">Tél :</span>{" "}
+  //                         {driver.phoneNumber}
+  //                       </p>
+  //                     )}
+  //                     <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
+  //                       {driver.profilePicture && (
+  //                         <Image
+  //                           src={driver.profilePicture}
+  //                           alt={`Photo de ${driver.fullName}`}
+  //                           layout="fill"
+  //                           objectFit="cover"
+  //                         />
+  //                       )}
+  //                     </div>
+  //                     {booking.status === "accepted" &&
+  //                       ride.meetingPointNote && (
+  //                         <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+  //                           <p className="text-sm font-medium text-blue-800 mb-1">
+  //                             <strong>Note du conducteur :</strong>
+  //                           </p>
+  //                           <p className="text-sm text-blue-700 whitespace-pre-wrap">
+  //                             {ride.meetingPointNote}
+  //                           </p>
+  //                         </div>
+  //                       )}
+  //                   </div>
+  //                 )}
+
+  //                 {booking.specialNotes && (
+  //                   <p className="text-sm break-words">
+  //                     <span className="font-medium">
+  //                       <strong>Le message que vous avez laissé :</strong>
+  //                     </span>{" "}
+  //                     {booking.specialNotes}
+  //                   </p>
+  //                 )}
+
+  //                 {booking.status === "pending" && (
+  //                   <AlertDialog>
+  //                     <AlertDialogTrigger asChild>
+  //                       <Badge
+  //                         variant="destructive"
+  //                         className="mt-4 w-full sm:w-auto text-center cursor-pointer"
+  //                       >
+  //                         Annuler la réservation
+  //                       </Badge>
+  //                     </AlertDialogTrigger>
+  //                     <AlertDialogContent>
+  //                       <AlertDialogHeader>
+  //                         <AlertDialogTitle>
+  //                           Confirmer l'annulation
+  //                         </AlertDialogTitle>
+  //                         <AlertDialogDescription>
+  //                           Êtes-vous sûr de vouloir annuler cette réservation ?
+  //                           Les places seront remises à disposition pour
+  //                           d'autres passagers.
+  //                         </AlertDialogDescription>
+  //                       </AlertDialogHeader>
+  //                       <AlertDialogFooter>
+  //                         <AlertDialogCancel>
+  //                           Non, garder la réservation
+  //                         </AlertDialogCancel>
+  //                         <AlertDialogAction
+  //                           onClick={() => {
+  //                             handleCancelBooking(booking.id);
+  //                           }}
+  //                         >
+  //                           Oui, annuler la réservation
+  //                         </AlertDialogAction>
+  //                       </AlertDialogFooter>
+  //                     </AlertDialogContent>
+  //                   </AlertDialog>
+  //                 )}
+  //               </div>
+
+  //               {(booking.status === "rejected" ||
+  //                 (ride && isBookingPast(ride.departureTime))) && (
+  //                 <AlertDialog>
+  //                   <AlertDialogTrigger asChild>
+  //                     <Badge
+  //                       variant="destructive"
+  //                       className="mt-4 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
+  //                       onClick={() => setBookingToDelete(booking.id)}
+  //                     >
+  //                       Supprimer la réservation
+  //                     </Badge>
+  //                   </AlertDialogTrigger>
+  //                   <AlertDialogContent>
+  //                     <AlertDialogHeader>
+  //                       <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+  //                       <AlertDialogDescription>
+  //                         Cette action est irréversible. La réservation sera
+  //                         définitivement supprimée.
+  //                       </AlertDialogDescription>
+  //                     </AlertDialogHeader>
+  //                     <AlertDialogFooter>
+  //                       <AlertDialogCancel
+  //                         onClick={() => setBookingToDelete(null)}
+  //                       >
+  //                         Annuler
+  //                       </AlertDialogCancel>
+  //                       <AlertDialogAction onClick={handleDeleteBooking}>
+  //                         Confirmer la suppression
+  //                       </AlertDialogAction>
+  //                     </AlertDialogFooter>
+  //                   </AlertDialogContent>
+  //                 </AlertDialog>
+  //               )}
+  //             </Card>
+  //           );
+  //         })}
+  //       </div>
+  //     )}
+  //   </div>
+  // );
 };
 
 export default PassengerBookings;

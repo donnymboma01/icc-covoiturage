@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
@@ -16,6 +17,7 @@ import {
   MdEdit,
   MdAdd,
   MdLocationOn,
+  MdFlag,
   MdVerified,
   MdStar,
   MdNotifications,
@@ -23,10 +25,20 @@ import {
 import { FaCarSide, FaUserEdit } from "react-icons/fa";
 import { EditProfileModal } from "./EditProfileModal";
 import { BecomeDriverModal } from "./BecomeDriver";
-import { doc, setDoc, getFirestore, getDoc } from "firebase/firestore";
+import { toast } from "sonner";
+import {
+  doc,
+  setDoc,
+  getFirestore,
+  getDoc,
+  collection,
+  getDocs,
+} from "firebase/firestore";
 import { app } from "../../app/config/firebase-config";
 import { useNotifications } from "@/app/hooks/useNotifications";
 import UserAvatar from "../../public/images/avatarprofile.png";
+import FeedbackModal from "../feedback/FeedbackModal";
+import { getAuth, updateEmail } from "firebase/auth";
 
 interface Vehicle {
   brand: string;
@@ -37,6 +49,7 @@ interface Vehicle {
 }
 
 export interface UserData {
+  ministry: string | boolean | undefined;
   uid: string;
   profilePicture?: string;
   fullName: string;
@@ -44,8 +57,9 @@ export interface UserData {
   email: string;
   phoneNumber: string;
   vehicle?: Vehicle;
-  fcmToken?: string;
+  fcmToken?: string | null;
   churchIds?: string[];
+  isStar: string | boolean | undefined;
 }
 
 const verses = [
@@ -66,44 +80,204 @@ const UserProfile = ({
   user: UserData | null;
   onUpdateUser: (data: Partial<UserData>) => Promise<void>;
 }) => {
-  const { requestPermission, token } = useNotifications();
+  const { requestPermission, token, isEnabled } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [showDriverForm, setShowDriverForm] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [churchData, setChurchData] = useState<{ name: string } | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return !!user?.fcmToken;
+  });
+
+  const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
+    []
+  );
 
   const db = getFirestore(app);
 
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
-      await onUpdateUser(userData);
-    } catch (error) {
+      const updateData = {
+        ...userData,
+        churchIds: userData.churchIds,
+      };
+
+      await onUpdateUser(updateData);
+
+      if (updateData.churchIds?.[0]) {
+        const churchRef = doc(db, "churches", updateData.churchIds[0]);
+        const churchSnap = await getDoc(churchRef);
+        if (churchSnap.exists()) {
+          setChurchData(churchSnap.data() as { name: string });
+        }
+      }
+
+      toast.success("Profil mis à jour avec succès");
+    } catch (error: any) {
       console.error("Error updating profile:", error);
+      toast.error("Erreur lors de la mise à jour du profil");
     }
   };
 
-  // Pour Jason & Djedou: Nous allons utiliser cette fonction pour
-  // vérifier les informations d'un utilisateur avant de lui attribuer une certification.
+  useEffect(() => {
+    setNotificationsEnabled(isEnabled);
+  }, [isEnabled]);
+
+  // const isVerifiedUser = (user: UserData | null): boolean => {
+  //   if (!user) return false;
+
+  //   const phoneNumberRegex = /^\d+$/;
+
+  //   const hasValidProfilePicture = Boolean(
+  //     user.profilePicture &&
+  //       user.profilePicture !== "" &&
+  //       !user.profilePicture.includes("avatarprofile.png")
+  //   );
+
+  //   return Boolean(
+  //     user.fullName &&
+  //       hasValidProfilePicture &&
+  //       user.email &&
+  //       user.phoneNumber &&
+  //       phoneNumberRegex.test(user.phoneNumber) &&
+  //       user.isStar &&
+  //       (!user.isDriver || (user.isDriver && user.vehicle?.licensePlate))
+  //   );
+  // };
   const isVerifiedUser = (user: UserData | null): boolean => {
     if (!user) return false;
 
+    const nameValidation = (name: string): boolean => {
+      const nameRegex = /^[A-Za-zÀ-ÿ](?:[A-Za-zÀ-ÿ''\s-]*[A-Za-zÀ-ÿ])?$/;
+
+      const hasValidLength = name.length >= 2 && name.length <= 50;
+      const noConsecutiveSymbols = !/[''-]{2,}/.test(name);
+      const noLeadingTrailingSpaces = name.trim() === name;
+
+      return (
+        nameRegex.test(name) &&
+        hasValidLength &&
+        noConsecutiveSymbols &&
+        noLeadingTrailingSpaces
+      );
+    };
+
     const phoneNumberRegex = /^\d+$/;
+
+    const hasValidProfilePicture = Boolean(
+      user.profilePicture &&
+        user.profilePicture !== "" &&
+        !user.profilePicture.includes("avatarprofile.png")
+    );
 
     return Boolean(
       user.fullName &&
-        user.profilePicture &&
+        nameValidation(user.fullName) &&
+        hasValidProfilePicture &&
         user.email &&
         user.phoneNumber &&
-        phoneNumberRegex.test(user.phoneNumber)
+        phoneNumberRegex.test(user.phoneNumber) &&
+        user.isStar &&
+        (!user.isDriver || (user.isDriver && user.vehicle?.licensePlate))
     );
   };
 
-  const handleEnableNotifications = () => {
-    requestPermission();
-    if (token && user) {
-      onUpdateUser({ fcmToken: token });
+  useEffect(() => {
+    const fetchChurches = async () => {
+      const churchesCollection = collection(db, "churches");
+      const churchesSnapshot = await getDocs(churchesCollection);
+      const churchMap = new Map();
+
+      churchesSnapshot.docs.forEach((doc) => {
+        const church = doc.data();
+        const normalizedName = church.name.trim().toLowerCase();
+
+        if (!churchMap.has(normalizedName)) {
+          churchMap.set(normalizedName, {
+            id: doc.id,
+            name: church.name.trim(),
+          });
+        }
+      });
+
+      const uniqueChurches = Array.from(churchMap.values());
+      uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
+      console.log("Fetched churches:", uniqueChurches);
+      setChurches(uniqueChurches);
+    };
+
+    fetchChurches();
+  }, [db]);
+
+  const isIOSDevice = () => {
+    return (
+      typeof window !== "undefined" &&
+      /iPad|iPhone|iPod/.test(navigator.userAgent)
+    );
+  };
+
+  // console.log("Is iOS:", isIOSDevice());
+
+  const handleEnableNotifications = async () => {
+    try {
+      if (notificationsEnabled) {
+        await onUpdateUser({
+          fcmToken: null,
+        });
+        setNotificationsEnabled(false);
+        toast.success("Notifications désactivées avec succès");
+        return;
+      }
+
+      if (isIOSDevice()) {
+        try {
+          const newToken = await requestPermission();
+          if (newToken && user?.uid) {
+            await onUpdateUser({
+              fcmToken: newToken,
+            });
+            setNotificationsEnabled(true);
+            toast.success("Notifications activées avec succès");
+          } else {
+            toast.error("Impossible d'obtenir le token de notification");
+          }
+        } catch (error) {
+          console.error("Erreur FCM:", error);
+          toast.error("Erreur lors de l'activation des notifications");
+        }
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        const newToken = await requestPermission();
+        if (newToken && user?.uid) {
+          await onUpdateUser({
+            fcmToken: newToken,
+          });
+          setNotificationsEnabled(true);
+          toast.success("Notifications activées avec succès");
+        }
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error("Erreur lors de la gestion des notifications");
     }
   };
+
+  useEffect(() => {
+    const checkNotificationSupport = () => {
+      if (typeof window !== "undefined" && "Notification" in window) {
+        setNotificationsEnabled(Notification.permission === "granted");
+      } else {
+        setNotificationsEnabled(false);
+      }
+    };
+
+    checkNotificationSupport();
+  }, []);
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
@@ -119,7 +293,7 @@ const UserProfile = ({
         isActive: true,
       });
     } catch (error) {
-      console.error("Error becoming driver:", error);
+      console.error("Erreur en passant à l'état de conducteur :", error);
     }
   };
 
@@ -139,7 +313,7 @@ const UserProfile = ({
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentVerseIndex((prevIndex) => (prevIndex + 1) % verses.length);
-    }, 50000);
+    }, 20000);
 
     return () => clearInterval(interval);
   }, []);
@@ -148,56 +322,64 @@ const UserProfile = ({
     <main className="container mx-auto p-4 sm:p-6 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         <Card className="p-4 sm:p-8 relative bg-gradient-to-r from-blue-600 to-blue-800">
-          <Button
-            variant="ghost"
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white"
-            onClick={() => setIsEditing(true)}
-          >
-            <FaUserEdit className="mr-2" />
-            <span className="hidden sm:inline">Modifier</span>
-          </Button>
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
+            {/* <Button
+              variant="ghost"
+              className="text-white"
+              onClick={() => setShowFeedbackModal(true)}
+            >
+              <MdFlag className="mr-2" />
+              <span className="hidden sm:inline">Signaler</span>
+            </Button> */}
+            <Button
+              variant="ghost"
+              className="text-white flex flex-col items-center"
+              onClick={() => setIsEditing(true)}
+            >
+              <FaUserEdit className="text-xl mb-1" />
+              <span className="text-xs">Modifier</span>
+            </Button>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
             <div className="relative">
               <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
                 <AvatarImage src={user?.profilePicture || UserAvatar.src} />
               </Avatar>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full text-white hover:bg-blue-700 transition-colors"
-              >
-                <MdEdit size={20} />
-              </button>
             </div>
 
-            <div className="text-white text-center sm:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-                {user?.fullName}
+            <div className="text-white w-full sm:w-auto">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center justify-center sm:justify-start gap-2 break-words">
+                <span className="max-w-[200px] sm:max-w-none truncate">
+                  {user?.fullName}
+                </span>
+                {isVerifiedUser(user) && (
+                  <MdVerified className="text-amber-500 text-xl" />
+                )}
               </h1>
+
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3 mb-4">
                 <Badge className="bg-slate-800 ">
                   {user?.isDriver ? "Conducteur" : "Passager"}
                 </Badge>
-                {/* {isVerifiedUser(user) && (
-                  <Badge className="bg-slate-800">
-                    <MdVerified className="mr-1" /> Vérifié
-                  </Badge>
-                )} */}
-                <Badge className="bg-slate-800">
-                  <MdVerified className="mr-1" /> Vérifié
-                </Badge>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
-                <MdLocationOn className="text-yellow-400" />
-                <span className="text-sm sm:text-base">
-                  {churchData?.name || "Église non spécifiée"}
-                </span>
-              </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2">
-                <MdStar className="text-yellow-400" />
-                <span className="text-sm sm:text-base">
-                  Membre depuis {new Date().getFullYear()}
-                </span>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
+                  <MdLocationOn className="text-yellow-400" />
+                  <span className="text-sm sm:text-base">
+                    {churchData?.name || "Église non spécifiée"}
+                  </span>
+                </div>
+
+                {user?.isStar && user?.ministry && (
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <MdStar className="text-yellow-400" />
+                    <span className="text-sm sm:text-base">
+                      {user.ministry}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -231,10 +413,18 @@ const UserProfile = ({
 
               <Button
                 onClick={handleEnableNotifications}
-                className="flex items-center gap-2 w-full"
+                className="flex items-center justify-center gap-2 w-full p-4"
+                style={{
+                  touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent",
+                }}
               >
-                <MdNotifications />
-                Activer les notifications
+                <MdNotifications size={20} />
+                <span className="text-sm">
+                  {notificationsEnabled
+                    ? "Désactiver les notifications"
+                    : "Activer les notifications"}
+                </span>
               </Button>
             </div>
           </Card>
@@ -299,6 +489,7 @@ const UserProfile = ({
           onClose={() => setIsEditing(false)}
           onSubmit={handleUpdateProfile}
           currentUser={user}
+          churches={churches}
         />
       )}
 
@@ -307,6 +498,15 @@ const UserProfile = ({
           isOpen={showDriverForm}
           onClose={() => setShowDriverForm(false)}
           onSubmit={handleBecomeDriver}
+        />
+      )}
+
+      {showFeedbackModal && (
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          userId={user?.uid || ""}
+          userType={user?.isDriver ? "driver" : "passenger"}
         />
       )}
     </main>

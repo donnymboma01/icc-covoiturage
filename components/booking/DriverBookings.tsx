@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { useState, useEffect } from "react";
@@ -32,7 +33,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { MdVerified } from "react-icons/md";
 
 const REJECTION_REASONS = [
   "Horaires ne correspondent plus",
@@ -48,11 +52,19 @@ interface RejectDialogProps {
   onConfirm: (reason: string) => void;
 }
 
+interface AcceptDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (note: string) => void;
+  noteValue: string;
+  onNoteChange: (value: string) => void;
+}
+
 interface Booking {
   id: string;
   rideId: string;
   passengerId: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "archived";
   seatsBooked: number;
   specialNotes: string;
   bookingDate: Timestamp;
@@ -61,6 +73,9 @@ interface Booking {
 interface Passenger {
   fullName: string;
   phoneNumber?: string;
+  profilePicture?: string;
+  isVerified?: boolean;
+  isStar: string | boolean | undefined;
 }
 
 interface Ride {
@@ -76,42 +91,76 @@ const DriverBookings = () => {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
+  const [isAcceptDialogOpen, setIsAcceptDialogOpen] = useState(false);
+  const [meetingNote, setMeetingNote] = useState("");
+
   const [passengerDetails, setPassengerDetails] = useState<{
     [key: string]: Passenger;
   }>({});
   const [rideDetails, setRideDetails] = useState<{ [key: string]: Ride }>({});
   const [filter, setFilter] = useState<
-    "pending" | "accepted" | "rejected" | "all"
-  >("all");
+    "pending" | "accepted" | "rejected" | "all" | "archived"
+  >("pending");
+
+  const isRideExpired = (departureTime: Timestamp) => {
+    return departureTime.toDate() < new Date();
+  };
 
   const filterButtons = (
-    <div className="flex gap-2 mb-4">
-      <Badge
-        onClick={() => setFilter("all")}
-        variant={filter === "all" ? "default" : "outline"}
-      >
-        Toutes
-      </Badge>
+    <div className="flex flex-wrap gap-1.5 mb-4">
       <Badge
         onClick={() => setFilter("pending")}
         variant={filter === "pending" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
       >
         En attente
       </Badge>
       <Badge
         onClick={() => setFilter("accepted")}
         variant={filter === "accepted" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
       >
         Acceptées
       </Badge>
       <Badge
         onClick={() => setFilter("rejected")}
         variant={filter === "rejected" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
       >
         Refusées
       </Badge>
+      <Badge
+        onClick={() => setFilter("archived")}
+        variant={filter === "archived" ? "default" : "outline"}
+        className="cursor-pointer hover:scale-105 transition-transform px-2 py-1 text-xs sm:text-sm sm:px-3 sm:py-1.5"
+      >
+        Archivées
+      </Badge>
     </div>
   );
+
+  useEffect(() => {
+    const archiveExpiredBookings = async () => {
+      const db = getFirestore();
+      bookings.forEach(async (booking) => {
+        const ride = rideDetails[booking.rideId];
+        if (
+          ride &&
+          isRideExpired(ride.departureTime) &&
+          booking.status === "pending"
+        ) {
+          await updateDoc(doc(db, "bookings", booking.id), {
+            status: "archived",
+            updatedAt: Timestamp.now(),
+          });
+        }
+      });
+    };
+
+    if (Object.keys(rideDetails).length > 0) {
+      archiveExpiredBookings();
+    }
+  }, [rideDetails]);
 
   useEffect(() => {
     if (!user) return;
@@ -184,6 +233,26 @@ const DriverBookings = () => {
     });
   }, [bookings]);
 
+  // const handleBookingAction = async (
+  //   booking: Booking,
+  //   status: "accepted" | "rejected"
+  // ) => {
+  //   if (status === "rejected") {
+  //     setSelectedBooking(booking);
+  //     setIsRejectDialogOpen(true);
+  //     return;
+  //   }
+
+  //   const db = getFirestore();
+  //   try {
+  //     await updateDoc(doc(db, "bookings", booking.id), {
+  //       status,
+  //       updatedAt: Timestamp.now(),
+  //     });
+  //   } catch (error) {
+  //     console.error("Erreur lors de la mise à jour de la reservation: ", error);
+  //   }
+  // };
   const handleBookingAction = async (
     booking: Booking,
     status: "accepted" | "rejected"
@@ -194,26 +263,9 @@ const DriverBookings = () => {
       return;
     }
 
-    const db = getFirestore();
-    try {
-      await updateDoc(doc(db, "bookings", booking.id), {
-        status,
-        updatedAt: Timestamp.now(),
-      });
-
-      if (status === "accepted") {
-        const rideRef = doc(db, "rides", booking.rideId);
-        const rideDoc = await getDoc(rideRef);
-
-        if (rideDoc.exists()) {
-          const currentSeats = rideDoc.data().availableSeats;
-          await updateDoc(rideRef, {
-            availableSeats: currentSeats - booking.seatsBooked,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error updating booking:", error);
+    if (status === "accepted") {
+      setSelectedBooking(booking);
+      setIsAcceptDialogOpen(true);
     }
   };
 
@@ -227,10 +279,40 @@ const DriverBookings = () => {
         rejectionReason: reason,
         updatedAt: Timestamp.now(),
       });
+
+      const rideRef = doc(db, "rides", selectedBooking.rideId);
+      const rideDoc = await getDoc(rideRef);
+
+      if (rideDoc.exists()) {
+        const currentSeats = rideDoc.data().availableSeats;
+        await updateDoc(rideRef, {
+          availableSeats: currentSeats + selectedBooking.seatsBooked,
+        });
+      }
+
       setIsRejectDialogOpen(false);
       setSelectedBooking(null);
     } catch (error) {
-      console.error("Error updating booking:", error);
+      console.error("Erreur lors de la mise à jour de la reservation:", error);
+    }
+  };
+
+  const handleAcceptBooking = async (booking: Booking) => {
+    const db = getFirestore();
+    try {
+      await updateDoc(doc(db, "bookings", booking.id), {
+        status: "accepted",
+        updatedAt: Timestamp.now(),
+      });
+
+      await updateDoc(doc(db, "rides", booking.rideId), {
+        meetingPointNote: meetingNote,
+      });
+
+      setIsAcceptDialogOpen(false);
+      setMeetingNote("");
+    } catch (error) {
+      console.error("Erreur lors de l'acceptation:", error);
     }
   };
 
@@ -251,7 +333,7 @@ const DriverBookings = () => {
           {bookings.map((booking) => (
             <Card key={booking.id} className="p-3 sm:p-4">
               <div className="space-y-3">
-                {passengerDetails[booking.passengerId] && (
+                {/* {passengerDetails[booking.passengerId] && (
                   <div className="mb-2">
                     <h3 className="font-semibold text-sm sm:text-base">
                       Passager :
@@ -266,53 +348,129 @@ const DriverBookings = () => {
                       </p>
                     )}
                   </div>
-                )}
-
-                {rideDetails[booking.rideId] && (
-                  <div className="mb-2">
-                    <h3 className="font-semibold text-sm sm:text-base">
-                      Détails du trajet :
-                    </h3>
-                    <p className="text-sm truncate">
-                      De : {rideDetails[booking.rideId].departureAddress}
-                    </p>
-                    <p className="text-sm truncate">
-                      À : {rideDetails[booking.rideId].arrivalAddress}
-                    </p>
-                    <p className="text-sm">
-                      Départ :{" "}
-                      {rideDetails[booking.rideId].departureTime
-                        .toDate()
-                        .toLocaleString("fr-FR")}
-                    </p>
+                )} */}
+                {passengerDetails[booking.passengerId] && (
+                  <div className="mb-2 flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                        <AvatarImage
+                          src={
+                            passengerDetails[booking.passengerId]
+                              .profilePicture || "/images/avatarprofile.png"
+                          }
+                          alt={passengerDetails[booking.passengerId].fullName}
+                        />
+                      </Avatar>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm sm:text-base">
+                          {passengerDetails[booking.passengerId].fullName}
+                        </h3>
+                        {passengerDetails[booking.passengerId].isStar && (
+                          <MdVerified className="text-amber-500 h-4 w-4 sm:h-5 sm:w-5" />
+                        )}
+                      </div>
+                      {passengerDetails[booking.passengerId].phoneNumber && (
+                        <p className="text-sm text-gray-600">
+                          {passengerDetails[booking.passengerId].phoneNumber}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                <p className="text-sm">
-                  Places demandées : {booking.seatsBooked}
-                </p>
-                {booking.specialNotes && (
-                  <p className="text-sm break-words">
-                    Notes : {booking.specialNotes}
-                  </p>
-                )}
+                {rideDetails[booking.rideId] && (
+                  <>
+                    <div className="mb-2">
+                      <h3 className="font-semibold text-sm sm:text-base">
+                        Détails du trajet :
+                      </h3>
+                      <p className="text-sm truncate">
+                        De : {rideDetails[booking.rideId].departureAddress}
+                      </p>
+                      <p className="text-sm truncate">
+                        À : {rideDetails[booking.rideId].arrivalAddress}
+                      </p>
+                      <p className="text-sm">
+                        Départ :{" "}
+                        {rideDetails[booking.rideId].departureTime
+                          .toDate()
+                          .toLocaleString("fr-FR")}
+                      </p>
+                    </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 mt-3">
-                  <Badge
-                    onClick={() => handleBookingAction(booking, "accepted")}
-                    variant="default"
-                    className="text-center cursor-pointer"
-                  >
-                    Accepter
-                  </Badge>
-                  <Badge
-                    onClick={() => handleBookingAction(booking, "rejected")}
-                    variant="destructive"
-                    className="text-center cursor-pointer"
-                  >
-                    Refuser
-                  </Badge>
-                </div>
+                    <p className="text-sm">
+                      Places demandées : {booking.seatsBooked}
+                    </p>
+                    {booking.specialNotes && (
+                      <p className="text-sm break-words">
+                        Notes : {booking.specialNotes}
+                      </p>
+                    )}
+
+                    {isRideExpired(rideDetails[booking.rideId].departureTime) &&
+                      booking.status === "pending" && (
+                        <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <p className="text-sm text-amber-800 font-medium">
+                            Ce trajet est déjà passé. La demande a été
+                            automatiquement archivée.
+                          </p>
+                        </div>
+                      )}
+
+                    {!isRideExpired(
+                      rideDetails[booking.rideId].departureTime
+                    ) && (
+                      <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                        {booking.status === "pending" && (
+                          <>
+                            <Badge
+                              onClick={() =>
+                                handleBookingAction(booking, "accepted")
+                              }
+                              variant="default"
+                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto"
+                            >
+                              Accepter
+                            </Badge>
+                            <Badge
+                              onClick={() =>
+                                handleBookingAction(booking, "rejected")
+                              }
+                              variant="destructive"
+                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+                            >
+                              Refuser
+                            </Badge>
+                          </>
+                        )}
+                        {booking.status === "accepted" && (
+                          <Badge
+                            onClick={() =>
+                              handleBookingAction(booking, "rejected")
+                            }
+                            variant="destructive"
+                            className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
+                          >
+                            Refuser
+                          </Badge>
+                        )}
+                        {booking.status === "rejected" && (
+                          <Badge
+                            onClick={() =>
+                              handleBookingAction(booking, "accepted")
+                            }
+                            variant="default"
+                            className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
+                          >
+                            Accepter
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </Card>
           ))}
@@ -322,6 +480,16 @@ const DriverBookings = () => {
         isOpen={isRejectDialogOpen}
         onClose={() => setIsRejectDialogOpen(false)}
         onConfirm={handleConfirmReject}
+      />
+
+      <AcceptDialog
+        isOpen={isAcceptDialogOpen}
+        onClose={() => setIsAcceptDialogOpen(false)}
+        onConfirm={() =>
+          selectedBooking && handleAcceptBooking(selectedBooking)
+        }
+        noteValue={meetingNote}
+        onNoteChange={setMeetingNote}
       />
     </div>
   );
@@ -366,6 +534,42 @@ const RejectDialog = ({ isOpen, onClose, onConfirm }: RejectDialogProps) => {
           >
             Confirmer le refus
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const AcceptDialog = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  noteValue,
+  onNoteChange,
+}: AcceptDialogProps) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Ajouter une note pour le passager</DialogTitle>
+          <DialogDescription>
+            Précisez le point de rencontre exact ou toute information utile pour
+            faciliter la rencontre.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <textarea
+            className="min-h-[100px] p-3 border rounded-md"
+            placeholder="Ex: Je serai garé sur le parking de l'église, voiture bleue Peugeot 208. Vous pouvez me retrouver près de l'entrée principale."
+            value={noteValue}
+            onChange={(e) => onNoteChange(e.target.value)}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button onClick={() => onConfirm(noteValue)}>Confirmer</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

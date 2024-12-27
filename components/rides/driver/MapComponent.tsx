@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
@@ -24,23 +25,27 @@ interface Location {
 interface MapComponentProps {
   onDepartureSelect: (address: string) => void;
   onArrivalSelect: (address: string) => void;
+  initialDepartureAddress?: string;
+  initialArrivalAddress?: string;
+  isMapVisible: boolean;
 }
 
 const MapComponent = ({
   onDepartureSelect,
   onArrivalSelect,
+  initialDepartureAddress = "",
+  initialArrivalAddress = "",
+  isMapVisible,
 }: MapComponentProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
-
-  const [departureAddress, setDepartureAddress] = useState<string>("");
-  const [arrivalAddress, setArrivalAddress] = useState<string>("");
+  const [userLocation, setUserLocation] = useState<[number, number]>([
+    48.8566, 2.3522,
+  ]);
+  const [departureAddress, setDepartureAddress] = useState("");
+  const [arrivalAddress, setArrivalAddress] = useState("");
   const [departureMarker, setDepartureMarker] = useState<L.Marker | null>(null);
   const [arrivalMarker, setArrivalMarker] = useState<L.Marker | null>(null);
-
-  const [userLocation, setUserLocation] = useState<[number, number]>([
-    50.85, 4.35,
-  ]);
 
   const updateMarker = (location: Location, type: "departure" | "arrival") => {
     if (!leafletMap.current) return;
@@ -104,37 +109,46 @@ const MapComponent = ({
   };
 
   useEffect(() => {
-    if (typeof window === "undefined" || !mapRef.current || leafletMap.current)
-      return;
+    if (!mapRef.current) return;
 
-    leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
+    if (!leafletMap.current) {
+      leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(leafletMap.current);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(leafletMap.current);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const newLocation: [number, number] = [
-          position.coords.latitude,
-          position.coords.longitude,
-        ];
-        setUserLocation(newLocation);
-        leafletMap.current?.setView(newLocation, 13);
-      },
-      (error) => {
-        console.warn("Erreur de géolocalisation :", error);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLocation: [number, number] = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+          setUserLocation(newLocation);
+          leafletMap.current?.setView(newLocation, 13);
+        },
+        (error) => {
+          console.warn("Erreur de géolocalisation :", error);
+        }
+      );
+    }
+
+    if (leafletMap.current) {
+      if (isMapVisible) {
+        setTimeout(() => {
+          leafletMap.current?.invalidateSize();
+        }, 100);
       }
-    );
+    }
 
     return () => {
-      if (leafletMap.current) {
+      if (leafletMap.current && !isMapVisible) {
         leafletMap.current.remove();
         leafletMap.current = null;
       }
     };
-  }, []);
+  }, [isMapVisible]);
 
   useEffect(() => {
     return () => {
@@ -143,48 +157,75 @@ const MapComponent = ({
     };
   }, [arrivalMarker, departureMarker]);
 
+  useEffect(() => {
+    if (isMapVisible && mapRef.current && !leafletMap.current) {
+      leafletMap.current = L.map(mapRef.current).setView(userLocation, 13);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(leafletMap.current);
+
+      if (departureMarker) {
+        departureMarker.addTo(leafletMap.current);
+      }
+      if (arrivalMarker) {
+        arrivalMarker.addTo(leafletMap.current);
+      }
+    }
+  }, [isMapVisible]);
+
   return (
-    <Card className="p-4">
-      <div className="space-y-4">
-        <div ref={mapRef} className="h-[500px] w-full z-0 rounded-lg" />
+    <div className="space-y-6 relative z-0">
+      <div
+        className={`
+        transition-all duration-500 ease-in-out mb-6
+        ${isMapVisible ? "opacity-100 h-[500px]" : "opacity-0 h-0"}
+        overflow-hidden rounded-xl shadow-lg
+        relative w-full max-w-full
+      `}
+        style={{ visibility: isMapVisible ? "visible" : "hidden" }}
+      >
+        <div
+          ref={mapRef}
+          className="h-full w-full rounded-xl border-2 border-gray-100"
+        />
+      </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Input
-                type="text"
-                placeholder="Adresse de départ"
-                value={departureAddress}
-                onChange={(e) => setDepartureAddress(e.target.value)}
-                className="w-full"
-              />
-              <Button
-                onClick={() => searchAddress(departureAddress, "departure")}
-                className="w-full sm:w-auto"
-              >
-                Chercher
-              </Button>
-            </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Input
+            type="text"
+            placeholder="Adresse de départ"
+            value={departureAddress}
+            onChange={(e) => setDepartureAddress(e.target.value)}
+            className="w-full rounded-lg border-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+          />
+          <Button
+            onClick={() => searchAddress(departureAddress, "departure")}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+          >
+            Rechercher départ
+          </Button>
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Input
-                type="text"
-                placeholder="Adresse d'arrivée"
-                value={arrivalAddress}
-                onChange={(e) => setArrivalAddress(e.target.value)}
-                className="w-full"
-              />
-              <Button
-                onClick={() => searchAddress(arrivalAddress, "arrival")}
-                className="w-full sm:w-auto"
-              >
-                Chercher
-              </Button>
-            </div>
-          </div>
+        <div className="space-y-2">
+          <Input
+            type="text"
+            placeholder="Adresse d'arrivée"
+            value={arrivalAddress}
+            onChange={(e) => setArrivalAddress(e.target.value)}
+            className="w-full rounded-lg border-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+          />
+          <Button
+            onClick={() => searchAddress(arrivalAddress, "arrival")}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+          >
+            Rechercher arrivée
+          </Button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
