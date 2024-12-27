@@ -25,6 +25,17 @@ import { toast } from "sonner";
 import ChurchSelector from "./ChrurchSelector";
 import RideSummary from "./RidesSummary";
 import { ErrorBoundary } from "react-error-boundary";
+import { geohashForLocation } from "geofire-common";
+import { getCoordinates } from "../../../utils/geocoding";
+
+export const prepareRideLocation = async (address: string) => {
+  const coordinates = await getCoordinates(address);
+  return {
+    lat: coordinates.lat,
+    lng: coordinates.lng,
+    geohash: geohashForLocation([coordinates.lat, coordinates.lng]),
+  };
+};
 
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -148,6 +159,13 @@ const CreateRideForm = () => {
     console.log("User status:", user?.isDriver);
 
     try {
+      const departureLocation = await prepareRideLocation(
+        formData.departureAddress
+      );
+      const arrivalLocation = await prepareRideLocation(
+        formData.arrivalAddress
+      );
+
       console.log("User:", user);
       const vehicleQuery = query(
         collection(db, "vehicles"),
@@ -167,6 +185,8 @@ const CreateRideForm = () => {
         churchName: formData.churchName,
         departureAddress: formData.departureAddress,
         arrivalAddress: formData.arrivalAddress,
+        departureLocation,
+        arrivalLocation,
         departureTime: formData.departureTime,
         availableSeats: formData.availableSeats,
         isRecurring: formData.isRecurring,
@@ -177,7 +197,7 @@ const CreateRideForm = () => {
         serviceType: formData.serviceType,
         ...(formData.isRecurring && { frequency: formData.frequency }),
         displayPhoneNumber: formData.displayPhoneNumber,
-        meetingPointNote: formData.meetingPointNote || '',
+        meetingPointNote: formData.meetingPointNote || "",
       };
 
       const docRef = await addDoc(collection(db, "rides"), rideData);
@@ -185,6 +205,8 @@ const CreateRideForm = () => {
       toast.success("Votre trajet a été créé");
 
       router.push("/rides/history");
+      console.log("Departure Location:", departureLocation);
+      console.log("Arrival Location:", arrivalLocation);
     } catch (error: unknown) {
       console.error("Détails complets de l'erreur:", error);
       if (error instanceof Error) {

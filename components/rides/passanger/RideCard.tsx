@@ -56,13 +56,18 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
         </Avatar>
 
         <div className="flex-1 space-y-2 w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-2">
-            <div className="text-center sm:text-left">
-              <h3 className="font-medium flex items-center gap-2">{driver.fullName} {driver.isStar && <MdVerified className="text-amber-500" />}</h3>
-              <p className="text-xs sm:text-sm text-slate-500">
-                {format(ride.departureTime, "EEEE d MMMM", { locale: fr })}
-              </p>
+          <div className="flex flex-col items-center w-full mb-2">
+            <div className="flex items-center justify-center gap-2 w-full">
+              <h3 className="font-bold text-base sm:text-lg text-center break-words max-w-[80%]">
+                {driver.fullName}{" "}
+              </h3>
+              {driver.isStar && (
+                <MdVerified className="text-amber-500 flex-shrink-0 h-5 w-5 sm:h-6 sm:w-6" />
+              )}
             </div>
+            <p className="text-xs sm:text-sm text-slate-500 text-center">
+              {format(ride.departureTime, "EEEE d MMMM", { locale: fr })}
+            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -102,5 +107,4 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
     </Card>
   );
 };
-
 export default RideCard;

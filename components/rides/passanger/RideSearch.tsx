@@ -13,6 +13,11 @@ import {
   Timestamp,
   getFirestore,
 } from "firebase/firestore";
+import {
+  distanceBetween,
+  geohashForLocation,
+  geohashQueryBounds,
+} from "geofire-common";
 import { app } from "../../../app/config/firebase-config";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +33,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/app/hooks/useAuth";
+import { getCoordinates } from "@/utils/geocoding";
+
+interface GeoLocation {
+  lat: number;
+  lng: number;
+  geohash: string;
+}
 
 interface Ride {
   id: string;
@@ -40,6 +52,8 @@ interface Ride {
   price?: number;
   status: "active" | "cancelled";
   waypoints: string[];
+  departureLocation: GeoLocation;
+  arrivalLocation: GeoLocation;
 }
 
 interface Driver {
@@ -47,6 +61,15 @@ interface Driver {
   profilePicture?: string;
   isStar: string | boolean | undefined;
 }
+
+const getDriverData = async (driverId: string): Promise<Driver> => {
+  const driverSnap = await getDocs(
+    query(collection(db, "users"), where("uid", "==", driverId))
+  );
+
+  const driverData = driverSnap.docs[0]?.data() as Driver;
+  return driverData;
+};
 
 const db = getFirestore(app);
 
@@ -155,77 +178,6 @@ const RideSearch = () => {
     fetchAllAvailableRides();
   }, []);
 
-  const handleSearch = async () => {
-    setLoading(true);
-    setHasSearched(true);
-    try {
-      const startOfDay = new Date(searchParams.date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(searchParams.date);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const ridesRef = collection(db, "rides");
-      const conditions = [
-        where("status", "==", "active"),
-        where("departureTime", ">=", startOfDay),
-        where("departureTime", "<=", endOfDay),
-      ];
-
-      const q = query(ridesRef, ...conditions);
-      const querySnapshot = await getDocs(q);
-
-      console.log("Nombre de trajets trouvés:", querySnapshot.size); // Debug
-
-      const ridesData = await Promise.all(
-        querySnapshot.docs.map(async (doc) => {
-          const rideData = doc.data() as Ride;
-
-          // Appliquer les filtres de recherche si nécessaire
-          if (searchParams.departure || searchParams.arrival) {
-            const departureMatch =
-              !searchParams.departure ||
-              rideData.departureAddress
-                .toLowerCase()
-                .includes(searchParams.departure.toLowerCase());
-            const arrivalMatch =
-              !searchParams.arrival ||
-              rideData.arrivalAddress
-                .toLowerCase()
-                .includes(searchParams.arrival.toLowerCase());
-
-            if (!departureMatch || !arrivalMatch) {
-              return null;
-            }
-          }
-
-          const driverSnap = await getDocs(
-            query(
-              collection(db, "users"),
-              where("uid", "==", rideData.driverId)
-            )
-          );
-          const driverData = driverSnap.docs[0]?.data() as Driver;
-
-          return {
-            ...rideData,
-            id: doc.id,
-            driver: driverData,
-          };
-        })
-      );
-
-      const filteredRides = ridesData.filter(
-        (ride): ride is Ride & { driver: Driver } => ride !== null
-      );
-      console.log("Trajets filtrés:", filteredRides.length); // Debug
-      setRides(filteredRides);
-    } catch (error) {
-      console.error("Erreur lors de la recherche:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // const handleSearch = async () => {
   //   setLoading(true);
   //   setHasSearched(true);
@@ -245,18 +197,19 @@ const RideSearch = () => {
   //     const q = query(ridesRef, ...conditions);
   //     const querySnapshot = await getDocs(q);
 
+  //     console.log("Nombre de trajets trouvés:", querySnapshot.size); // Debug
+
   //     const ridesData = await Promise.all(
   //       querySnapshot.docs.map(async (doc) => {
   //         const rideData = doc.data() as Ride;
 
-  //         // Only apply filters if user is logged in and has entered search criteria
-  //         if (user && (searchParams.departure || searchParams.arrival)) {
+  //         // Appliquer les filtres de recherche si nécessaire
+  //         if (searchParams.departure || searchParams.arrival) {
   //           const departureMatch =
   //             !searchParams.departure ||
   //             rideData.departureAddress
   //               .toLowerCase()
   //               .includes(searchParams.departure.toLowerCase());
-
   //           const arrivalMatch =
   //             !searchParams.arrival ||
   //             rideData.arrivalAddress
@@ -287,28 +240,105 @@ const RideSearch = () => {
   //     const filteredRides = ridesData.filter(
   //       (ride): ride is Ride & { driver: Driver } => ride !== null
   //     );
+  //     console.log("Trajets filtrés:", filteredRides.length); // Debug
   //     setRides(filteredRides);
-
-  //     // const filteredRides = ridesData.filter(
-  //     //   (ride): ride is Ride & { driver: Driver } => ride !== null
-  //     // );
-  //     // setRides(filteredRides);
   //   } catch (error) {
-  //     console.error("Error fetching rides:", error);
+  //     console.error("Erreur lors de la recherche:", error);
   //   } finally {
   //     setLoading(false);
   //   }
   // };
 
-  // useEffect(() => {
-  //   if (user) {
-  //     handleSearch();
-  //   }
-  // }, [user]);
+  const handleSearch = async () => {
+    setLoading(true);
+    setHasSearched(true);
 
-  // useEffect(() => {
-  //   handleSearch();
-  // }, []);
+    try {
+      const startOfDay = new Date(searchParams.date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(searchParams.date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      if (!searchParams.departure) {
+        const ridesRef = collection(db, "rides");
+        const q = query(
+          ridesRef,
+          where("status", "==", "active"),
+          where("departureTime", ">=", startOfDay),
+          where("departureTime", "<=", endOfDay)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const ridesData = await Promise.all(
+          querySnapshot.docs.map(async (doc) => {
+            const rideData = doc.data() as Ride;
+            const driverData = await getDriverData(rideData.driverId);
+            return {
+              ...rideData,
+              id: doc.id,
+              driver: driverData,
+            };
+          })
+        );
+        setRides(ridesData);
+        return;
+      }
+
+      const searchLocation = await getCoordinates(searchParams.departure);
+      const radiusInKm = 10;
+      const bounds = geohashQueryBounds(
+        [searchLocation.lat, searchLocation.lng],
+        radiusInKm * 1000
+      );
+
+      const ridesRef = collection(db, "rides");
+      const promises = bounds.map((b) => {
+        const q = query(
+          ridesRef,
+          where("departureLocation.geohash", ">=", b[0]),
+          where("departureLocation.geohash", "<=", b[1]),
+          where("status", "==", "active"),
+          where("departureTime", ">=", startOfDay),
+          where("departureTime", "<=", endOfDay)
+        );
+        return getDocs(q);
+      });
+
+      const snapshots = await Promise.all(promises);
+      const matchingDocs = [];
+
+      for (const snap of snapshots) {
+        for (const doc of snap.docs) {
+          const rideData = doc.data() as Ride;
+          if (rideData.departureLocation) {
+            const distanceInKm = distanceBetween(
+              [searchLocation.lat, searchLocation.lng],
+              [rideData.departureLocation.lat, rideData.departureLocation.lng]
+            );
+            if (distanceInKm <= radiusInKm) {
+              matchingDocs.push({ ...rideData, id: doc.id });
+            }
+          }
+        }
+      }
+
+      const ridesWithDrivers = await Promise.all(
+        matchingDocs.map(async (ride) => {
+          const driverData = await getDriverData(ride.driverId);
+          return { ...ride, driver: driverData };
+        })
+      );
+
+      setRides(ridesWithDrivers);
+    } catch (error) {
+      console.error("Search error details:", error);
+      setRides([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   return (
     <div className="space-y-6 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">

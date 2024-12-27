@@ -125,8 +125,44 @@ const UserProfile = ({
     setNotificationsEnabled(isEnabled);
   }, [isEnabled]);
 
+  // const isVerifiedUser = (user: UserData | null): boolean => {
+  //   if (!user) return false;
+
+  //   const phoneNumberRegex = /^\d+$/;
+
+  //   const hasValidProfilePicture = Boolean(
+  //     user.profilePicture &&
+  //       user.profilePicture !== "" &&
+  //       !user.profilePicture.includes("avatarprofile.png")
+  //   );
+
+  //   return Boolean(
+  //     user.fullName &&
+  //       hasValidProfilePicture &&
+  //       user.email &&
+  //       user.phoneNumber &&
+  //       phoneNumberRegex.test(user.phoneNumber) &&
+  //       user.isStar &&
+  //       (!user.isDriver || (user.isDriver && user.vehicle?.licensePlate))
+  //   );
+  // };
   const isVerifiedUser = (user: UserData | null): boolean => {
     if (!user) return false;
+
+    const nameValidation = (name: string): boolean => {
+      const nameRegex = /^[A-Za-zÀ-ÿ](?:[A-Za-zÀ-ÿ''\s-]*[A-Za-zÀ-ÿ])?$/;
+
+      const hasValidLength = name.length >= 2 && name.length <= 50;
+      const noConsecutiveSymbols = !/[''-]{2,}/.test(name);
+      const noLeadingTrailingSpaces = name.trim() === name;
+
+      return (
+        nameRegex.test(name) &&
+        hasValidLength &&
+        noConsecutiveSymbols &&
+        noLeadingTrailingSpaces
+      );
+    };
 
     const phoneNumberRegex = /^\d+$/;
 
@@ -138,6 +174,7 @@ const UserProfile = ({
 
     return Boolean(
       user.fullName &&
+        nameValidation(user.fullName) &&
         hasValidProfilePicture &&
         user.email &&
         user.phoneNumber &&
@@ -311,15 +348,11 @@ const UserProfile = ({
               </Avatar>
             </div>
 
-            <div className="text-white text-center sm:text-left">
-              {/* <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-2">
-                {user?.fullName}
-                {user?.isStar && (
-                  <MdVerified className="text-amber-500 text-xl" />
-                )}
-              </h1> */}
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-2">
-                {user?.fullName}
+            <div className="text-white w-full sm:w-auto">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center justify-center sm:justify-start gap-2 break-words">
+                <span className="max-w-[200px] sm:max-w-none truncate">
+                  {user?.fullName}
+                </span>
                 {isVerifiedUser(user) && (
                   <MdVerified className="text-amber-500 text-xl" />
                 )}
@@ -329,30 +362,7 @@ const UserProfile = ({
                 <Badge className="bg-slate-800 ">
                   {user?.isDriver ? "Conducteur" : "Passager"}
                 </Badge>
-
-                {/* {isVerifiedUser(user) ? (
-                  <Badge
-                    className="bg-amber-400 hover:bg-amber-500 text-black border-2 border-amber-600 shadow-md"
-                    style={{
-                      animation: "shine 1.5s ease-in-out infinite",
-                    }}
-                  >
-                    <MdVerified className="mr-1 text-amber-700" />
-                    Certifié S.T.A.R
-                  </Badge>
-                ) : (
-                  <Badge className="bg-gray-200 text-gray-600">
-                    Non certifié
-                  </Badge>
-                )} */}
               </div>
-
-              {/* <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
-                <MdLocationOn className="text-yellow-400" />
-                <span className="text-sm sm:text-base">
-                  {churchData?.name || "Église non spécifiée"}
-                </span>
-              </div> */}
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">

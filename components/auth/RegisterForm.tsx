@@ -200,6 +200,7 @@ const RegisterForm = () => {
         router.push("/auth/login");
       }, 1000);
     } catch (authError: any) {
+      console.log("Detailed error:", authError); 
       console.error("Registration error:", authError);
       if (userCredential?.user) {
         await cleanupFailedRegistration(userCredential.user);

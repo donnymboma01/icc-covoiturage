@@ -165,21 +165,24 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
               alt={driver.fullName}
             />
           </Avatar>
-          <div className="text-center sm:text-left">
-            <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-              {driver.fullName}
-              {driver.isStar && <MdVerified className="text-amber-500" />}
-            </h2>
 
-            <p className="text-gray-500 text-sm sm:text-base">
+          <div className="flex flex-col items-center sm:items-start w-full">
+            <div className="flex items-center justify-center sm:justify-start gap-2 w-full">
+              <h2 className="text-lg sm:text-xl font-semibold text-center sm:text-left break-words max-w-[80%]">
+                {driver.fullName}
+              </h2>
+              {driver.isStar && (
+                <MdVerified className="text-amber-500 flex-shrink-0 h-5 w-5 sm:h-6 sm:w-6" />
+              )}
+            </div>
+
+            <p className="text-gray-500 text-sm sm:text-base text-center sm:text-left">
               {ride.displayPhoneNumber ? driver.phoneNumber : ""}
             </p>
-            {/* <p className="text-gray-500 text-sm sm:text-base">
-              {driver.phoneNumber}
-            </p> */}
+
             {driverChurch && (
-              <div className="flex items-center gap-2">
-                <MdChurch className="text-gray-500 text-lg" />
+              <div className="flex items-center justify-center sm:justify-start gap-2 w-full">
+                <MdChurch className="text-gray-500 text-lg flex-shrink-0" />
                 <p className="text-gray-500 text-sm sm:text-base">
                   {driverChurch.name}
                 </p>

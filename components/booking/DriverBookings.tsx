@@ -35,6 +35,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { MdVerified } from "react-icons/md";
 
 const REJECTION_REASONS = [
   "Horaires ne correspondent plus",
@@ -71,6 +73,9 @@ interface Booking {
 interface Passenger {
   fullName: string;
   phoneNumber?: string;
+  profilePicture?: string;
+  isVerified?: boolean;
+  isStar: string | boolean | undefined;
 }
 
 interface Ride {
@@ -325,101 +330,10 @@ const DriverBookings = () => {
         <p className="text-sm sm:text-base">Aucune demande en attente</p>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {/* {bookings.map((booking) => (
-            <Card key={booking.id} className="p-3 sm:p-4">
-              <div className="space-y-3">
-                {passengerDetails[booking.passengerId] && (
-                  <div className="mb-2">
-                    <h3 className="font-semibold text-sm sm:text-base">
-                      Passager :
-                    </h3>
-                    <p className="text-sm">
-                      {passengerDetails[booking.passengerId].fullName}
-                    </p>
-                    {passengerDetails[booking.passengerId].phoneNumber && (
-                      <p className="text-sm">
-                        Téléphone :{" "}
-                        {passengerDetails[booking.passengerId].phoneNumber}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {rideDetails[booking.rideId] && (
-                  <div className="mb-2">
-                    <h3 className="font-semibold text-sm sm:text-base">
-                      Détails du trajet :
-                    </h3>
-                    <p className="text-sm truncate">
-                      De : {rideDetails[booking.rideId].departureAddress}
-                    </p>
-                    <p className="text-sm truncate">
-                      À : {rideDetails[booking.rideId].arrivalAddress}
-                    </p>
-                    <p className="text-sm">
-                      Départ :{" "}
-                      {rideDetails[booking.rideId].departureTime
-                        .toDate()
-                        .toLocaleString("fr-FR")}
-                    </p>
-                  </div>
-                )}
-
-                <p className="text-sm">
-                  Places demandées : {booking.seatsBooked}
-                </p>
-                {booking.specialNotes && (
-                  <p className="text-sm break-words">
-                    Notes : {booking.specialNotes}
-                  </p>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-2 mt-3">
-                  {booking.status === "pending" && (
-                    <>
-                      <Badge
-                        onClick={() => handleBookingAction(booking, "accepted")}
-                        variant="default"
-                        className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto"
-                      >
-                        Accepter
-                      </Badge>
-                      <Badge
-                        onClick={() => handleBookingAction(booking, "rejected")}
-                        variant="destructive"
-                        className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
-                      >
-                        Refuser
-                      </Badge>
-                    </>
-                  )}
-                  {booking.status === "accepted" && (
-                    <Badge
-                      onClick={() => handleBookingAction(booking, "rejected")}
-                      variant="destructive"
-                      className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
-                    >
-                      Refuser
-                    </Badge>
-                  )}
-                  {booking.status === "rejected" && (
-                    <Badge
-                      onClick={() => handleBookingAction(booking, "accepted")}
-                      variant="default"
-                      className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
-                    >
-                      Accepter
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))} */}
-
           {bookings.map((booking) => (
             <Card key={booking.id} className="p-3 sm:p-4">
               <div className="space-y-3">
-                {passengerDetails[booking.passengerId] && (
+                {/* {passengerDetails[booking.passengerId] && (
                   <div className="mb-2">
                     <h3 className="font-semibold text-sm sm:text-base">
                       Passager :
@@ -433,6 +347,36 @@ const DriverBookings = () => {
                         {passengerDetails[booking.passengerId].phoneNumber}
                       </p>
                     )}
+                  </div>
+                )} */}
+                {passengerDetails[booking.passengerId] && (
+                  <div className="mb-2 flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                        <AvatarImage
+                          src={
+                            passengerDetails[booking.passengerId]
+                              .profilePicture || "/images/avatarprofile.png"
+                          }
+                          alt={passengerDetails[booking.passengerId].fullName}
+                        />
+                      </Avatar>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm sm:text-base">
+                          {passengerDetails[booking.passengerId].fullName}
+                        </h3>
+                        {passengerDetails[booking.passengerId].isStar && (
+                          <MdVerified className="text-amber-500 h-4 w-4 sm:h-5 sm:w-5" />
+                        )}
+                      </div>
+                      {passengerDetails[booking.passengerId].phoneNumber && (
+                        <p className="text-sm text-gray-600">
+                          {passengerDetails[booking.passengerId].phoneNumber}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
