@@ -163,27 +163,14 @@ const RegisterForm = () => {
   // };
 
   const uploadImage = async (file: File, userId: string) => {
-    try {
-      if (!storage) {
-        console.error("Storage initialization failed");
-        throw new Error("Storage not initialized");
-      }
-
-      console.log("Storage bucket:", storage.app.options.storageBucket);
-
-      const storageRef = ref(
-        storage,
-        `profile-pictures/${userId}/${file.name}`
-      );
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      return downloadURL;
-    } catch (error) {
-      console.error("Upload error details:", error);
-      throw error;
-    }
+    const storage = getStorage(app, "icc-covoitturage.firebasestorage.app");
+    console.log("Starting upload with storage bucket:", storage?.app?.options?.storageBucket);
+    const storageRef = ref(storage, `profile-pictures/${userId}/${file.name}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    console.log("Storage bucket:", storage.app.options.storageBucket);
+    return await getDownloadURL(snapshot.ref);
   };
+  
 
   // const uploadImage = async (file: File, userId: string) => {
   //   try {
