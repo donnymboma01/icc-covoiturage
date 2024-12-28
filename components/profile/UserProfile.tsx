@@ -373,9 +373,9 @@ const UserProfile = ({
                 </div>
 
                 {user?.isStar && user?.ministry && (
-                  <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <MdStar className="text-yellow-400" />
-                    <span className="text-sm sm:text-base">
+                  <div className="flex items-center justify-center sm:justify-start gap-2 w-full">
+                    <MdStar className="text-yellow-400 flex-shrink-0" />
+                    <span className="text-sm sm:text-base text-center sm:text-left truncate">
                       {user.ministry}
                     </span>
                   </div>
