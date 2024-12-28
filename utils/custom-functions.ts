@@ -52,30 +52,19 @@ export const uploadImageToFirebase = async (
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
   } catch (error) {
-    console.error("Error uploading image:", error);
+    console.error("Erreur de téléchargement d'image: ", error);
     throw error;
   }
 };
 
-// export const cleanupFailedRegistration = async (user: any) => {
-//   if (user) {
-//     try {
-//       await user.delete();
-//       console.log("User cleanup successful");
-//     } catch (error) {
-//       console.error("Cleanup failed:", error);
-//     }
-//   }
-// };
 
 export const cleanupFailedRegistration = async (user: any) => {
   try {
     if (db) {
-      // Delete user document if exists
+ 
       const userDoc = doc(db, "users", user.uid);
       await deleteDoc(userDoc);
 
-      // Delete vehicle documents if exist
       const vehicleQuery = query(
         collection(db, "vehicles"),
         where("userId", "==", user.uid)
@@ -85,7 +74,6 @@ export const cleanupFailedRegistration = async (user: any) => {
         await deleteDoc(doc.ref);
       });
 
-      // Delete auth user
       await user.delete();
     } else {
       throw new Error("Firestore database is not initialized");
