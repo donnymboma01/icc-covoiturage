@@ -90,7 +90,7 @@ const InfosPage = () => {
               </span>
             </p>
 
-            <p className="flex items-center bg-white p-1 px-2 rounded-bl-3xl rounded-tr-3xl mt-4">
+            {/* <p className="flex items-center bg-white p-1 px-2 rounded-bl-3xl rounded-tr-3xl mt-4">
               <TbCircleNumber6Filled
                 size={40}
                 className="bg-slate-800 text-white rounded-full"
@@ -100,19 +100,19 @@ const InfosPage = () => {
                   "Permettre à ceux qui n’ont pas de moyen de transport de prendre part aux différentes activités de l’église"
                 }
               </span>
-            </p>
+            </p> */}
 
-            {/* <p className="flex items-center bg-white p-1 px-2 rounded-bl-3xl rounded-tr-3xl mt-4">
-              <TbCircleNumber7Filled
+            <p className="flex items-center bg-white p-1 px-2 rounded-bl-3xl rounded-tr-3xl mt-4">
+              <TbCircleNumber6Filled
                 size={40}
                 className="bg-slate-800 text-white rounded-full"
               />{" "}
               <span>
                 {
-                  "Encourager la participation aux activités et cultes de l'église"
+                 "Permettre à ceux qui n’ont pas de moyen de transport de prendre part aux différentes activités de l’église"
                 }
               </span>
-            </p> */}
+            </p>
           </div>
         </div>
       </div>
