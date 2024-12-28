@@ -269,15 +269,21 @@ const RegisterForm = () => {
         values.password
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       let profilePictureUrl = "";
       if (values.profilePicture) {
-        const path = `profile-pictures/${userCredential.user.uid}/${values.profilePicture.name}`;
-        profilePictureUrl = await uploadImageToFirebase(
-          values.profilePicture,
-          path
-        );
+        console.log("Starting image upload...");
+        try {
+          profilePictureUrl = await uploadImage(
+            values.profilePicture,
+            userCredential.user.uid
+          );
+          console.log("Image upload successful:", profilePictureUrl);
+        } catch (uploadError) {
+          console.error("Upload error details:", uploadError);
+          throw uploadError;
+        }
       }
 
       const userDocument = {
