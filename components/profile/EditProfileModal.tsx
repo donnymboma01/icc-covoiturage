@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { MdClose, MdAddAPhoto } from "react-icons/md";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/app/config/firebase-config";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -53,24 +54,6 @@ export function EditProfileModal({
   const [open, setOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   console.log("Submitting userData:", userData);
-
-  //   const updatedUserData = {
-  //     ...userData,
-  //     churchIds: userData.churchId ? [userData.churchId] : [],
-  //   };
-
-  //   try {
-  //     await onSubmit(updatedUserData);
-  //     onClose();
-  //   } catch (error) {
-  //     console.error("Erreur lors de la modification du profil: ", error);
-  //   }
-  // };
-
-  // Le bon code
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const dataToSubmit = {
@@ -204,6 +187,7 @@ export function EditProfileModal({
   //     toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
   //   }
   // };
+
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -211,13 +195,16 @@ export function EditProfileModal({
     if (!file) return;
 
     try {
+      if (!storage) {
+        throw new Error("Storage not initialized");
+      }
+
       const loadingToast = toast.loading("Téléchargement en cours...");
 
       const compressedImage = await compressImage(file);
       const previewUrl = URL.createObjectURL(compressedImage);
       setImagePreview(previewUrl);
 
-      const storage = getStorage();
       const fileName = `${Date.now()}_${file.name}`;
       const storageRef = ref(
         storage,
@@ -240,6 +227,42 @@ export function EditProfileModal({
       toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
     }
   };
+  // const handleImageUpload = async (
+  //   event: React.ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   const file = event.target.files?.[0];
+  //   if (!file) return;
+
+  //   try {
+  //     const loadingToast = toast.loading("Téléchargement en cours...");
+
+  //     const compressedImage = await compressImage(file);
+  //     const previewUrl = URL.createObjectURL(compressedImage);
+  //     setImagePreview(previewUrl);
+
+  //     const storage = getStorage();
+  //     const fileName = `${Date.now()}_${file.name}`;
+  //     const storageRef = ref(
+  //       storage,
+  //       `profile-pictures/${currentUser.uid}/${fileName}`
+  //     );
+
+  //     await uploadBytes(storageRef, compressedImage);
+  //     const downloadURL = await getDownloadURL(storageRef);
+
+  //     setUserData((prev) => ({
+  //       ...prev,
+  //       profilePicture: downloadURL,
+  //     }));
+
+  //     URL.revokeObjectURL(previewUrl);
+  //     toast.dismiss(loadingToast);
+  //     toast.success("Photo mise à jour avec succès");
+  //   } catch (error) {
+  //     console.error("Erreur de téléchargement:", error);
+  //     toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
+  //   }
+  // };
 
   const handleChurchChange = (value: string) => {
     console.log("Selected church ID:", value);

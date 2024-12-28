@@ -48,6 +48,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { uploadImageToFirebase } from "@/utils/custom-functions";
 import { cleanupFailedRegistration } from "@/utils/custom-functions";
+import { storage } from "../../app/config/firebase-config";
 
 interface VehicleDoc {
   userId: string;
@@ -150,13 +151,31 @@ const RegisterForm = () => {
     }
   };
 
+  // const uploadImage = async (file: File, userId: string) => {
+  //   try {
+  //     const path = `profile-pictures/${userId}/${file.name}`;
+  //     const downloadURL = await uploadImageToFirebase(file, path);
+  //     return downloadURL;
+  //   } catch (error) {
+  //     console.error("Error uploading profile picture:", error);
+  //     throw error;
+  //   }
+  // };
   const uploadImage = async (file: File, userId: string) => {
     try {
-      const path = `profile-pictures/${userId}/${file.name}`;
-      const downloadURL = await uploadImageToFirebase(file, path);
+      if (!storage) {
+        throw new Error("Storage pas initialisé");
+      }
+
+      const storageRef = ref(
+        storage,
+        `profile-pictures/${userId}/${file.name}`
+      );
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
       return downloadURL;
     } catch (error) {
-      console.error("Error uploading profile picture:", error);
+      console.error("Erreur de chargement de l'image:", error);
       throw error;
     }
   };
