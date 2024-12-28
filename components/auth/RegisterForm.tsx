@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -68,6 +69,15 @@ const RegisterForm = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  const initializeFirebase = async () => {
+    await new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+  };
+
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
@@ -92,6 +102,10 @@ const RegisterForm = () => {
   });
 
   const isDriver = form.watch("isDriver");
+
+  useEffect(() => {
+    initializeFirebase();
+  }, []);
 
   useEffect(() => {
     const fetchChurches = async () => {
@@ -148,6 +162,7 @@ const RegisterForm = () => {
   };
 
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
+    await initializeFirebase();
     console.log("Form submitted with values:", values);
     console.log("Form validation state:", form.formState);
     let userCredential;
@@ -200,7 +215,7 @@ const RegisterForm = () => {
         router.push("/auth/login");
       }, 1000);
     } catch (authError: any) {
-      console.log("Detailed error:", authError); 
+      console.log("Detailed error:", authError);
       console.error("Registration error:", authError);
       if (userCredential?.user) {
         await cleanupFailedRegistration(userCredential.user);
@@ -226,10 +241,15 @@ const RegisterForm = () => {
             "Erreur réseau. Vérifiez votre connexion internet et réessayez."
           );
           break;
+        case "storage/object-not-found":
+          toast.error(
+            "Erreur lors du téléchargement de l'image. Veuillez réessayer."
+          );
+          break;
         default:
           console.error("Erreur d'authentification :", authError);
           toast.error(
-            "Une erreur inattendue est survenue. Veuillez réessayer."
+            "Une erreur inattendue est survenue. Veuillez rafraichir la page et réessayer svp."
           );
       }
     } finally {
@@ -300,7 +320,6 @@ const RegisterForm = () => {
                   <strong>
                     La photo de profil est obligatoire pour les conducteurs !
                   </strong>{" "}
-                  
                 </p>
                 <p>JPG, PNG. Taille maximale 10MB</p>
               </div>
