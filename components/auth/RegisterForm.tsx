@@ -161,11 +161,15 @@ const RegisterForm = () => {
   //     throw error;
   //   }
   // };
+
   const uploadImage = async (file: File, userId: string) => {
     try {
       if (!storage) {
-        throw new Error("Storage pas initialisé");
+        console.error("Storage initialization failed");
+        throw new Error("Storage not initialized");
       }
+
+      console.log("Storage bucket:", storage.app.options.storageBucket);
 
       const storageRef = ref(
         storage,
@@ -173,12 +177,32 @@ const RegisterForm = () => {
       );
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
+
       return downloadURL;
     } catch (error) {
-      console.error("Erreur de chargement de l'image:", error);
+      console.error("Upload error details:", error);
       throw error;
     }
   };
+
+  // const uploadImage = async (file: File, userId: string) => {
+  //   try {
+  //     if (!storage) {
+  //       throw new Error("Storage pas initialisé");
+  //     }
+
+  //     const storageRef = ref(
+  //       storage,
+  //       `profile-pictures/${userId}/${file.name}`
+  //     );
+  //     const snapshot = await uploadBytes(storageRef, file);
+  //     const downloadURL = await getDownloadURL(snapshot.ref);
+  //     return downloadURL;
+  //   } catch (error) {
+  //     console.error("Erreur de chargement de l'image:", error);
+  //     throw error;
+  //   }
+  // };
 
   // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
   //   await initializeFirebase();
@@ -288,7 +312,7 @@ const RegisterForm = () => {
         values.password
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // await new Promise((resolve) => setTimeout(resolve, 2000));
 
       let profilePictureUrl = "";
       if (values.profilePicture) {
