@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 import PageLayout from "@/components/PageLayout";
 import {
@@ -53,7 +54,9 @@ const InfosPage = () => {
                 className="bg-slate-800 text-white rounded-full"
               />
               <span>
-                {"Encourager les moments de partage et de communion en voiture"}
+                {
+                  " ⁠Encourager les membres à participer aux activités de l’église"
+                }
               </span>
             </p>
 
@@ -83,9 +86,7 @@ const InfosPage = () => {
                 className="bg-slate-800 text-white rounded-full"
               />{" "}
               <span>
-                {
-                  "Renforcer les liens fraternels à travers des trajets partagés"
-                }
+                {"Renforcer les liens entre les membres de l’église "}
               </span>
             </p>
 
@@ -96,12 +97,12 @@ const InfosPage = () => {
               />
               <span>
                 {
-                  "Permettre à ceux qui n'ont pas de moyens de transport de venir"
+                  "Permettre à ceux qui n’ont pas de moyen de transport de prendre part aux différentes activités de l’église"
                 }
               </span>
             </p>
 
-            <p className="flex items-center bg-white p-1 px-2 rounded-bl-3xl rounded-tr-3xl mt-4">
+            {/* <p className="flex items-center bg-white p-1 px-2 rounded-bl-3xl rounded-tr-3xl mt-4">
               <TbCircleNumber7Filled
                 size={40}
                 className="bg-slate-800 text-white rounded-full"
@@ -111,7 +112,7 @@ const InfosPage = () => {
                   "Encourager la participation aux activités et cultes de l'église"
                 }
               </span>
-            </p>
+            </p> */}
           </div>
         </div>
       </div>
