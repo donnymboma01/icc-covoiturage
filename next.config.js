@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const path = require("path");
+const withPWA = require("next-pwa")({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -15,15 +21,14 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        port: '',
-        pathname: '/v0/b/icc-covoitturage.firebasestorage.app/**',
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        port: "",
+        pathname: "/v0/b/icc-covoitturage.firebasestorage.app/**",
       },
     ],
   },
-  output: 'standalone', 
+  output: "standalone",
 };
 
-
-module.exports = nextConfig;
+module.exports = withPWA(nextConfig);
