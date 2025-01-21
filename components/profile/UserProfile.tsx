@@ -199,7 +199,6 @@ const UserProfile = ({
   };
 
   // console.log("Is iOS:", isIOSDevice());
-
   const handleEnableNotifications = async () => {
     try {
       if (notificationsEnabled) {
@@ -209,19 +208,23 @@ const UserProfile = ({
         return;
       }
 
-      const newToken = await requestPermission();
-      if (newToken && user?.uid) {
-        await onUpdateUser({ fcmToken: newToken });
-        setNotificationsEnabled(true);
-        toast.success("Notifications activées avec succès");
-      } else {
-        toast.error("Veuillez autoriser les notifications dans les paramètres de votre appareil");
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+      if (isIOS || isAndroid) {
+        const newToken = await requestPermission();
+        if (newToken && user?.uid) {
+          await onUpdateUser({ fcmToken: newToken });
+          setNotificationsEnabled(true);
+          toast.success("Notifications activées avec succès");
+        }
       }
     } catch (error) {
       console.error("Erreur:", error);
-      toast.error("Veuillez vérifier les paramètres de notification de votre appareil");
+      toast.error("Erreur lors de l'activation des notifications");
     }
   };
+
 
 
   // const handleEnableNotifications = async () => {
