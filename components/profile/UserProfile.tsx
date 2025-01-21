@@ -241,23 +241,36 @@ const UserProfile = ({
       if (notificationsEnabled) {
         await onUpdateUser({ fcmToken: null });
         setNotificationsEnabled(false);
-        toast.success("Notifications désactivées avec succès");
+        toast.success("Notifications désactivées");
         return;
       }
 
-      const newToken = await requestPermission();
-      console.log("Token FCM reçu:", newToken);
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-      if (newToken && user?.uid) {
-        await onUpdateUser({ fcmToken: newToken });
-        setNotificationsEnabled(true);
-        toast.success("Notifications activées avec succès");
+      if (isMobile) {
+        const newToken = await requestPermission();
+        console.log("Mobile FCM Token:", newToken);
+
+        if (newToken && user?.uid) {
+          await onUpdateUser({ fcmToken: newToken });
+          setNotificationsEnabled(true);
+          toast.success("Notifications activées");
+        }
+      } else {
+        const newToken = await requestPermission();
+        console.log("Desktop FCM Token:", newToken);
+
+        if (newToken && user?.uid) {
+          await onUpdateUser({ fcmToken: newToken });
+          setNotificationsEnabled(true);
+          toast.success("Notifications activées");
+        }
       }
     } catch (error) {
       console.error("Erreur notifications:", error);
-      toast.error("Erreur lors de l'activation des notifications");
     }
   };
+
 
 
 
