@@ -205,25 +205,38 @@ const UserProfile = ({
         await onUpdateUser({ fcmToken: null });
         setNotificationsEnabled(false);
         toast.success("Notifications désactivées avec succès");
+        console.log("Token FCM supprimé");
         return;
       }
 
-      const isAndroid = /Android/i.test(navigator.userAgent);
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (!("Notification" in window)) {
+        toast.error("Votre navigateur ne supporte pas les notifications");
+        return;
+      }
 
-      if (isIOS || isAndroid) {
+      const permission = await Notification.requestPermission();
+
+      if (permission === "granted") {
         const newToken = await requestPermission();
+        console.log("Token FCM reçu:", newToken); 
+
         if (newToken && user?.uid) {
           await onUpdateUser({ fcmToken: newToken });
           setNotificationsEnabled(true);
           toast.success("Notifications activées avec succès");
+        } else {
+          toast.error("Impossible d'obtenir le token de notification");
         }
+      } else {
+        toast.error("Permission de notification refusée");
       }
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("Erreur lors de l'activation des notifications:", error);
       toast.error("Erreur lors de l'activation des notifications");
     }
   };
+
+
 
 
 
