@@ -151,16 +151,7 @@ const RegisterForm = () => {
     }
   };
 
-  // const uploadImage = async (file: File, userId: string) => {
-  //   try {
-  //     const path = `profile-pictures/${userId}/${file.name}`;
-  //     const downloadURL = await uploadImageToFirebase(file, path);
-  //     return downloadURL;
-  //   } catch (error) {
-  //     console.error("Error uploading profile picture:", error);
-  //     throw error;
-  //   }
-  // };
+
 
   const uploadImage = async (file: File, userId: string) => {
     const storage = getStorage(app, "icc-covoitturage.firebasestorage.app");
@@ -171,121 +162,6 @@ const RegisterForm = () => {
     return await getDownloadURL(snapshot.ref);
   };
   
-
-  // const uploadImage = async (file: File, userId: string) => {
-  //   try {
-  //     if (!storage) {
-  //       throw new Error("Storage pas initialisé");
-  //     }
-
-  //     const storageRef = ref(
-  //       storage,
-  //       `profile-pictures/${userId}/${file.name}`
-  //     );
-  //     const snapshot = await uploadBytes(storageRef, file);
-  //     const downloadURL = await getDownloadURL(snapshot.ref);
-  //     return downloadURL;
-  //   } catch (error) {
-  //     console.error("Erreur de chargement de l'image:", error);
-  //     throw error;
-  //   }
-  // };
-
-  // const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
-  //   await initializeFirebase();
-  //   console.log("Form submitted with values:", values);
-  //   console.log("Form validation state:", form.formState);
-  //   let userCredential;
-
-  //   try {
-  //     setIsLoading(true);
-
-  //     userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       values.email,
-  //       values.password
-  //     );
-
-  //     let profilePictureUrl = "";
-  //     if (values.profilePicture) {
-  //       profilePictureUrl = await uploadImage(
-  //         values.profilePicture,
-  //         userCredential.user.uid
-  //       );
-  //     }
-
-  //     const userDocument = {
-  //       uid: userCredential.user.uid,
-  //       email: values.email,
-  //       fullName: values.fullName,
-  //       phoneNumber: values.phoneNumber,
-  //       isDriver: values.isDriver,
-  //       createdAt: new Date(),
-  //       churchIds: [values.church],
-  //       isStar: values.isStar,
-  //       ministry: values.isStar ? values.ministry : null,
-  //       profilePicture: profilePictureUrl || null,
-  //     };
-
-  //     await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
-
-  //     if (values.isDriver && values.vehicle) {
-  //       const vehicleDoc = {
-  //         userId: userCredential.user.uid,
-  //         ...values.vehicle,
-  //         isActive: true,
-  //       };
-  //       await addDoc(collection(db, "vehicles"), vehicleDoc);
-  //     }
-
-  //     await auth.signOut();
-
-  //     setTimeout(() => {
-  //       toast.success("Inscription réussie");
-  //       router.push("/auth/login");
-  //     }, 1000);
-  //   } catch (authError: any) {
-  //     console.log("Detailed error:", authError);
-  //     console.error("Registration error:", authError);
-  //     if (userCredential?.user) {
-  //       await cleanupFailedRegistration(userCredential.user);
-  //     }
-  //     switch (authError.code) {
-  //       case "auth/email-already-in-use":
-  //         toast.error(
-  //           "L'adresse e-mail que vous avez saisie est déjà associée à un autre profil."
-  //         );
-  //         break;
-  //       case "auth/weak-password":
-  //         toast.error(
-  //           "Le mot de passe est trop faible. Veuillez en choisir un plus sécurisé."
-  //         );
-  //         break;
-  //       case "auth/invalid-email":
-  //         toast.error(
-  //           "L'adresse e-mail saisie est invalide. Veuillez vérifier et réessayer."
-  //         );
-  //         break;
-  //       case "auth/network-request-failed":
-  //         toast.error(
-  //           "Erreur réseau. Vérifiez votre connexion internet et réessayez."
-  //         );
-  //         break;
-  //       case "storage/object-not-found":
-  //         toast.error(
-  //           "Erreur lors du téléchargement de l'image. Veuillez réessayer."
-  //         );
-  //         break;
-  //       default:
-  //         console.error("Erreur d'authentification :", authError);
-  //         toast.error(
-  //           "Une erreur inattendue est survenue. Veuillez rafraichir la page et réessayer svp."
-  //         );
-  //     }
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
     await initializeFirebase();
     let userCredential;

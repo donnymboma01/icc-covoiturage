@@ -121,69 +121,6 @@ const BookingForm = ({
     validateSeats(value);
   };
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (!user) return;
-
-  //   if (!validateSeats(seats)) return;
-
-  //   setLoading(true);
-  //   try {
-  //     const userDoc = await getDoc(doc(db, "users", user.uid));
-  //     if (!userDoc.exists()) {
-  //       throw new Error("Le profil de l'utilisateur n'existe pas.");
-  //     }
-
-  //     const rideRef = doc(db, "rides", ride.id);
-  //     const rideDoc = await getDoc(rideRef);
-  //     const currentRideData = rideDoc.data();
-
-  //     if (!currentRideData) {
-  //       throw new Error("Le trajet n'existe plus");
-  //     }
-
-  //     const currentAvailableSeats = currentRideData.availableSeats;
-  //     if (currentAvailableSeats < seats) {
-  //       setError(
-  //         `Désolé, il ne reste que ${currentAvailableSeats} place(s) disponible(s)`
-  //       );
-  //       return;
-  //     }
-
-  //     const bookingRef = await addDoc(collection(db, "bookings"), {
-  //       rideId: ride.id,
-  //       passengerId: user.uid,
-  //       bookingDate: new Date(),
-  //       status: "pending",
-  //       seatsBooked: seats,
-  //       specialNotes: notes,
-  //     });
-
-  //     await updateDoc(rideRef, {
-  //       availableSeats: currentAvailableSeats - seats,
-  //     });
-
-  //     onSuccess();
-  //     setShowSuccessDialog(true);
-  //     setLoading(false);
-  //     toast.success("Votre reservation a bien été prise en compte");
-
-  //     setTimeout(() => {
-  //       window.location.replace("/dashboard/passanger/bookings");
-  //     }, 8000);
-  //     // window.location.href = "/dashboard/passanger/bookings";
-
-  //     // setTimeout(() => {
-  //     //   window.location.href = "/dashboard/passanger/bookings";
-  //     // }, 9000);
-  //   } catch (error) {
-  //     console.error("Erreur lors de la création de la réservation:", error);
-  //     setError("Une erreur est survenue lors de la réservation");
-  //     toast.error("Une erreur est survenue lors de la réservation");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;

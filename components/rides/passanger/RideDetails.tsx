@@ -218,18 +218,6 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             </div>
           </div>
 
-          {/* {ride.meetingPointNote && (
-            <div className="flex items-start gap-2 mt-2">
-              <MdInfo className="text-xl text-gray-500 mt-1" />
-              <div>
-                <p className="text-sm font-medium">
-                  Point de rencontre exacte :{" "}
-                </p>
-                <p className="text-sm text-gray-600">{ride.meetingPointNote}</p>
-              </div>
-            </div>
-          )} */}
-
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
               <MdPerson className="text-xl text-gray-500" />

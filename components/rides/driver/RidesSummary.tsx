@@ -82,10 +82,6 @@ const RideSummary = ({ formData }: RideSummaryProps) => {
             </div>
           )}
 
-          {/* <div>
-            <h3 className="text-sm font-medium text-slate-500">Église</h3>
-            <p className="text-lg">{formData.churchName}</p>
-          </div> */}
         </div>
       </Card>
     </div>

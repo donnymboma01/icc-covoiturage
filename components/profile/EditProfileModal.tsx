@@ -72,45 +72,6 @@ export function EditProfileModal({
     }
   };
 
-  // const compressImage = async (file: File): Promise<Blob> => {
-  //   return new Promise((resolve, reject) => {
-  //     const reader = new FileReader();
-  //     reader.onload = (e) => {
-  //       const img = new Image();
-  //       img.onload = () => {
-  //         const canvas = document.createElement("canvas");
-  //         const ctx = canvas.getContext("2d")!;
-
-  //         let width = img.width;
-  //         let height = img.height;
-  //         const maxSize = 1200;
-
-  //         if (width > height && width > maxSize) {
-  //           height *= maxSize / width;
-  //           width = maxSize;
-  //         } else if (height > maxSize) {
-  //           width *= maxSize / height;
-  //           height = maxSize;
-  //         }
-
-  //         canvas.width = width;
-  //         canvas.height = height;
-  //         ctx.drawImage(img, 0, 0, width, height);
-
-  //         canvas.toBlob(
-  //           (blob) => {
-  //             if (blob) resolve(blob);
-  //             else reject(new Error("Échec de la compression"));
-  //           },
-  //           "image/jpeg",
-  //           0.8
-  //         );
-  //       };
-  //       img.src = e.target?.result as string;
-  //     };
-  //     reader.readAsDataURL(file);
-  //   });
-  // };
   const compressImage = async (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -152,41 +113,7 @@ export function EditProfileModal({
     });
   };
 
-  // const handleImageUpload = async (
-  //   event: React.ChangeEvent<HTMLInputElement>
-  // ) => {
-  //   const file = event.target.files?.[0];
-  //   if (!file) return;
 
-  //   try {
-  //     const previewUrl = URL.createObjectURL(file);
-  //     setImagePreview(previewUrl);
-
-  //     const loadingToast = toast.loading("Téléchargement en cours...");
-
-  //     const storage = getStorage();
-  //     const fileName = `${Date.now()}_${file.name}`;
-  //     const storageRef = ref(
-  //       storage,
-  //       `profile-pictures/${currentUser.uid}/${fileName}`
-  //     );
-
-  //     await uploadBytes(storageRef, file);
-  //     const downloadURL = await getDownloadURL(storageRef);
-
-  //     setUserData((prev) => ({
-  //       ...prev,
-  //       profilePicture: downloadURL,
-  //     }));
-
-  //     URL.revokeObjectURL(previewUrl);
-  //     toast.dismiss(loadingToast);
-  //     toast.success("Photo mise à jour avec succès");
-  //   } catch (error) {
-  //     console.error("Probleme de telechargement: ", error);
-  //     toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
-  //   }
-  // };
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -227,42 +154,6 @@ export function EditProfileModal({
       toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
     }
   };
-  // const handleImageUpload = async (
-  //   event: React.ChangeEvent<HTMLInputElement>
-  // ) => {
-  //   const file = event.target.files?.[0];
-  //   if (!file) return;
-
-  //   try {
-  //     const loadingToast = toast.loading("Téléchargement en cours...");
-
-  //     const compressedImage = await compressImage(file);
-  //     const previewUrl = URL.createObjectURL(compressedImage);
-  //     setImagePreview(previewUrl);
-
-  //     const storage = getStorage();
-  //     const fileName = `${Date.now()}_${file.name}`;
-  //     const storageRef = ref(
-  //       storage,
-  //       `profile-pictures/${currentUser.uid}/${fileName}`
-  //     );
-
-  //     await uploadBytes(storageRef, compressedImage);
-  //     const downloadURL = await getDownloadURL(storageRef);
-
-  //     setUserData((prev) => ({
-  //       ...prev,
-  //       profilePicture: downloadURL,
-  //     }));
-
-  //     URL.revokeObjectURL(previewUrl);
-  //     toast.dismiss(loadingToast);
-  //     toast.success("Photo mise à jour avec succès");
-  //   } catch (error) {
-  //     console.error("Erreur de téléchargement:", error);
-  //     toast.error("Erreur lors du téléchargement. Veuillez réessayer.");
-  //   }
-  // };
 
   const handleChurchChange = (value: string) => {
     console.log("Selected church ID:", value);

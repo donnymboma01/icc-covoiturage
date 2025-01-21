@@ -70,34 +70,6 @@ export function RideEditDialog({
     return true;
   };
 
-  // const validateSeats = (seats: number) => {
-  //   if (seats <= 0) {
-  //     toast.error("Le nombre de places doit être supérieur à 0");
-  //     return false;
-  //   }
-  //   if (seats > carCapacity) {
-  //     toast.error(
-  //       `Vous ne pouvez pas proposer plus de ${carCapacity} places (capacité de votre véhicule)`
-  //     );
-  //     return false;
-  //   }
-  //   return true;
-  // };
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   try {
-  //     await onSave({
-  //       ...formData,
-  //       departureTime: Timestamp.fromDate(formData.departureTime),
-  //     });
-  //     setOpen(false);
-  //     toast.success("Modifications enregistrées avec succès");
-  //   } catch (error) {
-  //     console.error("Error saving:", error);
-  //     toast.error("Erreur lors de l'enregistrement");
-  //   }
-  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -125,27 +125,7 @@ const UserProfile = ({
     setNotificationsEnabled(isEnabled);
   }, [isEnabled]);
 
-  // const isVerifiedUser = (user: UserData | null): boolean => {
-  //   if (!user) return false;
 
-  //   const phoneNumberRegex = /^\d+$/;
-
-  //   const hasValidProfilePicture = Boolean(
-  //     user.profilePicture &&
-  //       user.profilePicture !== "" &&
-  //       !user.profilePicture.includes("avatarprofile.png")
-  //   );
-
-  //   return Boolean(
-  //     user.fullName &&
-  //       hasValidProfilePicture &&
-  //       user.email &&
-  //       user.phoneNumber &&
-  //       phoneNumberRegex.test(user.phoneNumber) &&
-  //       user.isStar &&
-  //       (!user.isDriver || (user.isDriver && user.vehicle?.licensePlate))
-  //   );
-  // };
   const isVerifiedUser = (user: UserData | null): boolean => {
     if (!user) return false;
 
@@ -168,19 +148,19 @@ const UserProfile = ({
 
     const hasValidProfilePicture = Boolean(
       user.profilePicture &&
-        user.profilePicture !== "" &&
-        !user.profilePicture.includes("avatarprofile.png")
+      user.profilePicture !== "" &&
+      !user.profilePicture.includes("avatarprofile.png")
     );
 
     return Boolean(
       user.fullName &&
-        nameValidation(user.fullName) &&
-        hasValidProfilePicture &&
-        user.email &&
-        user.phoneNumber &&
-        phoneNumberRegex.test(user.phoneNumber) &&
-        user.isStar &&
-        (!user.isDriver || (user.isDriver && user.vehicle?.licensePlate))
+      nameValidation(user.fullName) &&
+      hasValidProfilePicture &&
+      user.email &&
+      user.phoneNumber &&
+      phoneNumberRegex.test(user.phoneNumber) &&
+      user.isStar &&
+      (!user.isDriver || (user.isDriver && user.vehicle?.licensePlate))
     );
   };
 
@@ -223,49 +203,73 @@ const UserProfile = ({
   const handleEnableNotifications = async () => {
     try {
       if (notificationsEnabled) {
-        await onUpdateUser({
-          fcmToken: null,
-        });
+        await onUpdateUser({ fcmToken: null });
         setNotificationsEnabled(false);
         toast.success("Notifications désactivées avec succès");
         return;
       }
 
-      if (isIOSDevice()) {
-        try {
-          const newToken = await requestPermission();
-          if (newToken && user?.uid) {
-            await onUpdateUser({
-              fcmToken: newToken,
-            });
-            setNotificationsEnabled(true);
-            toast.success("Notifications activées avec succès");
-          } else {
-            toast.error("Impossible d'obtenir le token de notification");
-          }
-        } catch (error) {
-          console.error("Erreur FCM:", error);
-          toast.error("Erreur lors de l'activation des notifications");
-        }
-        return;
-      }
-
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        const newToken = await requestPermission();
-        if (newToken && user?.uid) {
-          await onUpdateUser({
-            fcmToken: newToken,
-          });
-          setNotificationsEnabled(true);
-          toast.success("Notifications activées avec succès");
-        }
+      const newToken = await requestPermission();
+      if (newToken && user?.uid) {
+        await onUpdateUser({ fcmToken: newToken });
+        setNotificationsEnabled(true);
+        toast.success("Notifications activées avec succès");
+      } else {
+        toast.error("Veuillez autoriser les notifications dans les paramètres de votre appareil");
       }
     } catch (error) {
       console.error("Erreur:", error);
-      toast.error("Erreur lors de la gestion des notifications");
+      toast.error("Veuillez vérifier les paramètres de notification de votre appareil");
     }
   };
+
+
+  // const handleEnableNotifications = async () => {
+  //   try {
+  //     if (notificationsEnabled) {
+  //       await onUpdateUser({
+  //         fcmToken: null,
+  //       });
+  //       setNotificationsEnabled(false);
+  //       toast.success("Notifications désactivées avec succès");
+  //       return;
+  //     }
+
+  //     if (isIOSDevice()) {
+  //       try {
+  //         const newToken = await requestPermission();
+  //         if (newToken && user?.uid) {
+  //           await onUpdateUser({
+  //             fcmToken: newToken,
+  //           });
+  //           setNotificationsEnabled(true);
+  //           toast.success("Notifications activées avec succès");
+  //         } else {
+  //           toast.error("Impossible d'obtenir le token de notification");
+  //         }
+  //       } catch (error) {
+  //         console.error("Erreur FCM:", error);
+  //         toast.error("Erreur lors de l'activation des notifications");
+  //       }
+  //       return;
+  //     }
+
+  //     const permission = await Notification.requestPermission();
+  //     if (permission === "granted") {
+  //       const newToken = await requestPermission();
+  //       if (newToken && user?.uid) {
+  //         await onUpdateUser({
+  //           fcmToken: newToken,
+  //         });
+  //         setNotificationsEnabled(true);
+  //         toast.success("Notifications activées avec succès");
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Erreur:", error);
+  //     toast.error("Erreur lors de la gestion des notifications");
+  //   }
+  // };
 
   useEffect(() => {
     const checkNotificationSupport = () => {

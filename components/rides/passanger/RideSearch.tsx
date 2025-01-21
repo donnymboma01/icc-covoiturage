@@ -119,33 +119,6 @@ const RideSearch = () => {
     fetchChurches();
   }, []);
 
-  // const fetchAllAvailableRides = async () => {
-  //   try {
-  //     const ridesRef = collection(db, "rides");
-  //     const q = query(
-  //       ridesRef,
-  //       where("status", "==", "active"),
-  //       where("departureTime", ">=", new Date())
-  //     );
-
-  //     const querySnapshot = await getDocs(q);
-  //     console.log("Found rides:", querySnapshot.size);
-
-  //     const dates = querySnapshot.docs.map((doc) => {
-  //       const rideData = doc.data();
-  //       return rideData.departureTime.toDate();
-  //     });
-
-  //     const normalizedDates = dates.map(
-  //       (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  //     );
-
-  //     console.log("Setting available dates:", normalizedDates);
-  //     setAvailableDates(normalizedDates);
-  //   } catch (error) {
-  //     console.error("Error fetching rides:", error);
-  //   }
-  // };
   const fetchAllAvailableRides = async () => {
     try {
       const ridesRef = collection(db, "rides");

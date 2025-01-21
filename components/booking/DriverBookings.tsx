@@ -233,26 +233,6 @@ const DriverBookings = () => {
     });
   }, [bookings]);
 
-  // const handleBookingAction = async (
-  //   booking: Booking,
-  //   status: "accepted" | "rejected"
-  // ) => {
-  //   if (status === "rejected") {
-  //     setSelectedBooking(booking);
-  //     setIsRejectDialogOpen(true);
-  //     return;
-  //   }
-
-  //   const db = getFirestore();
-  //   try {
-  //     await updateDoc(doc(db, "bookings", booking.id), {
-  //       status,
-  //       updatedAt: Timestamp.now(),
-  //     });
-  //   } catch (error) {
-  //     console.error("Erreur lors de la mise à jour de la reservation: ", error);
-  //   }
-  // };
   const handleBookingAction = async (
     booking: Booking,
     status: "accepted" | "rejected"

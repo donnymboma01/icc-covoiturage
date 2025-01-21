@@ -349,39 +349,7 @@ const NavBar = () => {
           <MdAddRoad /> Créer un trajet
         </Button>
       </Link>
-      {/* <Link
-        href="/dashboard/driver/bookings"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
-        >
-          <MdOutlineDirectionsCar /> Les demandes de trajet
-        </Button>
-      </Link> */}
-      {/* <Link
-        href="/dashboard/driver/bookings"
-        onClick={handleBookingsClick}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
-        >
-          <MdOutlineDirectionsCar /> Les demandes de trajet{" "}
-          {bookingsCount > 0 && (
-            <span
-              className={`ml-1 ${
-                hasNewBookings ? "text-red-600 font-bold" : ""
-              }`}
-            >
-              ({bookingsCount})
-            </span>
-          )}
-        </Button>
-      </Link> */}
+  
       <Link
         href="/dashboard/driver/bookings"
         onClick={handleBookingsClick}
@@ -422,18 +390,7 @@ const NavBar = () => {
         </Button>
       </Link>
 
-      {/* <Link
-        href="/dashboard/passanger/bookings"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
-        >
-          <MdEventSeat /> Mes réservations
-        </Button>
-      </Link> */}
+     
       <Link
         href="/dashboard/passanger/bookings"
         onClick={() => {
@@ -476,18 +433,7 @@ const NavBar = () => {
           <MdBookmarkAdd /> Trouver un trajet
         </Button>
       </Link>
-      {/* <Link
-        href="/dashboard/passanger/bookings"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
-        >
-          <MdEventSeat /> Mes réservations
-        </Button>
-      </Link> */}
+      
       <Link
         href="/dashboard/passanger/bookings"
         onClick={() => setIsDrawerOpen(false)}
