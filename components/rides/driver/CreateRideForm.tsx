@@ -17,6 +17,7 @@ import {
   query,
   where,
   getFirestore,
+  onSnapshot,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { app } from "@/app/config/firebase-config";
@@ -119,29 +120,64 @@ const CreateRideForm = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
-  const loadVehicleData = async () => {
-    if (!user?.uid) return;
+  // const loadVehicleData = async () => {
+  //   if (!user?.uid) return;
 
-    try {
-      const vehicleQuery = query(
-        collection(db, "vehicles"),
-        where("userId", "==", user.uid),
-        where("isActive", "==", true)
-      );
-      const vehicleSnapshot = await getDocs(vehicleQuery);
+  //   try {
+  //     const vehicleQuery = query(
+  //       collection(db, "vehicles"),
+  //       where("userId", "==", user.uid),
+  //       where("isActive", "==", true)
+  //     );
+  //     const vehicleSnapshot = await getDocs(vehicleQuery);
 
-      if (!vehicleSnapshot.empty) {
-        const vehicleData = vehicleSnapshot.docs[0].data() as Vehicle;
-        setVehicleSeats(vehicleData.seats);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement du véhicule:", error);
-    }
-  };
+  //     if (!vehicleSnapshot.empty) {
+  //       const vehicleData = vehicleSnapshot.docs[0].data() as Vehicle;
+  //       setVehicleSeats(vehicleData.seats);
+  //     }
+  //   } catch (error) {
+  //     console.error("Erreur lors du chargement du véhicule:", error);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   loadVehicleData();
+  // }, [user]);
 
   useEffect(() => {
-    loadVehicleData();
-  }, [user]);
+    if (!user?.uid) return;
+
+    console.log("Setting up vehicle listener for user:", user.uid);
+
+    const vehicleRef = collection(db, "vehicles");
+    const q = query(
+      vehicleRef,
+      where("userId", "==", user.uid),
+      where("isActive", "==", true)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const vehicleData = snapshot.docs[0].data() as Vehicle;
+        console.log("Firestore Vehicle Document:", snapshot.docs[0].id);
+        console.log("Full Vehicle Data:", vehicleData);
+        console.log("Current seats value in state:", vehicleSeats);
+        console.log("New seats value from Firestore:", vehicleData.seats);
+        setVehicleSeats(vehicleData.seats);
+      } else {
+        console.log("No active vehicle found for user");
+      }
+    }, (error) => {
+      console.error("Vehicle snapshot error:", error);
+    });
+
+    return () => {
+      console.log("Cleaning up vehicle listener");
+      unsubscribe();
+    };
+  }, [user?.uid]);
+
+
 
   const handleCreateRide = async () => {
     if (!user?.isDriver) {
@@ -236,10 +272,9 @@ const CreateRideForm = () => {
             }
             className={`
               p-4 rounded-lg border-2 cursor-pointer transition-all
-              ${
-                formData.serviceType === service.id
-                  ? "border-primary bg-primary/10"
-                  : "border-gray-200 hover:border-primary/50"
+              ${formData.serviceType === service.id
+                ? "border-primary bg-primary/10"
+                : "border-gray-200 hover:border-primary/50"
               }
             `}
           >

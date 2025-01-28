@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import { MdClose, MdAddAPhoto } from "react-icons/md";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/app/config/firebase-config";
+import { doc, getFirestore, setDoc } from "firebase/firestore";
+import { app } from "@/app/config/firebase-config";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -40,37 +42,140 @@ export function EditProfileModal({
   currentUser,
   churches,
 }: EditProfileModalProps) {
-  console.log("Churches in modal:", churches);
+  //console.log("Churches in modal:", churches);
   const [userData, setUserData] = useState({
     fullName: currentUser?.fullName || "",
     phoneNumber: currentUser?.phoneNumber || "",
     profilePicture: currentUser?.profilePicture || "",
-    vehicle: currentUser?.vehicle || null,
+    vehicle: {
+      brand: currentUser?.vehicle?.brand || "",
+      model: currentUser?.vehicle?.model || "",
+      color: currentUser?.vehicle?.color || "",
+      seats: currentUser?.vehicle?.seats || 0,
+      licensePlate: currentUser?.vehicle?.licensePlate || "",
+      isActive: true,
+      userId: currentUser?.uid
+    },
     email: currentUser?.email || "",
     churchId: currentUser?.churchIds?.[0] || "",
     isStar: currentUser?.isStar || false,
     ministry: currentUser?.ministry || "",
   });
+
+  // const [userData, setUserData] = useState({
+  //   fullName: currentUser?.fullName || "",
+  //   phoneNumber: currentUser?.phoneNumber || "",
+  //   profilePicture: currentUser?.profilePicture || "",
+  //   vehicle: {
+  //     brand: currentUser?.vehicle?.brand || "",
+  //     model: currentUser?.vehicle?.model || "",
+  //     color: currentUser?.vehicle?.color || "",
+  //     seats: currentUser?.vehicle?.seats || 0,
+  //     licensePlate: currentUser?.vehicle?.licensePlate || "",
+  //     isActive: true
+  //   },
+  //   email: currentUser?.email || "",
+  //   churchId: currentUser?.churchIds?.[0] || "",
+  //   isStar: currentUser?.isStar || false,
+  //   ministry: currentUser?.ministry || "",
+  // });
+
   const [open, setOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  const db = getFirestore(app);
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   const dataToSubmit = {
+  //     ...userData,
+  //     churchIds: userData.churchId ? [userData.churchId] : [],
+  //   };
+
+  //   try {
+  //     await onSubmit(dataToSubmit);
+  //     //window.location.reload();
+  //     toast.success("Modifications enregistrées");
+  //     onClose();
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     toast.error("Erreur lors de la modification");
+  //   }
+  // };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const dataToSubmit = {
-      ...userData,
-      churchIds: userData.churchId ? [userData.churchId] : [],
-    };
 
     try {
+      // Préparez les données du véhicule
+      const vehicleData = {
+        ...userData.vehicle,
+        userId: currentUser.uid,
+        isActive: true
+      };
+
+      // Préparez les données utilisateur
+      const dataToSubmit = {
+        ...userData,
+        churchIds: userData.churchId ? [userData.churchId] : [],
+        vehicle: vehicleData
+      };
+
       await onSubmit(dataToSubmit);
-      window.location.reload();
+
+      if (currentUser.isDriver) {
+        const vehicleRef = doc(db, "vehicles", currentUser.uid);
+        await setDoc(vehicleRef, vehicleData);
+      }
+
       toast.success("Modifications enregistrées");
       onClose();
+
     } catch (error) {
       console.error("Error:", error);
       toast.error("Erreur lors de la modification");
     }
   };
+
+
+
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+
+  //   const vehicleData = {
+  //     brand: userData.vehicle.brand,
+  //     model: userData.vehicle.model,
+  //     color: userData.vehicle.color,
+  //     seats: Number(userData.vehicle.seats),
+  //     licensePlate: userData.vehicle.licensePlate,
+  //     isActive: true,
+  //     userId: currentUser.uid
+  //   };
+
+  //   const dataToSubmit = {
+  //     ...userData,
+  //     churchIds: userData.churchId ? [userData.churchId] : [],
+  //     vehicle: vehicleData
+  //   };
+
+  //   try {
+  //     await onSubmit(dataToSubmit);
+
+  //     if (currentUser.isDriver && db) {
+  //       const vehicleRef = doc(db, "vehicles", currentUser.uid);
+  //       await setDoc(vehicleRef, vehicleData, { merge: true });
+  //     }
+
+  //     toast.success("Modifications enregistrées");
+  //     onClose();
+  //     window.location.reload();
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     toast.error("Erreur lors de la modification");
+  //   }
+  // };
+
 
   const compressImage = async (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
@@ -381,7 +486,7 @@ export function EditProfileModal({
                         />
                       </div>
 
-                      <div>
+                      {/* <div>
                         <Label htmlFor="seats">Nombre de places</Label>
                         <Input
                           id="seats"
@@ -401,7 +506,27 @@ export function EditProfileModal({
                           required
                           className="mt-1"
                         />
-                      </div>
+                      </div> */}
+                      <Label htmlFor="seats">Nombre de places</Label>
+                      <Input
+                        id="seats"
+                        type="number"
+                        min="1"
+                        max="9"
+                        value={userData.vehicle?.seats || ''}
+                        onChange={(e) =>
+                          setUserData({
+                            ...userData,
+                            vehicle: {
+                              ...userData.vehicle,
+                              seats: parseInt(e.target.value)
+                            },
+                          })
+                        }
+                        required
+                        className="mt-1"
+                      />
+
 
                       <div>
                         <Label htmlFor="licensePlate">

@@ -86,6 +86,7 @@ const UserProfile = ({
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [churchData, setChurchData] = useState<{ name: string } | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [localUserData, setLocalUserData] = useState(user);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return !!user?.fcmToken;
@@ -97,29 +98,143 @@ const UserProfile = ({
 
   const db = getFirestore(app);
 
+  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
+  //   try {
+  //     const updateData = {
+  //       ...userData,
+  //       churchIds: userData.churchIds,
+  //     };
+
+  //     await onUpdateUser(updateData);
+
+  //     if (updateData.churchIds?.[0]) {
+  //       const churchRef = doc(db, "churches", updateData.churchIds[0]);
+  //       const churchSnap = await getDoc(churchRef);
+  //       if (churchSnap.exists()) {
+  //         setChurchData(churchSnap.data() as { name: string });
+  //       }
+  //     }
+
+  //     toast.success("Profil mis à jour avec succès");
+  //   } catch (error: any) {
+  //     console.error("Error updating profile:", error);
+  //     toast.error("Erreur lors de la mise à jour du profil");
+  //   }
+  // };
+  useEffect(() => {
+    setLocalUserData(user);
+  }, [user]);
+
+
+  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
+  //   try {
+  //     const updateData = {
+  //       ...userData,
+  //       churchIds: userData.churchIds,
+  //     };
+
+  //     await onUpdateUser(updateData);
+
+
+  //     if (updateData.churchIds?.[0]) {
+  //       const churchRef = doc(db, "churches", updateData.churchIds[0]);
+  //       const churchSnap = await getDoc(churchRef);
+  //       if (churchSnap.exists()) {
+  //         setChurchData(churchSnap.data() as { name: string });
+  //       }
+  //     }
+
+  //     if (userData.vehicle && userData.isDriver) {
+  //       const vehicleRef = doc(db, "vehicles", user?.uid || "");
+  //       await setDoc(vehicleRef, {
+  //         ...userData.vehicle,
+  //         userId: user?.uid,
+  //         isActive: true,
+  //       }, { merge: true });
+  //     }
+
+  //     toast.success("Profil mis à jour avec succès");
+  //     //window.location.reload();
+  //   } catch (error: any) {
+  //     console.error("Error updating profile:", error);
+  //     toast.error("Erreur lors de la mise à jour du profil");
+  //   }
+  // };
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
-      const updateData = {
-        ...userData,
-        churchIds: userData.churchIds,
-      };
+      console.log('Current state before update:', localUserData);
+      console.log('Incoming update data:', userData);
 
-      await onUpdateUser(updateData);
+      if (userData.vehicle && userData.isDriver && user?.uid) {
+        const vehicleRef = doc(db, "vehicles", user.uid);
 
-      if (updateData.churchIds?.[0]) {
-        const churchRef = doc(db, "churches", updateData.churchIds[0]);
-        const churchSnap = await getDoc(churchRef);
-        if (churchSnap.exists()) {
-          setChurchData(churchSnap.data() as { name: string });
-        }
+        const vehicleDoc = await getDoc(vehicleRef);
+        const currentVehicleData = vehicleDoc.exists() ? vehicleDoc.data() : {};
+
+        const mergedVehicleData = {
+          ...currentVehicleData,
+          ...userData.vehicle,
+          userId: user.uid,
+          isActive: true,
+        };
+
+        await setDoc(vehicleRef, mergedVehicleData);
+
+        const updatedUserData = {
+          ...userData,
+          vehicle: mergedVehicleData,
+        };
+
+
+        await onUpdateUser(updatedUserData);
+
+        setLocalUserData(prev => ({
+          ...prev,
+          ...updatedUserData,
+        } as UserData));
+
+
+        console.log('Updated state:', localUserData);
+      } else {
+
+        await onUpdateUser(userData);
+        setLocalUserData(prev => ({
+          ...prev,
+          ...userData,
+        } as UserData));
       }
 
       toast.success("Profil mis à jour avec succès");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Erreur lors de la mise à jour du profil");
     }
   };
+
+
+
+  useEffect(() => {
+    if (user) {
+      const syncData = async () => {
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data() as UserData;
+
+        if (userData.isDriver) {
+          const vehicleRef = doc(db, "vehicles", user.uid);
+          const vehicleDoc = await getDoc(vehicleRef);
+          if (vehicleDoc.exists()) {
+            userData.vehicle = vehicleDoc.data() as Vehicle;
+          }
+        }
+
+        setLocalUserData(userData);
+      };
+
+      syncData();
+    }
+  }, [user, db]);
+
 
   useEffect(() => {
     setNotificationsEnabled(isEnabled);
@@ -184,7 +299,7 @@ const UserProfile = ({
 
       const uniqueChurches = Array.from(churchMap.values());
       uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
-      console.log("Fetched churches:", uniqueChurches);
+      //console.log("Fetched churches:", uniqueChurches);
       setChurches(uniqueChurches);
     };
 
@@ -197,44 +312,6 @@ const UserProfile = ({
       /iPad|iPhone|iPod/.test(navigator.userAgent)
     );
   };
-
-  // console.log("Is iOS:", isIOSDevice());
-  // const handleEnableNotifications = async () => {
-  //   try {
-  //     if (notificationsEnabled) {
-  //       await onUpdateUser({ fcmToken: null });
-  //       setNotificationsEnabled(false);
-  //       toast.success("Notifications désactivées avec succès");
-  //       console.log("Token FCM supprimé");
-  //       return;
-  //     }
-
-  //     if (!("Notification" in window)) {
-  //       toast.error("Votre navigateur ne supporte pas les notifications");
-  //       return;
-  //     }
-
-  //     const permission = await Notification.requestPermission();
-
-  //     if (permission === "granted") {
-  //       const newToken = await requestPermission();
-  //       console.log("Token FCM reçu:", newToken); 
-
-  //       if (newToken && user?.uid) {
-  //         await onUpdateUser({ fcmToken: newToken });
-  //         setNotificationsEnabled(true);
-  //         toast.success("Notifications activées avec succès");
-  //       } else {
-  //         toast.error("Impossible d'obtenir le token de notification");
-  //       }
-  //     } else {
-  //       toast.error("Permission de notification refusée");
-  //     }
-  //   } catch (error) {
-  //     console.error("Erreur lors de l'activation des notifications:", error);
-  //     toast.error("Erreur lors de l'activation des notifications");
-  //   }
-  // };
 
   const handleEnableNotifications = async () => {
     try {
@@ -273,54 +350,6 @@ const UserProfile = ({
 
 
 
-
-  // const handleEnableNotifications = async () => {
-  //   try {
-  //     if (notificationsEnabled) {
-  //       await onUpdateUser({
-  //         fcmToken: null,
-  //       });
-  //       setNotificationsEnabled(false);
-  //       toast.success("Notifications désactivées avec succès");
-  //       return;
-  //     }
-
-  //     if (isIOSDevice()) {
-  //       try {
-  //         const newToken = await requestPermission();
-  //         if (newToken && user?.uid) {
-  //           await onUpdateUser({
-  //             fcmToken: newToken,
-  //           });
-  //           setNotificationsEnabled(true);
-  //           toast.success("Notifications activées avec succès");
-  //         } else {
-  //           toast.error("Impossible d'obtenir le token de notification");
-  //         }
-  //       } catch (error) {
-  //         console.error("Erreur FCM:", error);
-  //         toast.error("Erreur lors de l'activation des notifications");
-  //       }
-  //       return;
-  //     }
-
-  //     const permission = await Notification.requestPermission();
-  //     if (permission === "granted") {
-  //       const newToken = await requestPermission();
-  //       if (newToken && user?.uid) {
-  //         await onUpdateUser({
-  //           fcmToken: newToken,
-  //         });
-  //         setNotificationsEnabled(true);
-  //         toast.success("Notifications activées avec succès");
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Erreur:", error);
-  //     toast.error("Erreur lors de la gestion des notifications");
-  //   }
-  // };
-
   useEffect(() => {
     const checkNotificationSupport = () => {
       if (typeof window !== "undefined" && "Notification" in window) {
@@ -340,7 +369,7 @@ const UserProfile = ({
         vehicle: vehicleData,
       });
 
-      const vehicleRef = doc(db, "Vehicles", user?.uid || "");
+      const vehicleRef = doc(db, "vehicles", user?.uid || "");
       await setDoc(vehicleRef, {
         ...vehicleData,
         userId: user?.uid,
@@ -350,6 +379,7 @@ const UserProfile = ({
       console.error("Erreur en passant à l'état de conducteur :", error);
     }
   };
+
 
   useEffect(() => {
     const fetchChurchData = async () => {
@@ -398,14 +428,14 @@ const UserProfile = ({
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
             <div className="relative">
               <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
-                <AvatarImage src={user?.profilePicture || UserAvatar.src} />
+                <AvatarImage src={localUserData?.profilePicture || UserAvatar.src} />
               </Avatar>
             </div>
 
             <div className="text-white w-full sm:w-auto">
               <h1 className="text-2xl sm:text-3xl font-bold mb-2 flex items-center justify-center sm:justify-start gap-2 break-words">
                 <span className="max-w-[200px] sm:max-w-none truncate">
-                  {user?.fullName}
+                  {localUserData?.fullName}
                 </span>
                 {isVerifiedUser(user) && (
                   <MdVerified className="text-amber-500 text-xl" />
@@ -414,7 +444,7 @@ const UserProfile = ({
 
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3 mb-4">
                 <Badge className="bg-slate-800 ">
-                  {user?.isDriver ? "Conducteur" : "Passager"}
+                  {localUserData?.isDriver ? "Conducteur" : "Passager"}
                 </Badge>
               </div>
 
@@ -426,11 +456,11 @@ const UserProfile = ({
                   </span>
                 </div>
 
-                {user?.isStar && user?.ministry && (
+                {localUserData?.isStar && user?.ministry && (
                   <div className="flex items-center justify-center sm:justify-start gap-2 w-full">
                     <MdStar className="text-yellow-400 flex-shrink-0" />
                     <span className="text-sm sm:text-base text-center sm:text-left truncate">
-                      {user.ministry}
+                      {localUserData.ministry}
                     </span>
                   </div>
                 )}
@@ -450,7 +480,7 @@ const UserProfile = ({
                 <div>
                   <p className="text-xs sm:text-sm text-gray-500">Email</p>
                   <p className="text-sm sm:text-base font-medium">
-                    {user?.email}
+                    {localUserData?.email}
                   </p>
                 </div>
               </div>
@@ -460,7 +490,7 @@ const UserProfile = ({
                 <div>
                   <p className="text-xs sm:text-sm text-gray-500">Téléphone</p>
                   <p className="text-sm sm:text-base font-medium">
-                    {user?.phoneNumber}
+                    {localUserData?.phoneNumber}
                   </p>
                 </div>
               </div>
@@ -504,7 +534,7 @@ const UserProfile = ({
           )}
         </div>
 
-        {user?.isDriver && user.vehicle && (
+        {user?.isDriver && localUserData?.vehicle && (
           <Card className="p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-2">
               <MdDirectionsCar className="text-blue-600" />
@@ -513,29 +543,28 @@ const UserProfile = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <p className="text-sm text-gray-500">Marque</p>
-                <p className="font-medium">{user.vehicle.brand}</p>
+                <p className="font-medium">{localUserData.vehicle?.brand}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Modèle</p>
-                <p className="font-medium">{user.vehicle.model}</p>
+                <p className="font-medium">{localUserData.vehicle?.model}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Couleur</p>
-                <p className="font-medium">{user.vehicle.color}</p>
+                <p className="font-medium">{localUserData.vehicle?.color}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Nombre de places</p>
-                <p className="font-medium">{user.vehicle.seats}</p>
+                <p className="font-medium">{localUserData.vehicle?.seats}</p>
               </div>
               <div className="col-span-full sm:col-span-2">
-                <p className="text-sm text-gray-500">
-                  Plaque d'immatriculation
-                </p>
-                <p className="font-medium">{user.vehicle.licensePlate}</p>
+                <p className="text-sm text-gray-500">Plaque d'immatriculation</p>
+                <p className="font-medium">{localUserData.vehicle?.licensePlate}</p>
               </div>
             </div>
           </Card>
         )}
+
       </div>
       {isEditing && (
         <EditProfileModal
