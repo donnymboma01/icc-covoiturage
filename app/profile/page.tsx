@@ -6,10 +6,6 @@ import {
   getFirestore,
   doc,
   getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
   updateDoc,
   setDoc
 } from "firebase/firestore";
@@ -63,16 +59,19 @@ const Profile = () => {
       setUserData(freshData as UserData);
 
       toast.success("Profil mis à jour avec succès");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating user:", error);
-      toast.error(error.code === "auth/requires-recent-login"
-        ? "Veuillez vous reconnecter pour modifier votre email"
-        : "Erreur lors de la mise à jour du profil"
-      );
+      if (error instanceof Error && 'code' in error) {
+        toast.error(error.code === "auth/requires-recent-login"
+          ? "Veuillez vous reconnecter pour modifier votre email"
+          : "Erreur lors de la mise à jour du profil"
+        );
+      } else {
+        toast.error("Erreur lors de la mise à jour du profil");
+      }
       throw error;
     }
   };
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
