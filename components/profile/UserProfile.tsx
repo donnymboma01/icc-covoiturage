@@ -60,6 +60,7 @@ export interface UserData {
   fcmToken?: string | null;
   churchIds?: string[];
   isStar: string | boolean | undefined;
+  isVerified?: boolean;
 }
 
 const verses = [
@@ -98,68 +99,10 @@ const UserProfile = ({
 
   const db = getFirestore(app);
 
-  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
-  //   try {
-  //     const updateData = {
-  //       ...userData,
-  //       churchIds: userData.churchIds,
-  //     };
-
-  //     await onUpdateUser(updateData);
-
-  //     if (updateData.churchIds?.[0]) {
-  //       const churchRef = doc(db, "churches", updateData.churchIds[0]);
-  //       const churchSnap = await getDoc(churchRef);
-  //       if (churchSnap.exists()) {
-  //         setChurchData(churchSnap.data() as { name: string });
-  //       }
-  //     }
-
-  //     toast.success("Profil mis à jour avec succès");
-  //   } catch (error: any) {
-  //     console.error("Error updating profile:", error);
-  //     toast.error("Erreur lors de la mise à jour du profil");
-  //   }
-  // };
   useEffect(() => {
     setLocalUserData(user);
   }, [user]);
 
-
-  // const handleUpdateProfile = async (userData: Partial<UserData>) => {
-  //   try {
-  //     const updateData = {
-  //       ...userData,
-  //       churchIds: userData.churchIds,
-  //     };
-
-  //     await onUpdateUser(updateData);
-
-
-  //     if (updateData.churchIds?.[0]) {
-  //       const churchRef = doc(db, "churches", updateData.churchIds[0]);
-  //       const churchSnap = await getDoc(churchRef);
-  //       if (churchSnap.exists()) {
-  //         setChurchData(churchSnap.data() as { name: string });
-  //       }
-  //     }
-
-  //     if (userData.vehicle && userData.isDriver) {
-  //       const vehicleRef = doc(db, "vehicles", user?.uid || "");
-  //       await setDoc(vehicleRef, {
-  //         ...userData.vehicle,
-  //         userId: user?.uid,
-  //         isActive: true,
-  //       }, { merge: true });
-  //     }
-
-  //     toast.success("Profil mis à jour avec succès");
-  //     //window.location.reload();
-  //   } catch (error: any) {
-  //     console.error("Error updating profile:", error);
-  //     toast.error("Erreur lors de la mise à jour du profil");
-  //   }
-  // };
   const handleUpdateProfile = async (userData: Partial<UserData>) => {
     try {
       console.log('Current state before update:', localUserData);
@@ -299,7 +242,6 @@ const UserProfile = ({
 
       const uniqueChurches = Array.from(churchMap.values());
       uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
-      //console.log("Fetched churches:", uniqueChurches);
       setChurches(uniqueChurches);
     };
 
@@ -430,6 +372,11 @@ const UserProfile = ({
               <Avatar className="h-24 w-24 sm:h-40 sm:w-40 border-4 border-white shadow-xl">
                 <AvatarImage src={localUserData?.profilePicture || UserAvatar.src} />
               </Avatar>
+              {localUserData?.isDriver && localUserData?.isVerified && (
+                <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1 shadow-md">
+                  <MdVerified className="text-orange-500 h-6 w-6" />
+                </div>
+              )}
             </div>
 
             <div className="text-white w-full sm:w-auto">
@@ -437,15 +384,25 @@ const UserProfile = ({
                 <span className="max-w-[200px] sm:max-w-none truncate">
                   {localUserData?.fullName}
                 </span>
-                {isVerifiedUser(user) && (
-                  <MdVerified className="text-amber-500 text-xl" />
-                )}
               </h1>
 
               <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-3 mb-4">
-                <Badge className="bg-slate-800 ">
+                <Badge className={`
+                  ${localUserData?.isDriver && localUserData?.isVerified
+                    ? "bg-orange-500 text-white"
+                    : "bg-slate-800"} 
+                  flex items-center gap-2
+                `}>
                   {localUserData?.isDriver ? "Conducteur" : "Passager"}
+                  {localUserData?.isDriver && localUserData?.isVerified && (
+                    <span className="text-xs bg-white/20 px-1 rounded">vérifié</span>
+                  )}
                 </Badge>
+                {isVerifiedUser(localUserData) && (
+                  <Badge className="bg-green-600">
+                    Profil complet
+                  </Badge>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">
@@ -456,7 +413,7 @@ const UserProfile = ({
                   </span>
                 </div>
 
-                {localUserData?.isStar && user?.ministry && (
+                {localUserData?.isStar && localUserData?.ministry && (
                   <div className="flex items-center justify-center sm:justify-start gap-2 w-full">
                     <MdStar className="text-yellow-400 flex-shrink-0" />
                     <span className="text-sm sm:text-base text-center sm:text-left truncate">
@@ -513,7 +470,7 @@ const UserProfile = ({
             </div>
           </Card>
 
-          {!user?.isDriver && (
+          {!localUserData?.isDriver && (
             <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-blue-50 flex flex-col justify-between h-full">
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
@@ -534,7 +491,7 @@ const UserProfile = ({
           )}
         </div>
 
-        {user?.isDriver && localUserData?.vehicle && (
+        {localUserData?.isDriver && localUserData?.vehicle && (
           <Card className="p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-2">
               <MdDirectionsCar className="text-blue-600" />

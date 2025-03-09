@@ -67,6 +67,7 @@ export const RideSchema = z.object({
 //       path: ["vehicle"],
 //     }
 //   );
+
 export const RegisterSchema = z
   .object({
     email: z.string().email("Email invalide"),
@@ -77,6 +78,7 @@ export const RegisterSchema = z
     fullName: z.string().min(2, "Le nom complet est requis"),
     phoneNumber: z.string().min(10, "Numéro de téléphone invalide"),
     isDriver: z.boolean().default(false),
+    whatsappConsent: z.boolean().default(false),
     profilePicture: z.instanceof(File).optional(),
     church: z.string().min(1, "Veuillez sélectionner une église"),
     isStar: z.boolean().default(false),
@@ -97,6 +99,15 @@ export const RegisterSchema = z
   })
   .superRefine((data, ctx) => {
     if (data.isDriver) {
+      if (!data.whatsappConsent) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Vous devez accepter de rejoindre le groupe WhatsApp pour devenir conducteur",
+          path: ["whatsappConsent"],
+        });
+      }
+
       if (!data.vehicle) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -156,12 +167,14 @@ export const RegisterSchema = z
 //     isDriver: z.boolean().default(false),
 //     profilePicture: z.instanceof(File).optional(),
 //     church: z.string().min(1, "Veuillez sélectionner une église"),
+//     isStar: z.boolean().default(false),
+//     ministry: z.string().optional(),
 //     vehicle: z
 //       .object({
 //         brand: z.string(),
 //         model: z.string(),
 //         color: z.string(),
-//         seats: z.number().min(1),
+//         seats: z.number(),
 //         licensePlate: z.string(),
 //       })
 //       .optional(),
@@ -169,4 +182,52 @@ export const RegisterSchema = z
 //   .refine((data) => data.password === data.confirmPassword, {
 //     message: "Les mots de passe ne correspondent pas",
 //     path: ["confirmPassword"],
+//   })
+//   .superRefine((data, ctx) => {
+//     if (data.isDriver) {
+//       if (!data.vehicle) {
+//         ctx.addIssue({
+//           code: z.ZodIssueCode.custom,
+//           message:
+//             "Les informations du véhicule sont requises pour les conducteurs",
+//           path: ["vehicle"],
+//         });
+//       } else {
+//         if (!data.vehicle.brand) {
+//           ctx.addIssue({
+//             code: z.ZodIssueCode.custom,
+//             message: "La marque du véhicule est requise",
+//             path: ["vehicle", "brand"],
+//           });
+//         }
+//         if (!data.vehicle.model) {
+//           ctx.addIssue({
+//             code: z.ZodIssueCode.custom,
+//             message: "Le modèle du véhicule est requis",
+//             path: ["vehicle", "model"],
+//           });
+//         }
+//         if (!data.vehicle.color) {
+//           ctx.addIssue({
+//             code: z.ZodIssueCode.custom,
+//             message: "La couleur du véhicule est requise",
+//             path: ["vehicle", "color"],
+//           });
+//         }
+//         if (!data.vehicle.seats || data.vehicle.seats < 1) {
+//           ctx.addIssue({
+//             code: z.ZodIssueCode.custom,
+//             message: "Le nombre de places doit être supérieur à 0",
+//             path: ["vehicle", "seats"],
+//           });
+//         }
+//         if (!data.vehicle.licensePlate) {
+//           ctx.addIssue({
+//             code: z.ZodIssueCode.custom,
+//             message: "La plaque d'immatriculation est requise",
+//             path: ["vehicle", "licensePlate"],
+//           });
+//         }
+//       }
+//     }
 //   });

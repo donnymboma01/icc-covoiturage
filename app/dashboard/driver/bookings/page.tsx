@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import DriverBookings from "@/components/booking/DriverBookings";
 import PageLayout from "@/components/PageLayout";
+import DriverVerificationGuard from "@/components/auth/DriverVerificationGuard";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,13 +15,15 @@ import {
 
 const Bookings = () => {
   return (
-    <PageLayout
-      title="Les reservations"
-      description="Cette page permet de voir les reservations"
-    >
-      <CustomBreadcrumb name="Reservations" />
-      <DriverBookings />
-    </PageLayout>
+    <DriverVerificationGuard>
+      <PageLayout
+        title="Les reservations"
+        description="Cette page permet de voir les reservations"
+      >
+        <CustomBreadcrumb name="Reservations" />
+        <DriverBookings />
+      </PageLayout>
+    </DriverVerificationGuard>
   );
 };
 

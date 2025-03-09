@@ -42,7 +42,7 @@ export function EditProfileModal({
   currentUser,
   churches,
 }: EditProfileModalProps) {
-  //console.log("Churches in modal:", churches);
+  
   const [userData, setUserData] = useState({
     fullName: currentUser?.fullName || "",
     phoneNumber: currentUser?.phoneNumber || "",
@@ -62,59 +62,39 @@ export function EditProfileModal({
     ministry: currentUser?.ministry || "",
   });
 
-  // const [userData, setUserData] = useState({
-  //   fullName: currentUser?.fullName || "",
-  //   phoneNumber: currentUser?.phoneNumber || "",
-  //   profilePicture: currentUser?.profilePicture || "",
-  //   vehicle: {
-  //     brand: currentUser?.vehicle?.brand || "",
-  //     model: currentUser?.vehicle?.model || "",
-  //     color: currentUser?.vehicle?.color || "",
-  //     seats: currentUser?.vehicle?.seats || 0,
-  //     licensePlate: currentUser?.vehicle?.licensePlate || "",
-  //     isActive: true
-  //   },
-  //   email: currentUser?.email || "",
-  //   churchId: currentUser?.churchIds?.[0] || "",
-  //   isStar: currentUser?.isStar || false,
-  //   ministry: currentUser?.ministry || "",
-  // });
 
   const [open, setOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const db = getFirestore(app);
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   const dataToSubmit = {
-  //     ...userData,
-  //     churchIds: userData.churchId ? [userData.churchId] : [],
-  //   };
+  const updateVehicleInfo = async (vehicleData: any) => {
+    try {
+      
+      const vehicleRef = doc(db, "vehicles", currentUser.uid);
+      await setDoc(vehicleRef, vehicleData, { merge: true });
 
-  //   try {
-  //     await onSubmit(dataToSubmit);
-  //     //window.location.reload();
-  //     toast.success("Modifications enregistrées");
-  //     onClose();
-  //   } catch (error) {
-  //     console.error("Error:", error);
-  //     toast.error("Erreur lors de la modification");
-  //   }
-  // };
+      const userRef = doc(db, "users", currentUser.uid);
+      await setDoc(userRef, { vehicle: vehicleData }, { merge: true });
+    } catch (error) {
+      console.error("Error updating vehicle info:", error);
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
-      // Préparez les données du véhicule
       const vehicleData = {
         ...userData.vehicle,
         userId: currentUser.uid,
         isActive: true
       };
 
-      // Préparez les données utilisateur
+      if (currentUser.isDriver) {
+        await updateVehicleInfo(vehicleData);
+      }
+
       const dataToSubmit = {
         ...userData,
         churchIds: userData.churchId ? [userData.churchId] : [],
@@ -122,15 +102,8 @@ export function EditProfileModal({
       };
 
       await onSubmit(dataToSubmit);
-
-      if (currentUser.isDriver) {
-        const vehicleRef = doc(db, "vehicles", currentUser.uid);
-        await setDoc(vehicleRef, vehicleData);
-      }
-
       toast.success("Modifications enregistrées");
       onClose();
-
     } catch (error) {
       console.error("Error:", error);
       toast.error("Erreur lors de la modification");
@@ -138,43 +111,39 @@ export function EditProfileModal({
   };
 
 
-
-
   // const handleSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
 
-  //   const vehicleData = {
-  //     brand: userData.vehicle.brand,
-  //     model: userData.vehicle.model,
-  //     color: userData.vehicle.color,
-  //     seats: Number(userData.vehicle.seats),
-  //     licensePlate: userData.vehicle.licensePlate,
-  //     isActive: true,
-  //     userId: currentUser.uid
-  //   };
-
-  //   const dataToSubmit = {
-  //     ...userData,
-  //     churchIds: userData.churchId ? [userData.churchId] : [],
-  //     vehicle: vehicleData
-  //   };
-
   //   try {
+
+  //     const vehicleData = {
+  //       ...userData.vehicle,
+  //       userId: currentUser.uid,
+  //       isActive: true
+  //     };
+
+  //     const dataToSubmit = {
+  //       ...userData,
+  //       churchIds: userData.churchId ? [userData.churchId] : [],
+  //       vehicle: vehicleData
+  //     };
+
   //     await onSubmit(dataToSubmit);
 
-  //     if (currentUser.isDriver && db) {
+  //     if (currentUser.isDriver) {
   //       const vehicleRef = doc(db, "vehicles", currentUser.uid);
-  //       await setDoc(vehicleRef, vehicleData, { merge: true });
+  //       await setDoc(vehicleRef, vehicleData);
   //     }
 
   //     toast.success("Modifications enregistrées");
   //     onClose();
-  //     window.location.reload();
+
   //   } catch (error) {
   //     console.error("Error:", error);
   //     toast.error("Erreur lors de la modification");
   //   }
   // };
+
 
 
   const compressImage = async (file: File): Promise<Blob> => {
@@ -486,27 +455,6 @@ export function EditProfileModal({
                         />
                       </div>
 
-                      {/* <div>
-                        <Label htmlFor="seats">Nombre de places</Label>
-                        <Input
-                          id="seats"
-                          type="number"
-                          min="1"
-                          max="9"
-                          value={userData.vehicle?.seats || ""}
-                          onChange={(e) =>
-                            setUserData({
-                              ...userData,
-                              vehicle: {
-                                ...userData.vehicle,
-                                seats: parseInt(e.target.value),
-                              },
-                            })
-                          }
-                          required
-                          className="mt-1"
-                        />
-                      </div> */}
                       <Label htmlFor="seats">Nombre de places</Label>
                       <Input
                         id="seats"

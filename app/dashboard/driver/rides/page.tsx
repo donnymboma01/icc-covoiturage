@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import CreateRideForm from "@/components/rides/driver/CreateRideForm";
+import RidesHistory from "@/components/rides/driver/RidesHistory";
 import PageLayout from "@/components/PageLayout";
 import DriverVerificationGuard from "@/components/auth/DriverVerificationGuard";
 import {
@@ -13,36 +13,40 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-function Driver() {
+function DriverRidesPage() {
   return (
     <DriverVerificationGuard>
       <PageLayout
-        title="créer un trajet"
-        description="Cette page permet de créer un trajet"
+        title="Mes trajets"
+        description="Gérez vos trajets en tant que conducteur"
       >
-        <CustomBreadcrumb name="Création de trajet" />
-        <div className="max-w-[800px] mx-auto p-2">
-          <CreateRideForm />
+        <CustomBreadcrumb name="Mes trajets" />
+        <div className="max-w-[1200px] mx-auto p-2">
+          <RidesHistory />
         </div>
       </PageLayout>
     </DriverVerificationGuard>
   );
 }
 
-export default Driver;
+export default DriverRidesPage;
 
 const CustomBreadcrumb = ({ name }: { name: string }) => {
   return (
-    <Breadcrumb className=" p-2  bg-gray-100">
+    <Breadcrumb className="mb-6">
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink href="/home">Accueil</BreadcrumbLink>
+          <BreadcrumbLink href="/dashboard">Tableau de bord</BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage className="font-semibold">{name}</BreadcrumbPage>
+          <BreadcrumbLink href="/dashboard/driver">Conducteur</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>{name}</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
   );
-};
+}; 

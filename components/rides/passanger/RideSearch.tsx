@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   collection,
   query,
@@ -12,6 +12,8 @@ import {
   getDocs,
   Timestamp,
   getFirestore,
+  getDoc,
+  doc,
 } from "firebase/firestore";
 import {
   distanceBetween,
@@ -60,6 +62,7 @@ interface Driver {
   fullName: string;
   profilePicture?: string;
   isStar: string | boolean | undefined;
+  isVerified?: boolean;
 }
 
 const getDriverData = async (driverId: string): Promise<Driver> => {
@@ -68,6 +71,16 @@ const getDriverData = async (driverId: string): Promise<Driver> => {
   );
 
   const driverData = driverSnap.docs[0]?.data() as Driver;
+  
+  // Vérifier si le conducteur est vérifié
+  const verificationSnap = await getDoc(doc(db, "driverVerifications", driverId));
+  if (verificationSnap.exists()) {
+    const verificationData = verificationSnap.data();
+    driverData.isVerified = verificationData.isVerified === true;
+  } else {
+    driverData.isVerified = false;
+  }
+  
   return driverData;
 };
 
@@ -79,6 +92,7 @@ const RideSearch = () => {
     arrival: "",
     date: new Date(),
     seats: 1,
+    churchId: "all",
   });
 
   const [rides, setRides] = useState<Array<Ride & { driver: Driver }>>([]);
@@ -86,13 +100,14 @@ const RideSearch = () => {
   const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
     []
   );
-  const [selectedChurch, setSelectedChurch] = useState<string>("");
   const [highlightedDates, setHighlightedDates] = useState<Date[]>([]);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   const { user } = useAuth();
+
+  const searchResultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchChurches = async () => {
@@ -113,6 +128,7 @@ const RideSearch = () => {
       });
 
       const uniqueChurches = Array.from(churchMap.values());
+      uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
       setChurches(uniqueChurches);
     };
 
@@ -140,18 +156,38 @@ const RideSearch = () => {
         (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
       );
 
-      console.log("Dates disponibles:", normalizedDates); // Debug
       setAvailableDates(normalizedDates);
+
+      if (hasSearched) return;
+
+      const ridesWithDrivers = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const rideData = doc.data() as Ride;
+          const driverData = await getDriverData(rideData.driverId);
+          return {
+            ...rideData,
+            id: doc.id,
+            driver: driverData,
+          };
+        })
+      );
+
+      const sortedRides = ridesWithDrivers.sort((a, b) => {
+        return (
+          (a.departureTime as Timestamp).toDate().getTime() -
+          (b.departureTime as Timestamp).toDate().getTime()
+        );
+      });
+
+      setRides(sortedRides);
     } catch (error) {
-      console.error("Erreur lors du chargement des dates:", error);
+      console.error("Erreur lors du chargement des trajets:", error);
     }
   };
 
   useEffect(() => {
     fetchAllAvailableRides();
   }, []);
-
-
 
   const handleSearch = async () => {
     setLoading(true);
@@ -163,18 +199,73 @@ const RideSearch = () => {
       const endOfDay = new Date(searchParams.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      if (!searchParams.departure) {
-        const ridesRef = collection(db, "rides");
-        const q = query(
-          ridesRef,
+      // Construire la requête de base
+      let baseQuery = query(
+        collection(db, "rides"),
+        where("status", "==", "active"),
+        where("departureTime", ">=", startOfDay),
+        where("departureTime", "<=", endOfDay)
+      );
+
+      // Si une église spécifique est sélectionnée, nous devons d'abord récupérer les conducteurs de cette église
+      let filteredDriverIds: string[] = [];
+      if (searchParams.churchId !== "all") {
+        // Récupérer les utilisateurs (conducteurs) associés à cette église
+        const usersRef = collection(db, "users");
+        const usersQuery = query(
+          usersRef,
+          where("churchIds", "array-contains", searchParams.churchId),
+          where("isDriver", "==", true)
+        );
+        
+        const usersSnapshot = await getDocs(usersQuery);
+        filteredDriverIds = usersSnapshot.docs.map(doc => doc.id);
+        
+        // Si aucun conducteur n'est trouvé pour cette église, retourner un tableau vide
+        if (filteredDriverIds.length === 0) {
+          setRides([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Modifier la requête pour inclure seulement les trajets des conducteurs de cette église
+        baseQuery = query(
+          collection(db, "rides"),
           where("status", "==", "active"),
           where("departureTime", ">=", startOfDay),
-          where("departureTime", "<=", endOfDay)
+          where("departureTime", "<=", endOfDay),
+          where("driverId", "in", filteredDriverIds.slice(0, 10)) // Firestore limite à 10 valeurs pour 'in'
         );
+      }
 
-        const querySnapshot = await getDocs(q);
+      if (!searchParams.departure) {
+        // Si aucune adresse de départ n'est spécifiée, rechercher tous les trajets
+        const querySnapshot = await getDocs(baseQuery);
+        
+        // Si nous avons plus de 10 conducteurs et une église spécifique est sélectionnée, 
+        // nous devons faire plusieurs requêtes
+        let allDocs = querySnapshot.docs;
+        
+        if (searchParams.churchId !== "all" && filteredDriverIds.length > 10) {
+          // Traiter les conducteurs par lots de 10
+          for (let i = 10; i < filteredDriverIds.length; i += 10) {
+            const batchDriverIds = filteredDriverIds.slice(i, i + 10);
+            if (batchDriverIds.length > 0) {
+              const batchQuery = query(
+                collection(db, "rides"),
+                where("status", "==", "active"),
+                where("departureTime", ">=", startOfDay),
+                where("departureTime", "<=", endOfDay),
+                where("driverId", "in", batchDriverIds)
+              );
+              const batchSnapshot = await getDocs(batchQuery);
+              allDocs = [...allDocs, ...batchSnapshot.docs];
+            }
+          }
+        }
+        
         const ridesData = await Promise.all(
-          querySnapshot.docs.map(async (doc) => {
+          allDocs.map(async (doc) => {
             const rideData = doc.data() as Ride;
             const driverData = await getDriverData(rideData.driverId);
             return {
@@ -185,9 +276,20 @@ const RideSearch = () => {
           })
         );
         setRides(ridesData);
+
+        setTimeout(() => {
+          if (searchResultsRef.current) {
+            searchResultsRef.current.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }, 100);
+
         return;
       }
 
+      // Si une adresse de départ est spécifiée, rechercher les trajets à proximité
       const searchLocation = await getCoordinates(searchParams.departure);
       const radiusInKm = 10;
       const bounds = geohashQueryBounds(
@@ -197,7 +299,8 @@ const RideSearch = () => {
 
       const ridesRef = collection(db, "rides");
       const promises = bounds.map((b) => {
-        const q = query(
+        // Construire la requête avec les filtres géographiques
+        let geoQuery = query(
           ridesRef,
           where("departureLocation.geohash", ">=", b[0]),
           where("departureLocation.geohash", "<=", b[1]),
@@ -205,7 +308,22 @@ const RideSearch = () => {
           where("departureTime", ">=", startOfDay),
           where("departureTime", "<=", endOfDay)
         );
-        return getDocs(q);
+
+        // Si une église spécifique est sélectionnée, filtrer par les conducteurs de cette église
+        if (searchParams.churchId !== "all" && filteredDriverIds.length > 0) {
+          // Limiter à 10 conducteurs par requête (limite Firestore)
+          geoQuery = query(
+            ridesRef,
+            where("departureLocation.geohash", ">=", b[0]),
+            where("departureLocation.geohash", "<=", b[1]),
+            where("status", "==", "active"),
+            where("departureTime", ">=", startOfDay),
+            where("departureTime", "<=", endOfDay),
+            where("driverId", "in", filteredDriverIds.slice(0, 10))
+          );
+        }
+
+        return getDocs(geoQuery);
       });
 
       const snapshots = await Promise.all(promises);
@@ -214,6 +332,16 @@ const RideSearch = () => {
       for (const snap of snapshots) {
         for (const doc of snap.docs) {
           const rideData = doc.data() as Ride;
+          
+          // Vérifier si nous devons filtrer par église et si nous avons plus de 10 conducteurs
+          if (searchParams.churchId !== "all" && filteredDriverIds.length > 10 && 
+              !filteredDriverIds.slice(0, 10).includes(rideData.driverId)) {
+            // Vérifier si ce conducteur fait partie de l'église sélectionnée
+            if (!filteredDriverIds.includes(rideData.driverId)) {
+              continue; // Ignorer ce trajet si le conducteur n'est pas de l'église sélectionnée
+            }
+          }
+          
           if (rideData.departureLocation) {
             const distanceInKm = distanceBetween(
               [searchLocation.lat, searchLocation.lng],
@@ -234,18 +362,27 @@ const RideSearch = () => {
       );
 
       setRides(ridesWithDrivers);
+
+      setTimeout(() => {
+        if (searchResultsRef.current) {
+          searchResultsRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 100);
+
+      return;
     } catch (error) {
-      console.error("Search error details:", error);
+      console.error("Erreur lors de la recherche:", error);
       setRides([]);
     } finally {
       setLoading(false);
     }
   };
 
-
-
   return (
-    <div className="space-y-6 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="space-y-8">
       <Card className="p-4 sm:p-6">
         <form
           onSubmit={(e) => {
@@ -282,7 +419,27 @@ const RideSearch = () => {
               />
             </div>
 
-
+            <div className="space-y-2">
+              <Label>Église (optionnel)</Label>
+              <Select
+                value={searchParams.churchId}
+                onValueChange={(value) =>
+                  setSearchParams({ ...searchParams, churchId: value })
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Toutes les églises" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les églises</SelectItem>
+                  {churches.map((church) => (
+                    <SelectItem key={church.id} value={church.id}>
+                      {church.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="w-full">
               <p className="text-sm text-muted-foreground italic mb-2 text-center sm:text-left">
@@ -301,27 +458,6 @@ const RideSearch = () => {
                     setSearchParams({ ...searchParams, date });
                   }
                 }}
-                // modifiers={{
-                //   highlighted: (date) => {
-                //     return (
-                //       availableDates.some(
-                //         (availableDate) =>
-                //           date.getDate() === availableDate.getDate() &&
-                //           date.getMonth() === availableDate.getMonth() &&
-                //           date.getFullYear() === availableDate.getFullYear()
-                //       ) &&
-                //       !(
-                //         date.getDate() === searchParams.date.getDate() &&
-                //         date.getMonth() === searchParams.date.getMonth() &&
-                //         date.getFullYear() === searchParams.date.getFullYear()
-                //       )
-                //     );
-                //   },
-                //   selected: (date) =>
-                //     date.getDate() === searchParams.date.getDate() &&
-                //     date.getMonth() === searchParams.date.getMonth() &&
-                //     date.getFullYear() === searchParams.date.getFullYear(),
-                // }}
                 modifiers={{
                   highlighted: (date) => {
                     return availableDates.some(
@@ -336,7 +472,6 @@ const RideSearch = () => {
                     date.getMonth() === searchParams.date.getMonth() &&
                     date.getFullYear() === searchParams.date.getFullYear()
                 }}
-                
 
                 modifiersStyles={{
                   highlighted: {
@@ -410,8 +545,10 @@ const RideSearch = () => {
         </form>
       </Card>
 
-
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        ref={searchResultsRef}
+        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+      >
         {hasSearched ? (
           rides.length > 0 ? (
             rides.map((ride) => (

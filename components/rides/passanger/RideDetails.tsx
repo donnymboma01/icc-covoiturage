@@ -25,6 +25,7 @@ import {
   MdChurch,
   MdInfo,
   MdVerified,
+  MdStar,
 } from "react-icons/md";
 import BookingForm from "@/components/booking/BookingForm";
 import Modal from "@/components/ui/Modal";
@@ -44,6 +45,7 @@ interface Driver {
   profilePicture?: string;
   isDriver: boolean;
   churchIds: string[];
+  isVerified?: boolean;
 }
 
 interface Ride {
@@ -79,28 +81,38 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
   useEffect(() => {
     const fetchRideDetails = async () => {
       try {
-        const rideDoc = await getDoc(doc(db, "rides", rideId));
+        const rideRef = doc(db, "rides", rideId);
+        const rideDoc = await getDoc(rideRef);
+
         if (rideDoc.exists()) {
           const rideData = rideDoc.data();
-          console.log("Church ID:", rideData.churchId);
-          console.log("rideData: ", rideData);
+          const driverId = rideData.driverId;
+
+          // Récupérer les informations du conducteur
+          const driverRef = doc(db, "users", driverId);
+          const driverDoc = await getDoc(driverRef);
+
+          if (driverDoc.exists()) {
+            const driverData = driverDoc.data() as Driver;
+            
+            // Vérifier si le conducteur est vérifié
+            const verificationRef = doc(db, "driverVerifications", driverId);
+            const verificationDoc = await getDoc(verificationRef);
+            if (verificationDoc.exists()) {
+              driverData.isVerified = verificationDoc.data().isVerified === true;
+            } else {
+              driverData.isVerified = false;
+            }
+            
+            setDriver(driverData);
+          }
+
+          // Formater les données du trajet
           setRide({
             id: rideDoc.id,
             ...rideData,
             departureTime: rideData.departureTime.toDate(),
           } as Ride);
-
-          const driverDoc = await getDocs(
-            query(
-              collection(db, "users"),
-              where("uid", "==", rideData.driverId)
-            )
-          );
-
-          if (!driverDoc.empty) {
-            const driverData = driverDoc.docs[0].data() as Driver;
-            setDriver(driverData);
-          }
 
           if (rideData.churchId) {
             const churchDoc = await getDoc(
@@ -116,7 +128,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
           }
         }
       } catch (error) {
-        console.error("Erreur au chargement du trajet:", error);
+        console.error("Error fetching ride details:", error);
       } finally {
         setLoading(false);
       }
@@ -171,8 +183,17 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
               <h2 className="text-lg sm:text-xl font-semibold text-center sm:text-left break-words max-w-[80%]">
                 {driver.fullName}
               </h2>
+              {driver.isVerified && (
+                <div className="flex items-center gap-1 bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full text-xs">
+                  <MdVerified className="text-orange-500" />
+                  <span>Vérifié</span>
+                </div>
+              )}
               {driver.isStar && (
-                <MdVerified className="text-amber-500 flex-shrink-0 h-5 w-5 sm:h-6 sm:w-6" />
+                <div className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full text-xs">
+                  <MdStar className="text-yellow-500" />
+                  <span>Star</span>
+                </div>
               )}
             </div>
 

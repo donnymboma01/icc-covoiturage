@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import LocationSharingControl from "../rides/LocationSharingControl";
+import LocationSharingMap from "../rides/LocationSharingMap";
 import Image from "next/image";
 import {
   getFirestore,
@@ -32,6 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "../ui/button";
 
 const handleBookingStatusUpdate = async (
   bookingId: string,
@@ -88,9 +91,13 @@ const PassengerBookings = () => {
     "current"
   );
 
+  const [selectedBookingForTracking, setSelectedBookingForTracking] = useState<string | null>(null);
+
+  const mapRef = useRef<HTMLDivElement>(null);
+
   const filterBookings = (bookings: Booking[]) => {
     const now = new Date();
-  
+
     return {
       current: bookings.filter((booking) => {
         const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
@@ -101,7 +108,7 @@ const PassengerBookings = () => {
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0, 0, 0, 0);
-        return rideDateTime >= tomorrow; 
+        return rideDateTime >= tomorrow;
       }),
       past: bookings.filter((booking) => {
         const rideDateTime = rideDetails[booking.rideId]?.departureTime.toDate();
@@ -109,7 +116,7 @@ const PassengerBookings = () => {
       }),
     };
   };
-  
+
 
   useEffect(() => {
     console.log("Current bookings:", bookings);
@@ -237,6 +244,23 @@ const PassengerBookings = () => {
     }
   };
 
+  const handleToggleLocationSharing = (bookingId: string) => {
+    setSelectedBookingForTracking(
+      selectedBookingForTracking === bookingId ? null : bookingId
+    );
+    
+    if (selectedBookingForTracking !== bookingId) {
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 100);
+    }
+  };
+
   if (loading) return <div>Chargement de vos réservations...</div>;
 
   return (
@@ -299,6 +323,14 @@ const PassengerBookings = () => {
                         </span>{" "}
                         {booking.seatsBooked}
                       </p>
+                      {booking.specialNotes && (
+                        <p className="text-sm">
+                          <span className="font-medium">
+                            <strong>Notes :</strong>
+                          </span>{" "}
+                          {booking.specialNotes}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -365,84 +397,107 @@ const PassengerBookings = () => {
                             </p>
                           </div>
                         )}
+
+                      {booking.status === "accepted" && (
+                        <div className="mt-4">
+                          <Button
+                            variant="outline"
+                            onClick={() => handleToggleLocationSharing(booking.id)}
+                          >
+                            {selectedBookingForTracking === booking.id
+                              ? "Masquer la carte"
+                              : "Voir/Partager la localisation"}
+                          </Button>
+
+                          {selectedBookingForTracking === booking.id && (
+                            <div className="mt-4 space-y-4" ref={mapRef}>
+                              <LocationSharingControl
+                                bookingId={booking.id}
+                                passengerId={user?.uid || ""}
+                                driverId={rideDetails[booking.rideId]?.driverId || ""}
+                                currentUserId={user?.uid || ""}
+                                userType="passenger"
+                              />
+
+                              <LocationSharingMap
+                                bookingId={booking.id}
+                                passengerId={user?.uid || ""}
+                                driverId={rideDetails[booking.rideId]?.driverId || ""}
+                                currentUserId={user?.uid || ""}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {activeTab !== "past" && booking.status === "pending" && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Badge
+                              variant="destructive"
+                              className="mt-4 w-full sm:w-auto text-center cursor-pointer"
+                            >
+                              Annuler la réservation
+                            </Badge>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Confirmer l'annulation
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Êtes-vous sûr de vouloir annuler cette réservation ?
+                                Les places seront remises à disposition pour
+                                d'autres passagers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>
+                                Non, garder la réservation
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleCancelBooking(booking.id)}
+                              >
+                                Oui, annuler la réservation
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+
+                      {activeTab === "past" && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Badge
+                              variant="destructive"
+                              className="mt-4 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
+                              onClick={() => setBookingToDelete(booking.id)}
+                            >
+                              Supprimer la réservation
+                            </Badge>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Cette action est irréversible. La réservation sera
+                                définitivement supprimée.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel
+                                onClick={() => setBookingToDelete(null)}
+                              >
+                                Annuler
+                              </AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteBooking}>
+                                Confirmer la suppression
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
-                  )}
-
-                  {booking.specialNotes && (
-                    <p className="text-sm break-words">
-                      <span className="font-medium">
-                        <strong>Le message que vous avez laissé :</strong>
-                      </span>{" "}
-                      {booking.specialNotes}
-                    </p>
-                  )}
-
-                  {activeTab !== "past" && booking.status === "pending" && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Badge
-                          variant="destructive"
-                          className="mt-4 w-full sm:w-auto text-center cursor-pointer"
-                        >
-                          Annuler la réservation
-                        </Badge>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Confirmer l'annulation
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir annuler cette réservation ?
-                            Les places seront remises à disposition pour
-                            d'autres passagers.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>
-                            Non, garder la réservation
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleCancelBooking(booking.id)}
-                          >
-                            Oui, annuler la réservation
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-
-                  {activeTab === "past" && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Badge
-                          variant="destructive"
-                          className="mt-4 w-full sm:w-auto text-center cursor-pointer hover:bg-red-700 transition-colors"
-                          onClick={() => setBookingToDelete(booking.id)}
-                        >
-                          Supprimer la réservation
-                        </Badge>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Cette action est irréversible. La réservation sera
-                            définitivement supprimée.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel
-                            onClick={() => setBookingToDelete(null)}
-                          >
-                            Annuler
-                          </AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteBooking}>
-                            Confirmer la suppression
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   )}
                 </div>
               </Card>

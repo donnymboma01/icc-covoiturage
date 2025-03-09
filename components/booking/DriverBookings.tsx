@@ -1,7 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import LocationSharingControl from "../rides/LocationSharingControl";
+import LocationSharingMap from "../rides/LocationSharingMap";
 import {
   getFirestore,
   collection,
@@ -94,6 +96,8 @@ const DriverBookings = () => {
   const [isAcceptDialogOpen, setIsAcceptDialogOpen] = useState(false);
   const [meetingNote, setMeetingNote] = useState("");
 
+  const [selectedBookingForTracking, setSelectedBookingForTracking] = useState<string | null>(null);
+
   const [passengerDetails, setPassengerDetails] = useState<{
     [key: string]: Passenger;
   }>({});
@@ -101,6 +105,8 @@ const DriverBookings = () => {
   const [filter, setFilter] = useState<
     "pending" | "accepted" | "rejected" | "all" | "archived"
   >("pending");
+
+  const mapRef = useRef<HTMLDivElement>(null);
 
   const isRideExpired = (departureTime: Timestamp) => {
     return departureTime.toDate() < new Date();
@@ -197,10 +203,10 @@ const DriverBookings = () => {
       const unsubscribe = onSnapshot(bookingsQuery, (snapshot) => {
         const bookingsData = snapshot.docs.map(
           (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as Booking)
+          ({
+            id: doc.id,
+            ...doc.data(),
+          } as Booking)
         );
         setBookings(bookingsData);
         setLoading(false);
@@ -296,6 +302,23 @@ const DriverBookings = () => {
     }
   };
 
+  const handleToggleLocationSharing = (bookingId: string) => {
+    setSelectedBookingForTracking(
+      selectedBookingForTracking === bookingId ? null : bookingId
+    );
+    
+    if (selectedBookingForTracking !== bookingId) {
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 100);
+    }
+  };
+
   if (loading) return <div>Chargement des réservations...</div>;
 
   return (
@@ -313,22 +336,6 @@ const DriverBookings = () => {
           {bookings.map((booking) => (
             <Card key={booking.id} className="p-3 sm:p-4">
               <div className="space-y-3">
-                {/* {passengerDetails[booking.passengerId] && (
-                  <div className="mb-2">
-                    <h3 className="font-semibold text-sm sm:text-base">
-                      Passager :
-                    </h3>
-                    <p className="text-sm">
-                      {passengerDetails[booking.passengerId].fullName}
-                    </p>
-                    {passengerDetails[booking.passengerId].phoneNumber && (
-                      <p className="text-sm">
-                        Téléphone :{" "}
-                        {passengerDetails[booking.passengerId].phoneNumber}
-                      </p>
-                    )}
-                  </div>
-                )} */}
                 {passengerDetails[booking.passengerId] && (
                   <div className="mb-2 flex items-center gap-3">
                     <div className="flex-shrink-0">
@@ -402,50 +409,84 @@ const DriverBookings = () => {
                     {!isRideExpired(
                       rideDetails[booking.rideId].departureTime
                     ) && (
-                      <div className="flex flex-col sm:flex-row gap-2 mt-3">
-                        {booking.status === "pending" && (
-                          <>
-                            <Badge
-                              onClick={() =>
-                                handleBookingAction(booking, "accepted")
-                              }
-                              variant="default"
-                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto"
-                            >
-                              Accepter
-                            </Badge>
+                        <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                          {booking.status === "pending" && (
+                            <>
+                              <Badge
+                                onClick={() =>
+                                  handleBookingAction(booking, "accepted")
+                                }
+                                variant="default"
+                                className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto"
+                              >
+                                Accepter
+                              </Badge>
+                              <Badge
+                                onClick={() =>
+                                  handleBookingAction(booking, "rejected")
+                                }
+                                variant="destructive"
+                                className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+                              >
+                                Refuser
+                              </Badge>
+                            </>
+                          )}
+                          {booking.status === "accepted" && (
                             <Badge
                               onClick={() =>
                                 handleBookingAction(booking, "rejected")
                               }
                               variant="destructive"
-                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto"
+                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
                             >
                               Refuser
                             </Badge>
-                          </>
-                        )}
-                        {booking.status === "accepted" && (
-                          <Badge
-                            onClick={() =>
-                              handleBookingAction(booking, "rejected")
-                            }
-                            variant="destructive"
-                            className="text-center cursor-pointer hover:scale-105 transition-transform bg-red-600 hover:bg-red-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
-                          >
-                            Refuser
-                          </Badge>
-                        )}
-                        {booking.status === "rejected" && (
-                          <Badge
-                            onClick={() =>
-                              handleBookingAction(booking, "accepted")
-                            }
-                            variant="default"
-                            className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
-                          >
-                            Accepter
-                          </Badge>
+                          )}
+
+
+                          {booking.status === "rejected" && (
+                            <Badge
+                              onClick={() =>
+                                handleBookingAction(booking, "accepted")
+                              }
+                              variant="default"
+                              className="text-center cursor-pointer hover:scale-105 transition-transform bg-green-600 hover:bg-green-700 flex items-center justify-center w-full sm:w-auto mx-auto sm:mx-0"
+                            >
+                              Accepter
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                    {booking.status === "accepted" && (
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleToggleLocationSharing(booking.id)}
+                        >
+                          {selectedBookingForTracking === booking.id
+                            ? "Masquer la carte"
+                            : "Voir/Partager la localisation"}
+                        </Button>
+
+                        {selectedBookingForTracking === booking.id && (
+                          <div className="mt-4 space-y-4" ref={mapRef}>
+                            <LocationSharingControl
+                              bookingId={booking.id}
+                              passengerId={booking.passengerId}
+                              driverId={user?.uid || ""}
+                              currentUserId={user?.uid || ""}
+                              userType="driver"
+                            />
+
+                            <LocationSharingMap
+                              bookingId={booking.id}
+                              passengerId={booking.passengerId}
+                              driverId={user?.uid || ""}
+                              currentUserId={user?.uid || ""}
+                            />
+                          </div>
                         )}
                       </div>
                     )}

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MdAccessTime, MdLocationOn, MdVerified } from "react-icons/md";
+import { MdAccessTime, MdLocationOn, MdVerified, MdStar } from "react-icons/md";
 
 interface RideCardProps {
   ride: {
@@ -23,6 +23,7 @@ interface RideCardProps {
     isStar: string | boolean | undefined;
     fullName: string;
     profilePicture?: string;
+    isVerified?: boolean;
   };
   onClick?: () => void;
 }
@@ -58,15 +59,27 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
         <div className="flex-1 space-y-2 w-full">
           <div className="flex flex-col items-center w-full mb-2">
             <div className="flex items-center justify-center gap-2 w-full">
-              <h3 className="font-bold text-base sm:text-lg text-center break-words max-w-[80%]">
-                {driver.fullName}{" "}
-              </h3>
-              {driver.isStar && (
-                <MdVerified className="text-amber-500 flex-shrink-0 h-5 w-5 sm:h-6 sm:w-6" />
-              )}
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-1">
+                  <span className="font-semibold">{driver.fullName}</span>
+                  {driver.isVerified && (
+                    <Badge variant="outline" className="ml-1 bg-orange-100 text-orange-700 border-orange-200 flex items-center gap-1 px-1.5 py-0">
+                      <MdVerified className="text-orange-500" />
+                      <span className="text-xs">Vérifié</span>
+                    </Badge>
+                  )}
+                  {driver.isStar && (
+                    <Badge variant="outline" className="ml-1 bg-yellow-100 text-yellow-700 border-yellow-200 flex items-center gap-1 px-1.5 py-0">
+                      <MdStar className="text-yellow-500" />
+                      <span className="text-xs">Star</span>
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-sm text-gray-500 text-center">Conducteur</span>
+              </div>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 text-center">
-              {format(ride.departureTime, "EEEE d MMMM", { locale: fr })}
+              {format(ride.departureTime, "EEEE d MMMM yyyy", { locale: fr })}
             </p>
           </div>
 

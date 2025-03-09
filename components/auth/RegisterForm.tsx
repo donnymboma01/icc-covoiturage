@@ -30,6 +30,7 @@ import { MdAddAPhoto, MdPhotoCamera } from "react-icons/md";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  UserCredential,
 } from "firebase/auth";
 import { app } from "../../app/config/firebase-config";
 import { getAuth } from "firebase/auth";
@@ -44,11 +45,13 @@ import {
   addDoc,
   getDoc,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { uploadImageToFirebase } from "@/utils/custom-functions";
 import { cleanupFailedRegistration } from "@/utils/custom-functions";
 import { storage } from "../../app/config/firebase-config";
+import { resend } from "@/lib/resend";
 
 interface VehicleDoc {
   userId: string;
@@ -161,7 +164,7 @@ const RegisterForm = () => {
     console.log("Storage bucket:", storage.app.options.storageBucket);
     return await getDownloadURL(snapshot.ref);
   };
-  
+
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
     await initializeFirebase();
     let userCredential;
@@ -175,11 +178,9 @@ const RegisterForm = () => {
         values.password
       );
 
-      // await new Promise((resolve) => setTimeout(resolve, 2000));
-
       let profilePictureUrl = "";
       if (values.profilePicture) {
-        console.log("Starting image upload...");
+        console.log("Début de téléchargement de l'image...");
         try {
           profilePictureUrl = await uploadImage(
             values.profilePicture,
@@ -203,25 +204,58 @@ const RegisterForm = () => {
         isStar: values.isStar,
         ministry: values.isStar ? values.ministry : null,
         profilePicture: profilePictureUrl || null,
+        vehicle: values.isDriver ? values.vehicle : null,
+        isVerified: false,
+        driverStatus: values.isDriver ? "pending" : null
       };
 
       await setDoc(doc(db, "users", userCredential.user.uid), userDocument);
 
       if (values.isDriver && values.vehicle) {
-        const vehicleDoc = {
-          userId: userCredential.user.uid,
+        const vehicleRef = doc(db, "vehicles", userCredential.user.uid);
+        await setDoc(vehicleRef, {
           ...values.vehicle,
-          isActive: true,
-        };
-        await addDoc(collection(db, "vehicles"), vehicleDoc);
+          userId: userCredential.user.uid,
+          isActive: true
+        });
+
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        await setDoc(doc(db, "driverVerifications", userCredential.user.uid), {
+          userId: userCredential.user.uid,
+          verificationCode,
+          isVerified: false,
+          createdAt: new Date(),
+          whatsappJoined: values.whatsappConsent || false
+        });
+
+        localStorage.setItem("pendingDriverId", userCredential.user.uid);
+
+        const emailResponse = await fetch("/api/send-verification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: values.email,
+            verificationCode,
+          }),
+        });
+
+        console.log("Email verification response:", await emailResponse.json());
+
+        if (values.whatsappConsent) {
+          window.open('https://chat.whatsapp.com/EwRXbJyf6Gj6e4otwMNuiE', '_blank');
+        }
+
+        router.push("/verify-driver");
+        return;
       }
 
+      // Déconnexion explicite pour les passagers pour éviter la redirection automatique vers le dashboard
       await auth.signOut();
 
-      setTimeout(() => {
-        toast.success("Inscription réussie");
-        router.push("/auth/login");
-      }, 1000);
+      toast.success("Inscription réussie");
+      router.push("/auth/login");
+
     } catch (authError: any) {
       console.log("Detailed error:", authError);
 
@@ -231,40 +265,29 @@ const RegisterForm = () => {
 
       switch (authError.code) {
         case "auth/email-already-in-use":
-          toast.error(
-            "L'adresse e-mail que vous avez saisie est déjà associée à un autre profil."
-          );
+          toast.error("L'adresse e-mail que vous avez saisie est déjà associée à un autre profil.");
           break;
         case "auth/weak-password":
-          toast.error(
-            "Le mot de passe est trop faible. Veuillez en choisir un plus sécurisé."
-          );
+          toast.error("Le mot de passe est trop faible. Veuillez en choisir un plus sécurisé.");
           break;
         case "auth/invalid-email":
-          toast.error(
-            "L'adresse e-mail saisie est invalide. Veuillez vérifier et réessayer."
-          );
+          toast.error("L'adresse e-mail saisie est invalide. Veuillez vérifier et réessayer.");
           break;
         case "auth/network-request-failed":
-          toast.error(
-            "Erreur réseau. Vérifiez votre connexion internet et réessayez."
-          );
+          toast.error("Erreur réseau. Vérifiez votre connexion internet et réessayez.");
           break;
         case "storage/object-not-found":
-          toast.error(
-            "Erreur lors du téléchargement de l'image. Veuillez réessayer."
-          );
+          toast.error("Erreur lors du téléchargement de l'image. Veuillez réessayer.");
           break;
         default:
           console.error("Erreur d'authentification :", authError);
-          toast.error(
-            "Une erreur inattendue est survenue. Veuillez rafraichir la page et réessayer."
-          );
+          toast.error("Une erreur inattendue est survenue. Veuillez rafraichir la page et réessayer.");
       }
     } finally {
       setIsLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (!isDriver) {
@@ -291,11 +314,10 @@ const RegisterForm = () => {
             <div className="flex items-center gap-8">
               <div className="relative group">
                 <div
-                  className={`h-32 w-32 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 transition-all duration-300 ${
-                    profilePreview
-                      ? "border-none"
-                      : "hover:border-primary hover:bg-gray-100"
-                  }`}
+                  className={`h-32 w-32 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 transition-all duration-300 ${profilePreview
+                    ? "border-none"
+                    : "hover:border-primary hover:bg-gray-100"
+                    }`}
                 >
                   {profilePreview ? (
                     <div className="relative w-full h-full">
@@ -558,6 +580,27 @@ const RegisterForm = () => {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="whatsappConsent"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <div className="flex flex-row items-center space-x-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-medium text-sm">
+                      J'accepte de rejoindre le groupe WhatsApp des conducteurs ICC
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
           </div>
         )}
 

@@ -3,7 +3,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MdInfo } from "react-icons/md";
-import { FaCar } from "react-icons/fa"; 
+import { FaCar } from "react-icons/fa";
 import Covoiturage from "../public/images/covoiturage.png";
 import LogoICC from "../public/images/image.png";
 
@@ -64,6 +64,14 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <div className="absolute bottom-4 text-center w-full">
+        <p className="text-sm md:text-base lg:text-lg font-light tracking-wider text-yellow-400/80 italic">
+          version 2.0
+        </p>
+      </div>
+
+
     </main>
   );
 }

@@ -51,6 +51,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import NotificationBell from "./NotificationBell";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 import {
   AlertDialog,
@@ -61,6 +62,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
+// import { useAuth } from "@/app/hooks/useAuth";
 
 const NavBar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -75,9 +77,11 @@ const NavBar = () => {
     "accepted" | "rejected" | "cancelled" | undefined
   >();
 
+  // const { user, updateUser } = useAuth();
+
   const db = getFirestore(app);
 
-  const { user, loading } = useAuth();
+  const { user, loading, updateUser } = useAuth();
   const auth = getAuth(app);
 
   const handleDeleteAccount = () => {
@@ -86,6 +90,21 @@ const NavBar = () => {
       setOpenDialog(true);
     }, 100);
   };
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const driverVerificationRef = doc(db, "driverVerifications", user.uid);
+    const unsubscribe = onSnapshot(driverVerificationRef, (snapshot) => {
+      if (snapshot.exists() && snapshot.data().isVerified) {
+        updateUser({ isDriver: true });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -349,7 +368,7 @@ const NavBar = () => {
           <MdAddRoad /> Créer un trajet
         </Button>
       </Link>
-  
+
       <Link
         href="/dashboard/driver/bookings"
         onClick={handleBookingsClick}
@@ -390,7 +409,7 @@ const NavBar = () => {
         </Button>
       </Link>
 
-     
+
       <Link
         href="/dashboard/passanger/bookings"
         onClick={() => {
@@ -433,7 +452,7 @@ const NavBar = () => {
           <MdBookmarkAdd /> Trouver un trajet
         </Button>
       </Link>
-      
+
       <Link
         href="/dashboard/passanger/bookings"
         onClick={() => setIsDrawerOpen(false)}
@@ -467,21 +486,21 @@ const NavBar = () => {
       onClick={() => setIsDrawerOpen(false)}
     >
       <div
-        className={`fixed right-0 top-0 h-full w-64 bg-white shadow-xl transform transition-transform ${
+        className={`fixed right-0 top-0 h-full w-64 bg-white dark:bg-gray-900 dark:text-white shadow-xl transform transition-transform ${
           isDrawerOpen ? "translate-x-0" : "translate-x-full"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b dark:border-gray-700">
             <div className="flex flex-col justify-start items-start gap-2">
               <div className="flex items-center gap-2">
                 {user?.isDriver ? (
-                  <MdDirectionsCar className="text-2xl" />
+                  <MdDirectionsCar className="text-2xl text-blue-600 dark:text-blue-400" />
                 ) : (
-                  <MdPerson className="text-2xl" />
+                  <MdPerson className="text-2xl text-blue-600 dark:text-blue-400" />
                 )}
-                <span className="text-blue-600 font-semibold">
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
                   Bonjour, {user?.displayName || user?.fullName}
                 </span>
               </div>
@@ -493,10 +512,15 @@ const NavBar = () => {
                   <CgProfile /> Profil
                 </Button>
               </Link>
+              
+              <div className="flex justify-between items-center mt-4 w-full">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Changer de thème</span>
+                <ThemeToggle />
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col flex-1 justify-end p-4 border-t">
+          <div className="flex flex-col flex-1 justify-end p-4 border-t dark:border-gray-700">
             <div className="flex flex-col gap-2 w-full">
               <Button
                 variant="destructive"
@@ -512,7 +536,7 @@ const NavBar = () => {
                 variant="secondary"
                 className="w-full flex items-center gap-2"
               >
-                <MdExitToApp className="text-gray-600" /> Déconnexion
+                <MdExitToApp className="text-gray-600 dark:text-gray-400" /> Déconnexion
               </Button>
             </div>
           </div>
@@ -561,7 +585,7 @@ const NavBar = () => {
   if (loading) return null;
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-[100]">
+    <nav className="bg-white shadow-md sticky top-0 z-[100] dark:bg-gray-900 dark:text-white">
       <div className="container mx-auto flex justify-between items-center p-4">
         {user ? (
           <>
@@ -572,7 +596,7 @@ const NavBar = () => {
                 <MdPerson className="text-2xl" />
               )}
               Bonjour,
-              <span className="text-blue-600 font-semibold">
+              <span className="text-blue-600 dark:text-blue-400 font-semibold">
                 {user.displayName || user.fullName}
               </span>
             </div>
@@ -585,26 +609,19 @@ const NavBar = () => {
                   <CgProfile /> Profil
                 </Button>
               </Link>
+              <ThemeToggle />
               <div className="flex items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="hover:bg-gray-100 rounded-full transition-colors"
+                      className="hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     >
-                      <MdSettings className="h-5 w-5 text-gray-600 hover:text-gray-800" />
+                      <MdSettings className="h-5 w-5 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-58">
-                    {/* <Button
-                      variant="destructive"
-                      size="sm"
-                      className="flex items-center gap-2 w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
-                      onClick={handleDeleteAccount}
-                    >
-                      <MdDelete className="text-white" /> Supprimer mon compte
-                    </Button> */}
+                  <PopoverContent className="w-58 dark:bg-gray-800 dark:text-white">
                     <Button
                       variant="destructive"
                       size="sm"
@@ -630,7 +647,8 @@ const NavBar = () => {
             </Button>
           </>
         ) : (
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/auth/login">
               <Button>
                 Se connecter <MdLogin />
