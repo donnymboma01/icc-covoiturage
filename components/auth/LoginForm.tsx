@@ -25,9 +25,11 @@ import { app } from "../../app/config/firebase-config";
 import {getAuth, onAuthStateChanged, signInWithEmailAndPassword} from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { getDoc, doc, getFirestore } from "firebase/firestore";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -140,11 +142,20 @@ const LoginForm = () => {
                   <FormItem>
                     <FormLabel>{"Mot de passe"}</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Entrer votre mot de passe"
-                        type="password"
-                      />
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          placeholder="Entrer votre mot de passe"
+                          type={showPassword ? "text" : "password"}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

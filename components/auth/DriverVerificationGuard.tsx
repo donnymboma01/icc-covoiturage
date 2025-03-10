@@ -40,7 +40,9 @@ const DriverVerificationGuard = ({ children }: DriverVerificationGuardProps) => 
         const verificationDoc = await getDoc(verificationRef);
         
         if (!verificationDoc.exists() || !verificationDoc.data().isVerified) {
-          document.cookie = `pendingDriverId=${currentUser.uid}; path=/; max-age=86400`;
+          if (typeof document !== 'undefined') {
+            document.cookie = `pendingDriverId=${currentUser.uid}; path=/; max-age=86400`;
+          }
           router.push("/verify-driver");
           return;
         }

@@ -1,5 +1,7 @@
+"use client";
+
 import React from "react";
-import PassengerBookings from "@/components/booking/PassengerBookings";
+import dynamic from 'next/dynamic';
 import PageLayout from "@/components/PageLayout";
 import {
   Breadcrumb,
@@ -9,6 +11,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+
+// Importation dynamique du composant avec SSR désactivé
+const PassengerBookings = dynamic(
+  () => import("@/components/booking/PassengerBookings"),
+  { ssr: false }
+);
 
 const PassengerBookingsPage = () => {
   return (

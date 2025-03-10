@@ -71,7 +71,7 @@ const getDriverData = async (driverId: string): Promise<Driver> => {
   );
 
   const driverData = driverSnap.docs[0]?.data() as Driver;
-  
+
   // Vérifier si le conducteur est vérifié
   const verificationSnap = await getDoc(doc(db, "driverVerifications", driverId));
   if (verificationSnap.exists()) {
@@ -80,7 +80,7 @@ const getDriverData = async (driverId: string): Promise<Driver> => {
   } else {
     driverData.isVerified = false;
   }
-  
+
   return driverData;
 };
 
@@ -199,7 +199,6 @@ const RideSearch = () => {
       const endOfDay = new Date(searchParams.date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      // Construire la requête de base
       let baseQuery = query(
         collection(db, "rides"),
         where("status", "==", "active"),
@@ -207,47 +206,40 @@ const RideSearch = () => {
         where("departureTime", "<=", endOfDay)
       );
 
-      // Si une église spécifique est sélectionnée, nous devons d'abord récupérer les conducteurs de cette église
+
       let filteredDriverIds: string[] = [];
       if (searchParams.churchId !== "all") {
-        // Récupérer les utilisateurs (conducteurs) associés à cette église
+
         const usersRef = collection(db, "users");
         const usersQuery = query(
           usersRef,
           where("churchIds", "array-contains", searchParams.churchId),
           where("isDriver", "==", true)
         );
-        
+
         const usersSnapshot = await getDocs(usersQuery);
         filteredDriverIds = usersSnapshot.docs.map(doc => doc.id);
-        
-        // Si aucun conducteur n'est trouvé pour cette église, retourner un tableau vide
+
         if (filteredDriverIds.length === 0) {
           setRides([]);
           setLoading(false);
           return;
         }
-        
-        // Modifier la requête pour inclure seulement les trajets des conducteurs de cette église
+
         baseQuery = query(
           collection(db, "rides"),
           where("status", "==", "active"),
           where("departureTime", ">=", startOfDay),
           where("departureTime", "<=", endOfDay),
-          where("driverId", "in", filteredDriverIds.slice(0, 10)) // Firestore limite à 10 valeurs pour 'in'
+          where("driverId", "in", filteredDriverIds.slice(0, 10))
         );
       }
 
       if (!searchParams.departure) {
-        // Si aucune adresse de départ n'est spécifiée, rechercher tous les trajets
         const querySnapshot = await getDocs(baseQuery);
-        
-        // Si nous avons plus de 10 conducteurs et une église spécifique est sélectionnée, 
-        // nous devons faire plusieurs requêtes
         let allDocs = querySnapshot.docs;
-        
+
         if (searchParams.churchId !== "all" && filteredDriverIds.length > 10) {
-          // Traiter les conducteurs par lots de 10
           for (let i = 10; i < filteredDriverIds.length; i += 10) {
             const batchDriverIds = filteredDriverIds.slice(i, i + 10);
             if (batchDriverIds.length > 0) {
@@ -263,7 +255,7 @@ const RideSearch = () => {
             }
           }
         }
-        
+
         const ridesData = await Promise.all(
           allDocs.map(async (doc) => {
             const rideData = doc.data() as Ride;
@@ -289,7 +281,6 @@ const RideSearch = () => {
         return;
       }
 
-      // Si une adresse de départ est spécifiée, rechercher les trajets à proximité
       const searchLocation = await getCoordinates(searchParams.departure);
       const radiusInKm = 10;
       const bounds = geohashQueryBounds(
@@ -299,7 +290,6 @@ const RideSearch = () => {
 
       const ridesRef = collection(db, "rides");
       const promises = bounds.map((b) => {
-        // Construire la requête avec les filtres géographiques
         let geoQuery = query(
           ridesRef,
           where("departureLocation.geohash", ">=", b[0]),
@@ -309,9 +299,7 @@ const RideSearch = () => {
           where("departureTime", "<=", endOfDay)
         );
 
-        // Si une église spécifique est sélectionnée, filtrer par les conducteurs de cette église
         if (searchParams.churchId !== "all" && filteredDriverIds.length > 0) {
-          // Limiter à 10 conducteurs par requête (limite Firestore)
           geoQuery = query(
             ridesRef,
             where("departureLocation.geohash", ">=", b[0]),
@@ -332,16 +320,14 @@ const RideSearch = () => {
       for (const snap of snapshots) {
         for (const doc of snap.docs) {
           const rideData = doc.data() as Ride;
-          
-          // Vérifier si nous devons filtrer par église et si nous avons plus de 10 conducteurs
-          if (searchParams.churchId !== "all" && filteredDriverIds.length > 10 && 
-              !filteredDriverIds.slice(0, 10).includes(rideData.driverId)) {
-            // Vérifier si ce conducteur fait partie de l'église sélectionnée
+
+          if (searchParams.churchId !== "all" && filteredDriverIds.length > 10 &&
+            !filteredDriverIds.slice(0, 10).includes(rideData.driverId)) {
             if (!filteredDriverIds.includes(rideData.driverId)) {
-              continue; // Ignorer ce trajet si le conducteur n'est pas de l'église sélectionnée
+              continue;
             }
           }
-          
+
           if (rideData.departureLocation) {
             const distanceInKm = distanceBetween(
               [searchLocation.lat, searchLocation.lng],

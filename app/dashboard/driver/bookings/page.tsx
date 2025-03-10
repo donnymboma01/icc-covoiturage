@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import DriverBookings from "@/components/booking/DriverBookings";
+import dynamic from 'next/dynamic';
 import PageLayout from "@/components/PageLayout";
-import DriverVerificationGuard from "@/components/auth/DriverVerificationGuard";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,6 +11,17 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+
+// Importation dynamique des composants avec SSR désactivé
+const DriverBookings = dynamic(
+  () => import("@/components/booking/DriverBookings"),
+  { ssr: false }
+);
+
+const DriverVerificationGuard = dynamic(
+  () => import("@/components/auth/DriverVerificationGuard"),
+  { ssr: false }
+);
 
 const Bookings = () => {
   return (

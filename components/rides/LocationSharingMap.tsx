@@ -3,18 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { LocationSharing } from "@/utils/locationTypes";
 import {
     getFirestore,
-    doc,
     onSnapshot,
     collection,
     query,
     where,
 } from "firebase/firestore";
 
-// Icônes personnalisées
 const driverIcon = L.icon({
     iconUrl: "https://cdn-icons-png.flaticon.com/128/3097/3097144.png",
     iconSize: [38, 38],
@@ -38,9 +35,9 @@ interface LocationSharingMapProps {
 
 const LocationSharingMap = ({
     bookingId,
-    driverId,
-    passengerId,
-    currentUserId,
+    // driverId,
+    // passengerId,
+    // currentUserId,
 }: LocationSharingMapProps) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const leafletMap = useRef<L.Map | null>(null);
@@ -59,8 +56,6 @@ const LocationSharingMap = ({
                     '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             }).addTo(leafletMap.current);
         }
-
-        // Nettoyer la carte lors du démontage
         return () => {
             if (leafletMap.current) {
                 leafletMap.current.remove();
@@ -69,7 +64,6 @@ const LocationSharingMap = ({
         };
     }, []);
 
-    // Écouter les mises à jour de localisation
     useEffect(() => {
         if (!bookingId) return;
 
@@ -92,11 +86,9 @@ const LocationSharingMap = ({
         return () => unsubscribe();
     }, [bookingId]);
 
-    // Mettre à jour les marqueurs sur la carte
     useEffect(() => {
         if (!leafletMap.current) return;
 
-        // Supprimer les anciens marqueurs qui ne sont plus présents
         Object.keys(markersRef.current).forEach((id) => {
             const stillExists = locationSharings.some((sharing) => sharing.id === id);
             if (!stillExists) {
@@ -105,17 +97,14 @@ const LocationSharingMap = ({
             }
         });
 
-        // Ajouter ou mettre à jour les marqueurs
         locationSharings.forEach((sharing) => {
             const { id, lastLocation, sharingUserType } = sharing;
             const icon = sharingUserType === "driver" ? driverIcon : passengerIcon;
             const label = sharingUserType === "driver" ? "Conducteur" : "Passager";
 
             if (markersRef.current[id]) {
-                // Mettre à jour la position du marqueur existant
                 markersRef.current[id].setLatLng([lastLocation.lat, lastLocation.lng]);
             } else {
-                // Créer un nouveau marqueur
                 const marker = L.marker([lastLocation.lat, lastLocation.lng], {
                     icon,
                 }).addTo(leafletMap.current!);
@@ -125,7 +114,6 @@ const LocationSharingMap = ({
             }
         });
 
-        // Ajuster la vue de la carte si des marqueurs sont présents
         if (locationSharings.length > 0) {
             const bounds = Object.values(markersRef.current).map((marker) =>
                 marker.getLatLng()

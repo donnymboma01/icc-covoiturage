@@ -17,10 +17,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Initialiser le thème au chargement
   useEffect(() => {
     // Vérifier si un thème est stocké dans localStorage
-    const storedTheme = localStorage.getItem("theme") as Theme | null;
+    const storedTheme = typeof window !== 'undefined' ? localStorage.getItem("theme") as Theme | null : null;
     
     // Vérifier la préférence système
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const prefersDark = typeof window !== 'undefined' ? window.matchMedia("(prefers-color-scheme: dark)").matches : false;
     
     // Définir le thème initial
     const initialTheme = storedTheme || (prefersDark ? "dark" : "light");
@@ -34,12 +34,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("theme", newTheme);
+    }
     applyTheme(newTheme);
   };
 
   // Fonction pour appliquer le thème au document
   const applyTheme = (theme: Theme) => {
+    if (typeof document === 'undefined') return;
+    
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
     } else {

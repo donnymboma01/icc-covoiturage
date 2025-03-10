@@ -4,6 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -26,6 +27,7 @@ const app = initializeApp(firebaseConfig);
 const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
 const db = typeof window !== "undefined" ? getFirestore(app) : null;
 const storage = typeof window !== "undefined" ? getStorage(app) : null;
+const auth = typeof window !== "undefined" ? getAuth(app) : null;
 
-export { app, messaging, db, storage };
+export { app, messaging, db, storage, auth };
 

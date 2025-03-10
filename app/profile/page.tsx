@@ -77,16 +77,17 @@ const Profile = () => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         try {
-          const freshData = await fetchUserAndVehicleData(user.uid);
-          setUserData(freshData as UserData);
+          const userData = await fetchUserAndVehicleData(user.uid);
+          setUserData(userData as UserData);
         } catch (error) {
           console.error("Error fetching user data:", error);
         }
-        setLoading(false);
       }
+      setLoading(false);
     });
+
     return () => unsubscribe();
-  }, []);
+  }, [auth, fetchUserAndVehicleData]);
 
   if (loading) {
     return (

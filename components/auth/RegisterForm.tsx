@@ -27,6 +27,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { MdAddAPhoto, MdPhotoCamera } from "react-icons/md";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -69,6 +70,8 @@ const RegisterForm = () => {
   const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
     []
   );
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -392,7 +395,20 @@ const RegisterForm = () => {
             <FormItem>
               <FormLabel>Mot de passe</FormLabel>
               <FormControl>
-                <Input placeholder="••••••••" type="password" {...field} />
+                <div className="relative">
+                  <Input 
+                    placeholder="••••••••" 
+                    type={showPassword ? "text" : "password"} 
+                    {...field} 
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -406,7 +422,20 @@ const RegisterForm = () => {
             <FormItem>
               <FormLabel>Confirmer le mot de passe</FormLabel>
               <FormControl>
-                <Input placeholder="••••••••" type="password" {...field} />
+                <div className="relative">
+                  <Input 
+                    placeholder="••••••••" 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    {...field} 
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

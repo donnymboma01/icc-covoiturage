@@ -12,11 +12,17 @@ export const useNotifications = () => {
   const isIOSDevice = () => {
     return (
       typeof window !== "undefined" &&
+      typeof navigator !== "undefined" &&
       /iPad|iPhone|iPod/.test(navigator.userAgent) 
     );
   };
 
   const requestPermission = async () => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      console.log("Window or navigator not available");
+      return null;
+    }
+
     try {
       console.log("Starting FCM permission request");
 
@@ -104,6 +110,10 @@ export const useNotifications = () => {
 // };
 
 const checkServiceWorkerRegistration = async () => {
+  if (typeof navigator === 'undefined') {
+    throw new Error("Navigator not available");
+  }
+
   if (!("serviceWorker" in navigator)) {
     throw new Error("Service Worker not supported");
   }

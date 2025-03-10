@@ -1,20 +1,53 @@
-import { Resend } from "resend";
 import { NextResponse } from "next/server";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/app/config/firebase-config";
+import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
-  const { email, verificationCode } = await request.json();
-
-  if (!email) {
-    return NextResponse.json({ error: "Email est requis" }, { status: 400 });
-  }
-
   try {
+    if (!db) {
+      return NextResponse.json(
+        { success: false, message: "Database not initialized" },
+        { status: 500 }
+      );
+    }
+
+    const { userId } = await request.json();
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 heures
+
+    await updateDoc(userRef, {
+      verificationCode,
+      verificationCodeExpiry,
+    });
+
+    const userData = userDoc.data();
+    const userEmail = userData.email;
+
     const { data, error } = await resend.emails.send({
       from: "ICC Covoiturage <no-reply@impactcentrechretien.eu>",
-      to: [email],
-      subject: "Vérification de votre compte conducteur",
+      to: [userEmail],
+      subject: "Nouveau code de vérification ICC Covoiturage",
       html: `
         <!DOCTYPE html>
         <html>
@@ -30,9 +63,9 @@ export async function POST(request: Request) {
               
             <tr>
               <td style="background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px;">
-                <h2 style="color: #2c3e50; margin: 0 0 20px; font-size: 20px;">Vérification de votre compte</h2>
+                <h2 style="color: #2c3e50; margin: 0 0 20px; font-size: 20px;">Nouveau code de vérification</h2>
                 <p style="color: #666666; line-height: 1.6; margin: 0 0 20px;">
-                  Bienvenue chez ICC Covoiturage ! Pour activer votre compte conducteur, veuillez utiliser le code suivant :
+                  Voici votre nouveau code de vérification pour ICC Covoiturage :
                 </p>
                 
                 <!-- Code Box -->
@@ -68,7 +101,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data }, { status: 200 });
   } catch (err) {
-    console.error("Error sending verification email:", err);
-    return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });
+    console.error("Error resending verification code:", err);
+    return NextResponse.json({ error: "Failed to resend verification code" }, { status: 500 });
   }
-}
+} 

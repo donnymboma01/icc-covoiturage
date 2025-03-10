@@ -8,7 +8,13 @@ import { toast } from "sonner";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { app } from "@/app/config/firebase-config";
 import { FaWhatsapp } from "react-icons/fa";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogHeader,
+//   DialogTitle,
+//   DialogTrigger,
+// } from "@/components/ui/dialog";
 
 interface Vehicle {
     brand: string;
@@ -114,6 +120,9 @@ export default function VerifyDriver() {
         }
     };
 
+    const handleResendCode = () => {
+        verifyCode();
+    };
 
     return (
         <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow">
@@ -163,30 +172,9 @@ export default function VerifyDriver() {
                 </div>
             )}
 
-
-            {/* <AlertDialog open={showWelcomeDialog}>
-                <AlertDialogContent className="bg-white rounded-xl p-6">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl font-bold text-center mb-4">
-                            Bienvenue dans la famille des conducteurs ICC, {fullName}! 🎉
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-center space-y-4">
-                            <div className="text-gray-700 text-lg">
-                                Votre engagement en tant que conducteur est précieux pour notre communauté. Pour une meilleure coordination et partage d'expériences, rejoignez notre groupe WhatsApp dédié aux conducteurs ICC!
-                            </div>
-                            <a
-                                href="https://chat.whatsapp.com/EwRXbJyf6Gj6e4otwMNuiE"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold py-3 px-6 rounded-full transition-all transform hover:scale-105 shadow-lg"
-                            >
-                                <FaWhatsapp className="text-2xl" />
-                                Rejoindre le groupe WhatsApp
-                            </a>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                </AlertDialogContent>
-            </AlertDialog> */}
+            <p>
+                Vous n&apos;avez pas reçu le code ? <button onClick={handleResendCode}>Renvoyer le code</button>
+            </p>
 
         </div>
     );

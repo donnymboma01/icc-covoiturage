@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { useLocationTracking } from "@/hooks/useLocationTracking";
@@ -23,7 +23,7 @@ const LocationSharingControl = ({
 }: LocationSharingControlProps) => {
     const [isSharingEnabled, setIsSharingEnabled] = useState(false);
 
-    const { isTracking, error, currentLocation, startTracking, stopTracking } =
+    const { isTracking, error, currentLocation, stopTracking } =
         useLocationTracking({
             bookingId,
             passengerId,
@@ -70,7 +70,7 @@ const LocationSharingControl = ({
                         </div>
                     </div>
                 </div>
-                
+
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-600">
                         <p className="font-medium mb-1">Erreur :</p>
@@ -79,16 +79,16 @@ const LocationSharingControl = ({
                             <div className="mt-2 text-xs">
                                 <p className="font-medium">Comment autoriser la localisation :</p>
                                 <ul className="list-disc pl-4 mt-1 space-y-1">
-                                    <li>Cliquez sur l'icône de cadenas dans la barre d'adresse</li>
-                                    <li>Trouvez le paramètre "Localisation" ou "Position"</li>
-                                    <li>Changez-le de "Bloquer" à "Autoriser"</li>
+                                    <li>Cliquez sur l&apos;icône de cadenas dans la barre d&apos;adresse</li>
+                                    <li>Trouvez le paramètre &quot;Localisation&quot; ou &quot;Position&quot;</li>
+                                    <li>Changez-le de &quot;Bloquer&quot; à &quot;Autoriser&quot;</li>
                                     <li>Rafraîchissez la page et réessayez</li>
                                 </ul>
                             </div>
                         )}
                     </div>
                 )}
-                
+
                 {currentLocation && (
                     <div className="text-xs text-gray-500 flex items-center">
                         <span className="mr-1">Précision:</span>
