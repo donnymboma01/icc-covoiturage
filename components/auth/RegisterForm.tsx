@@ -232,7 +232,8 @@ const RegisterForm = () => {
           whatsappJoined: values.whatsappConsent || false
         });
 
-        localStorage.setItem("pendingDriverId", userCredential.user.uid);
+        // localStorage.setItem("pendingDriverId", userCredential.user.uid);
+        document.cookie = `pendingDriverId=${userCredential.user.uid}; path=/; max-age=86400; SameSite=Strict`;
 
         const emailResponse = await fetch("/api/send-verification", {
           method: "POST",
@@ -253,7 +254,6 @@ const RegisterForm = () => {
         return;
       }
 
-      // Déconnexion explicite pour les passagers pour éviter la redirection automatique vers le dashboard
       await auth.signOut();
 
       toast.success("Inscription réussie");
@@ -396,10 +396,10 @@ const RegisterForm = () => {
               <FormLabel>Mot de passe</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Input 
-                    placeholder="••••••••" 
-                    type={showPassword ? "text" : "password"} 
-                    {...field} 
+                  <Input
+                    placeholder="••••••••"
+                    type={showPassword ? "text" : "password"}
+                    {...field}
                   />
                   <button
                     type="button"
@@ -423,10 +423,10 @@ const RegisterForm = () => {
               <FormLabel>Confirmer le mot de passe</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Input 
-                    placeholder="••••••••" 
-                    type={showConfirmPassword ? "text" : "password"} 
-                    {...field} 
+                  <Input
+                    placeholder="••••••••"
+                    type={showConfirmPassword ? "text" : "password"}
+                    {...field}
                   />
                   <button
                     type="button"

@@ -55,9 +55,28 @@ export default function VerifyDriver() {
 
         setIsLoading(true);
         try {
-            const cookies = document.cookie.split(';');
-            const pendingDriverIdCookie = cookies.find(cookie => cookie.trim().startsWith('pendingDriverId='));
-            const userId = pendingDriverIdCookie ? pendingDriverIdCookie.split('=')[1] : null;
+            // const cookies = document.cookie.split(';');
+            // const pendingDriverIdCookie = cookies.find(cookie => cookie.trim().startsWith('pendingDriverId='));
+            // const userId = pendingDriverIdCookie ? pendingDriverIdCookie.split('=')[1] : null;
+
+            // if (!userId) {
+            //     toast.error("Session expirée, veuillez vous reconnecter");
+            //     router.push("/auth/login");
+            //     return;
+            // }
+            const cookies = document.cookie
+                .split(';')
+                .map(cookie => cookie.trim())
+                .reduce((acc, cookie) => {
+                    const [key, value] = cookie.split('=');
+                    acc[key] = value;
+                    return acc;
+                }, {} as Record<string, string>);
+
+            const userId = cookies['pendingDriverId'];
+
+            console.log("Cookie content:", cookies);
+            console.log("UserId from cookie:", userId);
 
             if (!userId) {
                 toast.error("Session expirée, veuillez vous reconnecter");
@@ -66,7 +85,12 @@ export default function VerifyDriver() {
             }
 
             const verificationRef = doc(db, "driverVerifications", userId);
+
+            console.log("Entered code:", code);
+            console.log("Document path:", `driverVerifications/${userId}`);
             const verificationDoc = await getDoc(verificationRef);
+
+            console.log("Verification data:", verificationDoc.data());
 
             if (!verificationDoc.exists()) {
                 toast.error("Aucune vérification en attente");
