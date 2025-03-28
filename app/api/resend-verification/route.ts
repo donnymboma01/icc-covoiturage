@@ -3,9 +3,10 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/app/config/firebase-config";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     if (!db) {
       return NextResponse.json(

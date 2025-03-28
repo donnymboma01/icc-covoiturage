@@ -572,15 +572,15 @@ const AcceptDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Ajouter une note pour le passager</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-foreground">Ajouter une note pour le passager</DialogTitle>
+          <DialogDescription className="text-foreground/70">
             Précisez le point de rencontre exact ou toute information utile pour
             faciliter la rencontre.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <textarea
-            className="min-h-[100px] p-3 border rounded-md"
+            className="min-h-[100px] p-3 border rounded-md bg-background text-foreground"
             placeholder="Ex: Je serai garé sur le parking de l'église, voiture bleue Peugeot 208. Vous pouvez me retrouver près de l'entrée principale."
             value={noteValue}
             onChange={(e) => onNoteChange(e.target.value)}

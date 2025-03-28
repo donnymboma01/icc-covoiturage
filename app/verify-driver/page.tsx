@@ -227,18 +227,9 @@ export default function VerifyDriver() {
                             </h2>
 
                             <div className="text-gray-700 text-lg">
-                                Votre engagement en tant que conducteur est précieux pour notre communauté. Pour une meilleure coordination, rejoignez notre groupe WhatsApp dédié aux conducteurs ICC!
+                                Votre engagement en tant que conducteur est précieux pour notre communauté. Que Dieu vous bénisse abondamment.
                             </div>
 
-                            <a
-                                href="https://chat.whatsapp.com/EwRXbJyf6Gj6e4otwMNuiE"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold py-3 px-6 rounded-full transition-all transform hover:scale-105 shadow-lg"
-                            >
-                                <FaWhatsapp className="text-2xl" />
-                                Rejoindre le groupe WhatsApp
-                            </a>
                         </div>
                     </div>
                 </div>

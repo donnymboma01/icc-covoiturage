@@ -192,7 +192,7 @@ const RegisterForm = () => {
           console.log("Image upload successful:", profilePictureUrl);
         } catch (uploadError) {
           console.error("Upload error details:", uploadError);
-          throw uploadError;
+          throw new Error("Erreur lors du téléchargement de la photo de profil");
         }
       }
 
@@ -228,11 +228,9 @@ const RegisterForm = () => {
           userId: userCredential.user.uid,
           verificationCode,
           isVerified: false,
-          createdAt: new Date(),
-          whatsappJoined: values.whatsappConsent || false
+          createdAt: new Date()
         });
 
-        // localStorage.setItem("pendingDriverId", userCredential.user.uid);
         document.cookie = `pendingDriverId=${userCredential.user.uid}; path=/; max-age=86400; SameSite=Strict`;
 
         const emailResponse = await fetch("/api/send-verification", {
@@ -244,48 +242,41 @@ const RegisterForm = () => {
           }),
         });
 
-        console.log("Email verification response:", await emailResponse.json());
-
-        if (values.whatsappConsent) {
-          window.open('https://chat.whatsapp.com/EwRXbJyf6Gj6e4otwMNuiE', '_blank');
+        if (!emailResponse.ok) {
+          throw new Error("Erreur lors de l'envoi de l'email de vérification");
         }
 
-        router.push("/verify-driver");
-        return;
+        console.log("Email verification response:", await emailResponse.json());
       }
 
-      await auth.signOut();
-
-      toast.success("Inscription réussie");
-      router.push("/auth/login");
-
-    } catch (authError: any) {
-      console.log("Detailed error:", authError);
-
+      toast.success("Inscription réussie !");
+      if (values.isDriver) {
+        router.push("/verify-driver");
+      } else {
+        router.push("/");
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
       if (userCredential?.user) {
         await cleanupFailedRegistration(userCredential.user);
       }
 
-      switch (authError.code) {
-        case "auth/email-already-in-use":
-          toast.error("L'adresse e-mail que vous avez saisie est déjà associée à un autre profil.");
-          break;
-        case "auth/weak-password":
-          toast.error("Le mot de passe est trop faible. Veuillez en choisir un plus sécurisé.");
-          break;
-        case "auth/invalid-email":
-          toast.error("L'adresse e-mail saisie est invalide. Veuillez vérifier et réessayer.");
-          break;
-        case "auth/network-request-failed":
-          toast.error("Erreur réseau. Vérifiez votre connexion internet et réessayez.");
-          break;
-        case "storage/object-not-found":
-          toast.error("Erreur lors du téléchargement de l'image. Veuillez réessayer.");
-          break;
-        default:
-          console.error("Erreur d'authentification :", authError);
-          toast.error("Une erreur inattendue est survenue. Veuillez rafraichir la page et réessayer.");
+      let errorMessage = "Une erreur est survenue lors de l'inscription";
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "Cet email est déjà utilisé";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Email invalide";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Le mot de passe est trop faible";
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Erreur de connexion réseau";
+      } else if (error.message.includes("photo de profil")) {
+        errorMessage = "Erreur lors du téléchargement de la photo de profil";
+      } else if (error.message.includes("email de vérification")) {
+        errorMessage = "Erreur lors de l'envoi de l'email de vérification";
       }
+
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -366,10 +357,15 @@ const RegisterForm = () => {
           name="fullName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Entrez votre nom complet</FormLabel>
+              <FormLabel className="text-foreground">Nom complet</FormLabel>
               <FormControl>
-                <Input placeholder="Nom complet" {...field} />
+                <Input
+                  {...field}
+                  placeholder="Votre nom complet"
+                  className="bg-background text-foreground"
+                />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -379,9 +375,14 @@ const RegisterForm = () => {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-foreground">Email</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="john@example.com" {...field} />
+                <Input
+                  {...field}
+                  type="email"
+                  placeholder="exemple@email.com"
+                  className="bg-background text-foreground"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -393,20 +394,21 @@ const RegisterForm = () => {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Mot de passe</FormLabel>
+              <FormLabel className="text-foreground">Mot de passe</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
-                    placeholder="••••••••"
-                    type={showPassword ? "text" : "password"}
                     {...field}
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="bg-background text-foreground"
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/70 hover:text-foreground"
                   >
-                    {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
               </FormControl>
@@ -420,20 +422,21 @@ const RegisterForm = () => {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirmer le mot de passe</FormLabel>
+              <FormLabel className="text-foreground">Confirmer le mot de passe</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
-                    placeholder="••••••••"
-                    type={showConfirmPassword ? "text" : "password"}
                     {...field}
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="bg-background text-foreground"
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/70 hover:text-foreground"
                   >
-                    {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
               </FormControl>
@@ -473,9 +476,13 @@ const RegisterForm = () => {
           name="phoneNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Numéro de téléphone</FormLabel>
+              <FormLabel className="text-foreground">Numéro de téléphone</FormLabel>
               <FormControl>
-                <Input placeholder="0492 34 56 78" {...field} />
+                <Input
+                  {...field}
+                  placeholder="+33 6 12 34 56 78"
+                  className="bg-background text-foreground"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -540,9 +547,13 @@ const RegisterForm = () => {
               name="vehicle.brand"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Marque du véhicule *</FormLabel>
+                  <FormLabel className="text-foreground">Marque du véhicule</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Renault" />
+                    <Input
+                      {...field}
+                      placeholder="Marque"
+                      className="bg-background text-foreground"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -554,9 +565,13 @@ const RegisterForm = () => {
               name="vehicle.model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Modèle *</FormLabel>
+                  <FormLabel className="text-foreground">Modèle du véhicule</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Clio" />
+                    <Input
+                      {...field}
+                      placeholder="Modèle"
+                      className="bg-background text-foreground"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -568,9 +583,13 @@ const RegisterForm = () => {
               name="vehicle.color"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Couleur *</FormLabel>
+                  <FormLabel className="text-foreground">Couleur du véhicule</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Noir" />
+                    <Input
+                      {...field}
+                      placeholder="Couleur"
+                      className="bg-background text-foreground"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -601,31 +620,15 @@ const RegisterForm = () => {
               name="vehicle.licensePlate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plaque d'immatriculation *</FormLabel>
+                  <FormLabel className="text-foreground">Plaque d'immatriculation</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: AB-123-CD" />
+                    <Input
+                      {...field}
+                      placeholder="AB-123-CD"
+                      className="bg-background text-foreground"
+                    />
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="whatsappConsent"
-              render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <div className="flex flex-row items-center space-x-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="font-medium text-sm">
-                      J'accepte de rejoindre le groupe WhatsApp des conducteurs ICC
-                    </FormLabel>
-                  </div>
                 </FormItem>
               )}
             />
@@ -710,12 +713,8 @@ const RegisterForm = () => {
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-medium"
           disabled={isLoading}
-          onTouchStart={(e) => {
-            console.log("Button touched");
-            e.currentTarget.click();
-          }}
         >
           {isLoading ? "Inscription en cours..." : "S'inscrire"}
         </Button>

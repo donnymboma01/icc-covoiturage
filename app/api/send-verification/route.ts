@@ -1,9 +1,10 @@
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+//  const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { email, verificationCode } = await request.json();
 
   if (!email) {
@@ -69,6 +70,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ data }, { status: 200 });
   } catch (err) {
     console.error("Error sending verification email:", err);
-    return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to send verification email" },
+      { status: 500 }
+    );
   }
 }

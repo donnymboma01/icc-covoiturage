@@ -1,41 +1,36 @@
-FROM node:alpine AS build_image
+FROM node:20-alpine3.20 AS base
+
 WORKDIR /app
 
-ARG NEXT_PUBLIC_FIREBASE_API_KEY
-ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
-ARG NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-ARG NEXT_PUBLIC_FIREBASE_APP_ID
-ARG NEXT_PUBLIC_FIREBASE_VAPID_KEY
-ARG NEXT_PUBLIC_FIREBASE_CLIENT_EMAIL
-ARG NEXT_PUBLIC_FIREBASE_PRIVATE_KEY
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-
-ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY
-ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID
-ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-ENV NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID
-ENV NEXT_PUBLIC_FIREBASE_VAPID_KEY=$NEXT_PUBLIC_FIREBASE_VAPID_KEY
-ENV NEXT_PUBLIC_FIREBASE_CLIENT_EMAIL=$NEXT_PUBLIC_FIREBASE_CLIENT_EMAIL
-ENV NEXT_PUBLIC_FIREBASE_PRIVATE_KEY=$NEXT_PUBLIC_FIREBASE_PRIVATE_KEY
-
-COPY package*.json ./
-# install dependencies
-RUN npm install --frozen-lockfile
 COPY . .
-# build
+COPY .env.build .env.local
+
+
 RUN npm run build
-# remove dev dependencies
-RUN npm prune --production
-FROM node:alpine
+
+FROM node:20-alpine3.20 AS runner
+
 WORKDIR /app
-# copy from build image
-COPY --from=build_image /app/package.json ./package.json
-COPY --from=build_image /app/node_modules ./node_modules
-COPY --from=build_image /app/.next ./.next
-COPY --from=build_image /app/public ./public
+
+ENV NODE_ENV=production
+
+
+COPY --from=base /app/public ./public
+COPY --from=base /app/.next/standalone ./
+COPY --from=base /app/.next/static ./.next/static
+
+# Définir l'utilisateur non root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+USER nextjs
+
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
