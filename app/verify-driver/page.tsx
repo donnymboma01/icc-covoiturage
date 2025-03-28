@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getFirestore, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { app } from "@/app/config/firebase-config";
-import { FaWhatsapp } from "react-icons/fa";
+
 // import {
 //   Dialog,
 //   DialogContent,
