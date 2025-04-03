@@ -247,13 +247,39 @@ const RegisterForm = () => {
         }
 
         console.log("Email verification response:", await emailResponse.json());
+      } else {
+        // Générer et envoyer un code de vérification pour les passagers
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        await setDoc(doc(db, "passengerVerifications", userCredential.user.uid), {
+          userId: userCredential.user.uid,
+          verificationCode,
+          isVerified: false,
+          createdAt: new Date()
+        });
+        
+        document.cookie = `pendingPassengerId=${userCredential.user.uid}; path=/; max-age=86400; SameSite=Strict`;
+        
+        const emailResponse = await fetch("/api/send-verification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: values.email,
+            verificationCode,
+            isPassenger: true
+          }),
+        });
+        
+        if (!emailResponse.ok) {
+          throw new Error("Erreur lors de l'envoi de l'email de vérification");
+        }
       }
 
       toast.success("Inscription réussie !");
       if (values.isDriver) {
         router.push("/verify-driver");
       } else {
-        router.push("/");
+        router.push("/verify-passenger");
       }
     } catch (error: any) {
       console.error("Registration error:", error);

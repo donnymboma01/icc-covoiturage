@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getAuth, updateEmail } from "firebase/auth";
 import {
   getFirestore,
@@ -12,6 +12,8 @@ import {
 import { toast } from "sonner";
 import { app } from "../config/firebase-config";
 import UserProfile, { UserData } from "../../components/profile/UserProfile";
+import DriverVerificationGuard from "@/components/auth/DriverVerificationGuard";
+import PassengerVerificationGuard from "@/components/auth/PassengerVerificationGuard";
 
 const Profile = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -19,7 +21,7 @@ const Profile = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const fetchUserAndVehicleData = async (userId: string) => {
+  const fetchUserAndVehicleData = useCallback(async (userId: string) => {
     const userRef = doc(db, "users", userId);
     const userDoc = await getDoc(userRef);
     const userData = userDoc.data();
@@ -32,7 +34,7 @@ const Profile = () => {
       }
     }
     return userData;
-  };
+  }, [db]);
 
   const handleUpdateUser = async (data: Partial<UserData>) => {
     const user = auth.currentUser;
@@ -105,7 +107,15 @@ const Profile = () => {
     );
   }
 
-  return <UserProfile user={userData} onUpdateUser={handleUpdateUser} />;
+  return userData?.isDriver ? (
+    <DriverVerificationGuard>
+      <UserProfile user={userData} onUpdateUser={handleUpdateUser} />
+    </DriverVerificationGuard>
+  ) : (
+    <PassengerVerificationGuard>
+      <UserProfile user={userData} onUpdateUser={handleUpdateUser} />
+    </PassengerVerificationGuard>
+  );
 };
 
 export default Profile;

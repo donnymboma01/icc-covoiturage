@@ -61,6 +61,7 @@ export interface UserData {
   churchIds?: string[];
   isStar: string | boolean | undefined;
   isVerified?: boolean;
+  driverStatus?: "pending" | "approved" | "rejected";
 }
 
 const verses = [
@@ -79,7 +80,7 @@ const UserProfile = ({
   onUpdateUser,
 }: {
   user: UserData | null;
-  onUpdateUser: (data: Partial<UserData>) => Promise<void>;
+  onUpdateUser: (data: Partial<UserData> & { driverStatus?: "pending" | "approved" | "rejected" }) => Promise<void>;
 }) => {
   const { requestPermission, token, isEnabled } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
@@ -306,10 +307,14 @@ const UserProfile = ({
 
   const handleBecomeDriver = async (vehicleData: Vehicle) => {
     try {
-      await onUpdateUser({
+      const updateData: UserData = {
+        ...localUserData as UserData,
         isDriver: true,
         vehicle: vehicleData,
-      });
+        driverStatus: "pending"
+      };
+
+      await onUpdateUser(updateData);
 
       const vehicleRef = doc(db, "vehicles", user?.uid || "");
       await setDoc(vehicleRef, {
@@ -317,8 +322,40 @@ const UserProfile = ({
         userId: user?.uid,
         isActive: true,
       });
+
+      // Générer et stocker un code de vérification pour le conducteur
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      await setDoc(doc(db, "driverVerifications", user?.uid || ""), {
+        userId: user?.uid,
+        verificationCode,
+        isVerified: false,
+        createdAt: new Date()
+      });
+
+      // Stocker l'ID de l'utilisateur dans un cookie pour la page de vérification
+      document.cookie = `pendingDriverId=${user?.uid}; path=/; max-age=86400; SameSite=Strict`;
+
+      // Envoyer le code de vérification par email
+      const emailResponse = await fetch("/api/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user?.email,
+          verificationCode,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        throw new Error("Erreur lors de l'envoi de l'email de vérification");
+      }
+
+      toast.success("Vous êtes maintenant conducteur ! Veuillez vérifier votre email pour activer votre compte.");
+      
+      // Rediriger vers la page de vérification
+      window.location.href = "/verify-driver";
     } catch (error) {
       console.error("Erreur en passant à l'état de conducteur :", error);
+      toast.error("Une erreur est survenue lors de la conversion en conducteur");
     }
   };
 

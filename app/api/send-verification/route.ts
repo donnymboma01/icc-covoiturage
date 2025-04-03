@@ -5,17 +5,23 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const { email, verificationCode } = await request.json();
+  const { email, verificationCode, isPassenger } = await request.json();
 
   if (!email) {
     return NextResponse.json({ error: "Email est requis" }, { status: 400 });
   }
 
   try {
+    const subject = isPassenger 
+      ? "Vérification de votre compte passager" 
+      : "Vérification de votre compte conducteur";
+    
+    const userType = isPassenger ? "passager" : "conducteur";
+    
     const { data, error } = await resend.emails.send({
       from: "ICC Covoiturage <no-reply@impactcentrechretien.eu>",
       to: [email],
-      subject: "Vérification de votre compte conducteur",
+      subject: subject,
       html: `
         <!DOCTYPE html>
         <html>
@@ -33,7 +39,7 @@ export async function POST(request: Request) {
               <td style="background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px;">
                 <h2 style="color: #2c3e50; margin: 0 0 20px; font-size: 20px;">Vérification de votre compte</h2>
                 <p style="color: #666666; line-height: 1.6; margin: 0 0 20px;">
-                  Bienvenue chez ICC Covoiturage ! Pour activer votre compte conducteur, veuillez utiliser le code suivant :
+                  Bienvenue chez ICC Covoiturage ! Pour activer votre compte ${userType}, veuillez utiliser le code suivant :
                 </p>
                 
                 <!-- Code Box -->
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
               <td style="padding: 20px; text-align: center;">
                 <p style="color: #999999; font-size: 12px; margin: 0;">
                   © 2025 ICC Covoiturage. Tous droits réservés.<br>
-                  Vous avez reçu cet email car vous vous êtes inscrit comme conducteur.
+                  Vous avez reçu cet email car vous vous êtes inscrit comme ${userType}.
                 </p>
               </td>
             </tr>
