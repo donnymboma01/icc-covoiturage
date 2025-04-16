@@ -158,6 +158,14 @@ const LoginForm = () => {
                       </div>
                     </FormControl>
                     <FormMessage />
+                    <div className="text-right mt-1">
+                      <Link
+                        href="/auth/forgot-password"
+                        className="text-xs text-primary hover:underline dark:text-blue-400"
+                      >
+                        Mot de passe oublié ?
+                      </Link>
+                    </div>
                   </FormItem>
                 );
               }}

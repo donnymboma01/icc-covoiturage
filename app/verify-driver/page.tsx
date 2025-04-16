@@ -212,7 +212,7 @@ export default function VerifyDriver() {
             />
             <Button
                 onClick={verifyCode}
-                className="w-full"
+                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 dark:text-white"
                 disabled={isLoading}
             >
                 {isLoading ? "Vérification en cours..." : "Vérifier"}

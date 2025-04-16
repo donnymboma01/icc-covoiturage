@@ -469,21 +469,21 @@ const UserProfile = ({
               <MdPhone className="text-blue-600" /> Contact
             </h2>
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3 p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <MdEmail className="text-lg sm:text-xl text-blue-600" />
                 <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Email</p>
-                  <p className="text-sm sm:text-base font-medium">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Email</p>
+                  <p className="text-sm sm:text-base font-medium dark:text-gray-200">
                     {localUserData?.email}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3 p-2 sm:p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <MdPhone className="text-lg sm:text-xl text-blue-600" />
                 <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Téléphone</p>
-                  <p className="text-sm sm:text-base font-medium">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Téléphone</p>
+                  <p className="text-sm sm:text-base font-medium dark:text-gray-200">
                     {localUserData?.phoneNumber}
                   </p>
                 </div>
