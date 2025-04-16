@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { sendPasswordResetEmail, getAuth } from "firebase/auth";
+import { FirebaseError } from "firebase/app";
 import { app } from "../../config/firebase-config";
 import Link from "next/link";
 
@@ -20,8 +21,10 @@ export default function ForgotPasswordPage() {
       await sendPasswordResetEmail(auth, email);
       toast.success("Un email de réinitialisation a été envoyé si l'adresse existe.");
       setEmail("");
-    } catch (error: any) {
-      toast.error("Erreur lors de l'envoi de l'email. Vérifiez l'adresse.");
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        toast.error("Erreur lors de l'envoi de l'email. Vérifiez l'adresse.");
+      }
     } finally {
       setIsLoading(false);
     }
