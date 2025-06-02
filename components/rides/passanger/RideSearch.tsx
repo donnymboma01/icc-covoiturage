@@ -20,6 +20,7 @@ import {
   geohashForLocation,
   geohashQueryBounds,
 } from "geofire-common";
+import Image from "next/image";
 import { app } from "../../../app/config/firebase-config";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,7 @@ const RideSearch = () => {
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showSpecialEventImage, setShowSpecialEventImage] = useState(false);
 
   const { user } = useAuth();
 
@@ -192,6 +194,31 @@ const RideSearch = () => {
   const handleSearch = async () => {
     setLoading(true);
     setHasSearched(true);
+
+    // Contrôler l'affichage de l'image spéciale
+    const searchDate = searchParams.date;
+    const startDate = new Date(2025, 5, 30); // Juin (mois 5)
+    const endDate = new Date(2025, 6, 6);   // Juillet (mois 6)
+
+    const normalizeDate = (date: Date) => {
+      const newDate = new Date(date);
+      newDate.setHours(0, 0, 0, 0);
+      return newDate;
+    };
+
+    const normalizedSearchDate = normalizeDate(searchDate);
+    const normalizedStartDate = normalizeDate(startDate);
+    const normalizedEndDate = normalizeDate(endDate);
+
+    if (
+      normalizedSearchDate >= normalizedStartDate &&
+      normalizedSearchDate <= normalizedEndDate
+    ) {
+      setShowSpecialEventImage(true);
+    } else {
+      setShowSpecialEventImage(false);
+    }
+
 
     try {
       const startOfDay = new Date(searchParams.date);
@@ -535,6 +562,15 @@ const RideSearch = () => {
         ref={searchResultsRef}
         className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
       >
+        {showSpecialEventImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/royale.png"
+              alt="Événement spécial ICC Covoiturage"
+              className="max-w-full h-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
         {hasSearched ? (
           rides.length > 0 ? (
             rides.map((ride) => (
