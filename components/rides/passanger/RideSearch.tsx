@@ -567,7 +567,9 @@ const RideSearch = () => {
             <Image
               src="/images/royale.png"
               alt="Événement spécial ICC Covoiturage"
-              className="max-w-full h-auto md:max-w-2xl rounded-lg shadow-md"
+              width={1200} // Ajout de la largeur
+              height={630} // Ajout de la hauteur
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
             />
           </div>
         )}

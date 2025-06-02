@@ -262,7 +262,7 @@ const CreateRideForm = () => {
         {[
           { id: "culte", label: "Culte du dimanche", icon: "🙏" },
           { id: "priere", label: "Réunion de prière", icon: "✝️" },
-          { id: "evenement", label: "Événement spécial", icon: "🎉" },
+          { id: "evenement", label: "Semaine Royale", icon: "🎉" },
           { id: "autre", label: "Autre", icon: "📌" },
         ].map((service) => (
           <div
