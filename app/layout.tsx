@@ -51,11 +51,15 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          <NavBar />
-          {children}
-          <Toaster richColors />
+          <div className="flex flex-col min-h-screen">
+            <NavBar />
+            <main className="flex-1 overflow-y-auto">
+              {children}
+            </main>
+            <Toaster richColors />
+          </div>
         </ThemeProvider>
       </body>
     </html>

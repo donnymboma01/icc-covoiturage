@@ -16,6 +16,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/app/hooks/useAuth";
+import { MdAdminPanelSettings } from "react-icons/md";
 import { app } from "@/app/config/firebase-config";
 import {
   signOut,
@@ -82,6 +83,7 @@ const NavBar = () => {
   const db = getFirestore(app);
 
   const { user, loading, updateUser } = useAuth();
+  const isAdmin = user?.isAdmin === true;
   const auth = getAuth(app);
 
   const handleDeleteAccount = () => {
@@ -480,15 +482,13 @@ const NavBar = () => {
 
   const MobileDrawer = () => (
     <div
-      className={`fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity ${
-        isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-      }`}
+      className={`fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity ${isDrawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
       onClick={() => setIsDrawerOpen(false)}
     >
       <div
-        className={`fixed right-0 top-0 h-full w-64 bg-white dark:bg-gray-900 dark:text-white shadow-xl transform transition-transform ${
-          isDrawerOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed right-0 top-0 h-full w-64 bg-white dark:bg-gray-900 dark:text-white shadow-xl transform transition-transform ${isDrawerOpen ? "translate-x-0" : "translate-x-full"
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col h-full">
@@ -506,13 +506,20 @@ const NavBar = () => {
               </div>
 
               {user?.isDriver ? <DriverNavigation /> : <PassengerNavigation />}
+              {isAdmin && (
+                <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
+                  <Button variant="ghost" className="w-full">
+                    <MdAdminPanelSettings className="mr-2" /> Panneau Admin
+                  </Button>
+                </Link>
+              )}
 
               <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
                 <Button variant="ghost" className="w-full mt-4">
                   <CgProfile /> Profil
                 </Button>
               </Link>
-              
+
               <div className="flex justify-between items-center mt-4 w-full">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Changer de thème</span>
                 <ThemeToggle />
@@ -601,8 +608,16 @@ const NavBar = () => {
               </span>
             </div>
 
-            <div className="hidden lg:flex items-center gap-4">
+            <div className="hidden lg:flex items-center justify-between w-full"> 
+              <div className="flex items-center gap-4">
               {user.isDriver ? <DriverNavigation /> : <PassengerNavigation />}
+              {isAdmin && (
+                <Link href="/admin">
+                  <Button variant="ghost">
+                    <MdAdminPanelSettings className="mr-2" /> Panneau Admin
+                  </Button>
+                </Link>
+              )}
               <Link href="/profile">
                 <Button variant="ghost">
                   {" "}
@@ -610,6 +625,7 @@ const NavBar = () => {
                 </Button>
               </Link>
               <ThemeToggle />
+              </div>
               <div className="flex items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
@@ -621,7 +637,7 @@ const NavBar = () => {
                       <MdSettings className="h-5 w-5 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-58 dark:bg-gray-800 dark:text-white">
+                  <PopoverContent className="w-58 dark:bg-gray-800 dark:text-white flex flex-col gap-2">
                     <Button
                       variant="destructive"
                       size="sm"
@@ -630,11 +646,11 @@ const NavBar = () => {
                     >
                       <MdDelete className="text-white" /> Supprimer mon compte
                     </Button>
+                    <Button onClick={handleSignOut} variant="secondary" size="sm" className="w-full flex items-center gap-2">
+                      <MdExitToApp className="text-gray-600 dark:text-gray-400" /> Déconnexion
+                    </Button>
                   </PopoverContent>
                 </Popover>
-                <Button onClick={handleSignOut} variant="secondary" size="sm">
-                  Déconnexion
-                </Button>
               </div>
             </div>
 

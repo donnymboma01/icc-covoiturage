@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 
 interface ExtendedUser extends User {
   isDriver?: boolean;
+  isAdmin?: boolean;
   fullName?: string;
   churchIds?: string[];
 }
@@ -14,6 +15,7 @@ export const useAuth = () => {
 
   const updateUser = async (updates: {
     isDriver?: boolean;
+    isAdmin?: boolean;
     fullName?: string;
     churchIds?: string[];
   }) => {
@@ -40,6 +42,7 @@ export const useAuth = () => {
           setUser({
             ...firebaseUser,
             isDriver: userData.isDriver,
+            isAdmin: userData.isAdmin,
             fullName: userData.fullName,
             churchIds: userData.churchIds,
           });
