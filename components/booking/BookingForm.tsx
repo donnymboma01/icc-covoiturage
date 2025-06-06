@@ -207,7 +207,7 @@ const BookingForm = ({
           <div className="flex items-start space-x-3">
             <div className="flex-1">
               <p className="text-sm text-blue-800 mb-2">
-                Bien que ce service soit basé sur le bénévolat, une petite
+                Bien que ce service soit basé sur le bénévolat, une
                 contribution pour le carburant serait grandement appréciée par le
                 conducteur. C'est une belle façon de partager les frais et
                 d'encourager ce service d'entraide.
