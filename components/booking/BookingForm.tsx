@@ -203,6 +203,24 @@ const BookingForm = ({
           </p>
         </div>
 
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <div className="flex items-start space-x-3">
+            <div className="flex-1">
+              <p className="text-sm text-blue-800 mb-2">
+                Bien que ce service soit basé sur le bénévolat, une petite
+                contribution pour le carburant serait grandement appréciée par le
+                conducteur. C'est une belle façon de partager les frais et
+                d'encourager ce service d'entraide.
+              </p>
+              <p className="text-xs text-blue-600 italic">
+                "Que chacun donne comme il l'a résolu en son cœur, sans tristesse
+                ni contrainte; car Dieu aime celui qui donne avec joie." - 2
+                Corinthiens 9:7
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="notes">Ecrivez un message pour le conducteur</Label>
           <Textarea
