@@ -191,12 +191,12 @@ const RideSearch = () => {
     fetchAllAvailableRides();
   }, []);
 
-  const handleSearch = async () => {
+  const handleSearch = async (currentSearchParams = searchParams) => {
     setLoading(true);
     setHasSearched(true);
 
     // Contrôler l'affichage de l'image spéciale
-    const searchDate = searchParams.date;
+    const searchDate = currentSearchParams.date;
     const startDate = new Date(2025, 5, 30); // Juin (mois 5)
     const endDate = new Date(2025, 6, 6);   // Juillet (mois 6)
 
@@ -221,9 +221,9 @@ const RideSearch = () => {
 
 
     try {
-      const startOfDay = new Date(searchParams.date);
+      const startOfDay = new Date(currentSearchParams.date);
       startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(searchParams.date);
+      const endOfDay = new Date(currentSearchParams.date);
       endOfDay.setHours(23, 59, 59, 999);
 
       let baseQuery = query(
@@ -235,12 +235,12 @@ const RideSearch = () => {
 
 
       let filteredDriverIds: string[] = [];
-      if (searchParams.churchId !== "all") {
+      if (currentSearchParams.churchId !== "all") {
 
         const usersRef = collection(db, "users");
         const usersQuery = query(
           usersRef,
-          where("churchIds", "array-contains", searchParams.churchId),
+          where("churchIds", "array-contains", currentSearchParams.churchId),
           where("isDriver", "==", true)
         );
 
@@ -262,11 +262,11 @@ const RideSearch = () => {
         );
       }
 
-      if (!searchParams.departure) {
+      if (!currentSearchParams.departure) {
         const querySnapshot = await getDocs(baseQuery);
         let allDocs = querySnapshot.docs;
 
-        if (searchParams.churchId !== "all" && filteredDriverIds.length > 10) {
+        if (currentSearchParams.churchId !== "all" && filteredDriverIds.length > 10) {
           for (let i = 10; i < filteredDriverIds.length; i += 10) {
             const batchDriverIds = filteredDriverIds.slice(i, i + 10);
             if (batchDriverIds.length > 0) {
@@ -308,7 +308,7 @@ const RideSearch = () => {
         return;
       }
 
-      const searchLocation = await getCoordinates(searchParams.departure);
+      const searchLocation = await getCoordinates(currentSearchParams.departure);
       const radiusInKm = 10;
       const bounds = geohashQueryBounds(
         [searchLocation.lat, searchLocation.lng],
@@ -468,7 +468,9 @@ const RideSearch = () => {
                 selected={searchParams.date}
                 onSelect={(date) => {
                   if (date) {
-                    setSearchParams({ ...searchParams, date });
+                    const newParams = { ...searchParams, date };
+                    setSearchParams(newParams);
+                    handleSearch(newParams);
                   }
                 }}
                 modifiers={{
