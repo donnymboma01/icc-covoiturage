@@ -106,6 +106,7 @@ const RideSearch = () => {
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [showSpecialEventImage, setShowSpecialEventImage] = useState(false);
+  const [showDimancheImage, setShowDimancheImage] = useState(false);
 
   const { user } = useAuth();
 
@@ -199,6 +200,7 @@ const RideSearch = () => {
     const searchDate = currentSearchParams.date;
     const startDate = new Date(2025, 5, 30); // Juin (mois 5)
     const endDate = new Date(2025, 6, 6);   // Juillet (mois 6)
+    const dimancheDate = new Date(2025, 6, 20); // 20 juillet 2025
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -209,6 +211,7 @@ const RideSearch = () => {
     const normalizedSearchDate = normalizeDate(searchDate);
     const normalizedStartDate = normalizeDate(startDate);
     const normalizedEndDate = normalizeDate(endDate);
+    const normalizedDimancheDate = normalizeDate(dimancheDate);
 
     if (
       normalizedSearchDate >= normalizedStartDate &&
@@ -217,6 +220,12 @@ const RideSearch = () => {
       setShowSpecialEventImage(true);
     } else {
       setShowSpecialEventImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedDimancheDate.getTime()) {
+      setShowDimancheImage(true);
+    } else {
+      setShowDimancheImage(false);
     }
 
 
@@ -564,6 +573,17 @@ const RideSearch = () => {
         ref={searchResultsRef}
         className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
       >
+        {showDimancheImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/dimanche.png"
+              alt="Dimanche spécial ICC Covoiturage"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
         {showSpecialEventImage && hasSearched && (
           <div className="my-4 w-full flex justify-center col-span-full">
             <Image
