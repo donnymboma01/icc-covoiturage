@@ -39,13 +39,13 @@ interface Booking {
 }
 
 import { Badge } from "@/components/ui/badge";
-import {  Clock, AlertCircle, Users, Ban, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Clock, AlertCircle, Users, Ban, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 interface BookingStats {
     totalBookings: number;
     pendingBookings: number;
-    acceptedBookings: number; // Renamed from confirmedBookings to acceptedBookings
-    rejectedBookings: number; // Added for 'refusée'
+    acceptedBookings: number;
+    rejectedBookings: number;
     cancelledBookings: number;
     totalSeatsBooked: number;
 }
@@ -147,7 +147,7 @@ const BookingsManagement = () => {
             acceptedBookings: bookingsData.filter(booking =>
                 booking.status === 'confirmed' ||
                 booking.status === 'acceptée' ||
-                booking.status === 'accepted' // Ajout pour couvrir le cas 'accepted'
+                booking.status === 'accepted'
             ).length,
             rejectedBookings: bookingsData.filter(booking => booking.status === 'rejected' || booking.status === 'refusée').length,
             cancelledBookings: bookingsData.filter(booking => booking.status === 'cancelled').length,
@@ -291,13 +291,12 @@ const BookingsManagement = () => {
                                                                 booking.status === 'cancelled' ? 'outline' :
                                                                     'outline'
                                                 }
-                                                className={`capitalize text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-semibold dark:text-gray-100 ${
-                                                    booking.status === 'acceptée' || booking.status === 'confirmed' ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-700 dark:text-green-100 dark:border-green-500' :
+                                                className={`capitalize text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-semibold dark:text-gray-100 ${booking.status === 'acceptée' || booking.status === 'confirmed' ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-700 dark:text-green-100 dark:border-green-500' :
                                                         booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-700 dark:text-yellow-100 dark:border-yellow-500' :
                                                             booking.status === 'rejected' || booking.status === 'refusée' ? 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-700 dark:text-red-100 dark:border-red-500' :
                                                                 booking.status === 'cancelled' ? 'bg-gray-100 text-gray-800 border border-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500' :
                                                                     'bg-gray-100 text-gray-800 border border-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500'
-                                                }`}
+                                                    }`}
                                             >
                                                 {booking.status === 'confirmed' ? 'Acceptée' :
                                                     booking.status === 'refusée' ? 'Refusée' :

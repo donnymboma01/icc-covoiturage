@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 heures
+    const verificationCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); 
 
     await updateDoc(userRef, {
       verificationCode,

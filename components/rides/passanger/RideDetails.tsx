@@ -88,14 +88,14 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
           const rideData = rideDoc.data();
           const driverId = rideData.driverId;
 
-          // Récupérer les informations du conducteur
+
           const driverRef = doc(db, "users", driverId);
           const driverDoc = await getDoc(driverRef);
 
           if (driverDoc.exists()) {
             const driverData = driverDoc.data() as Driver;
-            
-            // Vérifier si le conducteur est vérifié
+
+
             const verificationRef = doc(db, "driverVerifications", driverId);
             const verificationDoc = await getDoc(verificationRef);
             if (verificationDoc.exists()) {
@@ -103,11 +103,11 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             } else {
               driverData.isVerified = false;
             }
-            
+
             setDriver(driverData);
           }
 
-          // Formater les données du trajet
+
           setRide({
             id: rideDoc.id,
             ...rideData,
@@ -158,7 +158,7 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
   }, [driver]);
 
   if (loading) {
-    return <div>Chargement...</div>; 
+    return <div>Chargement...</div>;
   }
 
   if (!ride || !driver) {
@@ -237,6 +237,19 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
                 À : {ride.arrivalAddress}
               </p>
             </div>
+            {ride.meetingPointNote && (
+              <div className="flex items-start gap-2 bg-orange-50 p-3 rounded-lg border-l-4 border-orange-200">
+                <MdInfo className="text-xl text-orange-500 mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-orange-800 mb-1">
+                    Point de rencontre précis :
+                  </p>
+                  <p className="text-sm text-orange-700 break-words">
+                    {ride.meetingPointNote}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-4">

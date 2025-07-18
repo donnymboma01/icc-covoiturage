@@ -37,9 +37,6 @@ const AdminLayout = ({
 
     return (
         <div className="bg-gray-100 flex flex-col flex-1">
-            {/* The outer div of AdminLayout should not have min-h-screen if RootLayout's main content area is handling scrolling and height */}
-            {/* The flex container for sidebar and main content can remain if a sidebar is re-introduced */}
-            {/* For now, assuming no sidebar, the main content will take the full space allocated by RootLayout */}
             <main className="flex-1 p-4 sm:p-6">
                 {children}
             </main>

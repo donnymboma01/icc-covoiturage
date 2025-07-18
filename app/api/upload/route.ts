@@ -2,7 +2,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; 
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export async function POST(request: NextRequest) {

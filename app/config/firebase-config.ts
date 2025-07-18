@@ -17,12 +17,7 @@ const firebaseConfig = {
 };
 
 
-// const app = initializeApp(firebaseConfig);
-// const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
-// const db = typeof window !== "undefined" ? getFirestore(app) : null;
-// const storage = getStorage(app);
 
-// export { app, messaging, db };
 const app = initializeApp(firebaseConfig);
 const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
 const db = typeof window !== "undefined" ? getFirestore(app) : null;

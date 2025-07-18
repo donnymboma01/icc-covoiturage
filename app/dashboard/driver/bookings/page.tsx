@@ -12,7 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-// Importation dynamique des composants avec SSR désactivé
+
 const DriverBookings = dynamic(
   () => import("@/components/booking/DriverBookings"),
   { ssr: false }

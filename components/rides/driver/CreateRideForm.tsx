@@ -367,7 +367,7 @@ const CreateRideForm = () => {
           isMapVisible={isMapVisible}
         />
 
-        {/* Add meeting point note input */}
+
         <div className="mt-4">
           <Label htmlFor="meetingPointNote">Point de rencontre précis</Label>
           <Input

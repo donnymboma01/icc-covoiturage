@@ -213,7 +213,7 @@ const DetailedStats = () => {
             });
             const userGrowth = Object.entries(userGrowthData)
                 .map(([month, newUsers]) => ({ month: format(new Date(month + '-01'), 'MMM yy', { locale: fr }), newUsers }))
-                .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()); // Ensure correct month order
+                .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()); 
 
 
             const userRoles = [
@@ -247,10 +247,10 @@ const DetailedStats = () => {
 
     return (
         <div className="p-3 sm:p-4 space-y-4 sm:space-y-6">
-            <h2 className="text-xl sm:text-2xl font-bold">Statistiques Détaillées</h2>
+            {/* <h2 className="text-xl sm:text-2xl font-bold">Statistiques Détaillées</h2> */}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <Card className="p-3 sm:p-4">
+                {/* <Card className="p-3 sm:p-4">
                     <h3 className="text-sm font-semibold">Total des trajets</h3>
                     <p className="text-xl sm:text-2xl">{stats.monthlyStats.totalRides}</p>
                 </Card>
@@ -265,7 +265,7 @@ const DetailedStats = () => {
                 <Card className="p-3 sm:p-4">
                     <h3 className="text-sm font-semibold">Taux d'occupation</h3>
                     <p className="text-xl sm:text-2xl">{stats.monthlyStats.occupancyRate.toFixed(1)}%</p>
-                </Card>
+                </Card> */}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

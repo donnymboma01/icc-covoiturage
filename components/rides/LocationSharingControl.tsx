@@ -39,7 +39,6 @@ const LocationSharingControl = ({
             setIsSharingEnabled(false);
         } else {
             setIsSharingEnabled(true);
-            // Le tracking démarrera automatiquement via le hook useEffect dans useLocationTracking
         }
     };
 

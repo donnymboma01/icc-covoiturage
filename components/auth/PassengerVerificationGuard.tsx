@@ -36,7 +36,6 @@ const PassengerVerificationGuard = ({ children }: PassengerVerificationGuardProp
           return;
         }
 
-        // Si c'est un conducteur, le DriverVerificationGuard s'en occupera
         if (userData.isDriver) {
           setIsVerifying(false);
           return;

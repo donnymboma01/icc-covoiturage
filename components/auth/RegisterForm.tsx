@@ -248,7 +248,7 @@ const RegisterForm = () => {
 
         console.log("Email verification response:", await emailResponse.json());
       } else {
-        // Générer et envoyer un code de vérification pour les passagers
+       
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
         
         await setDoc(doc(db, "passengerVerifications", userCredential.user.uid), {

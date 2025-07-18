@@ -55,15 +55,6 @@ export default function VerifyDriver() {
 
         setIsLoading(true);
         try {
-            // const cookies = document.cookie.split(';');
-            // const pendingDriverIdCookie = cookies.find(cookie => cookie.trim().startsWith('pendingDriverId='));
-            // const userId = pendingDriverIdCookie ? pendingDriverIdCookie.split('=')[1] : null;
-
-            // if (!userId) {
-            //     toast.error("Session expirée, veuillez vous reconnecter");
-            //     router.push("/auth/login");
-            //     return;
-            // }
             const cookies = document.cookie
                 .split(';')
                 .map(cookie => cookie.trim())
@@ -165,7 +156,7 @@ export default function VerifyDriver() {
 
             const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Sauvegarder le nouveau code
+
             await setDoc(doc(db, "driverVerifications", userId), {
                 verificationCode,
                 createdAt: new Date(),
@@ -192,9 +183,6 @@ export default function VerifyDriver() {
         }
     };
 
-    // const handleResendCode = () => {
-    //     verifyCode();
-    // };
 
     return (
         <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow">
@@ -245,8 +233,6 @@ export default function VerifyDriver() {
                     </svg>
                     Demander un code de vérification
                 </button>
-
-                {/* Vous n&apos;avez pas reçu le code ? <button onClick={handleResendCode}>Renvoyer le code</button> */}
             </p>
 
         </div>

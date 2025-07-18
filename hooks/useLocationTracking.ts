@@ -29,7 +29,7 @@ export const useLocationTracking = ({
   const [sharingId, setSharingId] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
-  // Démarrer le suivi de localisation
+ 
   const startTracking = async () => {
     if (!navigator.geolocation) {
       setError("La géolocalisation n'est pas supportée par votre navigateur");
@@ -37,12 +37,11 @@ export const useLocationTracking = ({
     }
 
     try {
-      // Obtenir la position initiale
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           setCurrentLocation(position);
 
-          // Démarrer le partage dans Firestore
           const id = await startLocationSharing(
             bookingId,
             passengerId,
@@ -59,12 +58,12 @@ export const useLocationTracking = ({
           setSharingId(id);
           setIsTracking(true);
 
-          // Configurer le suivi continu
+
           watchIdRef.current = navigator.geolocation.watchPosition(
             async (newPosition) => {
               setCurrentLocation(newPosition);
 
-              // Mettre à jour la position dans Firestore
+  
               if (id) {
                 await updateLocation(id, {
                   lat: newPosition.coords.latitude,
@@ -78,8 +77,8 @@ export const useLocationTracking = ({
             },
             {
               enableHighAccuracy: true,
-              maximumAge: 10000, // 10 secondes
-              timeout: 5000,     // 5 secondes
+              maximumAge: 10000, 
+              timeout: 5000,     
             }
           );
         },
@@ -92,7 +91,7 @@ export const useLocationTracking = ({
     }
   };
 
-  // Fonction pour gérer les erreurs de géolocalisation avec des messages plus clairs
+
   const handleGeolocationError = (error: GeolocationPositionError) => {
     switch(error.code) {
       case error.PERMISSION_DENIED:
@@ -112,7 +111,6 @@ export const useLocationTracking = ({
     }
   };
 
-  // Arrêter le suivi de localisation
   const stopTracking = async () => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -126,7 +124,7 @@ export const useLocationTracking = ({
     setIsTracking(false);
   };
 
-  // Gérer l'activation/désactivation automatique
+
   useEffect(() => {
     if (isEnabled && !isTracking && !error) {
       startTracking();
@@ -134,7 +132,6 @@ export const useLocationTracking = ({
       stopTracking();
     }
 
-    // Nettoyage lors du démontage du composant
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);

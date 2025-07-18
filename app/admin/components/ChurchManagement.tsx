@@ -17,23 +17,23 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription, // Added DialogDescription
+  DialogDescription, 
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription as AlertDialogDesc, // Renamed to avoid conflict
+  AlertDialogDescription as AlertDialogDesc, 
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, where, updateDoc } from 'firebase/firestore'; // Added updateDoc
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, query, where, updateDoc } from 'firebase/firestore'; 
 import { app } from '@/app/config/firebase-config';
-import { PlusCircle, Edit3, Trash2, Search, Building } from 'lucide-react'; // Added Lucide icons
-import { Badge } from '@/components/ui/badge'; // Added Badge
+import { PlusCircle, Edit3, Trash2, Search, Building } from 'lucide-react'; 
+import { Badge } from '@/components/ui/badge'; 
 import { Card } from '@/components/ui/card';
 
 interface Church {
@@ -41,9 +41,8 @@ interface Church {
   name: string;
   address: string;
   createdBy: string;
-  createdAt?: Date; // Rendre createdAt optionnel
+  createdAt?: Date;
   usageCount: number;
-  // Add a new field for storing user count for each church
   userCount?: number;
 }
 
@@ -51,7 +50,7 @@ const ChurchManagement = () => {
   const [churches, setChurches] = useState<Church[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // Added state for delete dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); 
   const [selectedChurch, setSelectedChurch] = useState<Church | null>(null);
   const [newChurch, setNewChurch] = useState({ name: '', address: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,10 +81,10 @@ const ChurchManagement = () => {
 
         let createdAtDate: Date | undefined = undefined;
         if (church.createdAt) {
-          if (typeof church.createdAt.toDate === 'function') { // Firestore Timestamp
+          if (typeof church.createdAt.toDate === 'function') { 
             createdAtDate = church.createdAt.toDate();
           } else {
-            const parsedDate = new Date(church.createdAt); // Handles string, number, or existing Date
+            const parsedDate = new Date(church.createdAt); 
             if (!isNaN(parsedDate.getTime())) {
               createdAtDate = parsedDate;
             } else {
@@ -130,7 +129,7 @@ const ChurchManagement = () => {
         name: newChurch.name,
         address: newChurch.address,
         createdAt: new Date(),
-        createdBy: 'admin' // Consider using authenticated user's ID if available
+        createdBy: 'admin' 
       });
 
       setIsAddDialogOpen(false);
@@ -149,7 +148,7 @@ const ChurchManagement = () => {
         toast.error('Veuillez remplir tous les champs');
         return;
       }
-      // Keep existing fields and only update name and address
+
       const churchDataToUpdate: Partial<Church> = {
         name: selectedChurch.name,
         address: selectedChurch.address,
@@ -169,12 +168,12 @@ const ChurchManagement = () => {
 
   const handleDeleteChurch = async (churchId: string) => {
     try {
-      // No need for window.confirm as we'll use AlertDialog
+      
       await deleteDoc(doc(db, 'churches', churchId));
       toast.success('Église supprimée avec succès');
       fetchChurches();
-      setIsDeleteDialogOpen(false); // Close dialog after deletion
-      setSelectedChurch(null); // Clear selected church
+      setIsDeleteDialogOpen(false); 
+      setSelectedChurch(null); 
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'église:', error);
       toast.error('Erreur lors de la suppression de l\'église');

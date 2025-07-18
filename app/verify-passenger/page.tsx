@@ -142,7 +142,7 @@ export default function VerifyPassenger() {
 
             const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Sauvegarder le nouveau code
+       
             await setDoc(doc(db, "passengerVerifications", userId), {
                 userId,
                 verificationCode,

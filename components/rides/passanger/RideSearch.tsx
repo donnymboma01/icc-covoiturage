@@ -107,6 +107,8 @@ const RideSearch = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [showSpecialEventImage, setShowSpecialEventImage] = useState(false);
   const [showDimancheImage, setShowDimancheImage] = useState(false);
+  const [showFemmesBeneluxImage, setShowFemmesBeneluxImage] = useState(false);
+  const [showVeilleeEmploiImage, setShowVeilleeEmploiImage] = useState(false);
 
   const { user } = useAuth();
 
@@ -196,11 +198,13 @@ const RideSearch = () => {
     setLoading(true);
     setHasSearched(true);
 
-    // Contrôler l'affichage de l'image spéciale
     const searchDate = currentSearchParams.date;
     const startDate = new Date(2025, 5, 30); // Juin (mois 5)
     const endDate = new Date(2025, 6, 6);   // Juillet (mois 6)
     const dimancheDate = new Date(2025, 6, 20); // 20 juillet 2025
+    const femmesBeneluxStart = new Date(2025, 8, 26); // 26 septembre 2025
+    const femmesBeneluxEnd = new Date(2025, 8, 28);   // 28 septembre 2025
+    const veilleeEmploiDate = new Date(2025, 6, 18); // 18 Juillet 2025
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -212,6 +216,9 @@ const RideSearch = () => {
     const normalizedStartDate = normalizeDate(startDate);
     const normalizedEndDate = normalizeDate(endDate);
     const normalizedDimancheDate = normalizeDate(dimancheDate);
+    const normalizedFemmesBeneluxStart = normalizeDate(femmesBeneluxStart);
+    const normalizedFemmesBeneluxEnd = normalizeDate(femmesBeneluxEnd);
+    const normalizedVeilleeEmploiDate = normalizeDate(veilleeEmploiDate);
 
     if (
       normalizedSearchDate >= normalizedStartDate &&
@@ -222,10 +229,25 @@ const RideSearch = () => {
       setShowSpecialEventImage(false);
     }
 
+    if (normalizedSearchDate.getTime() === normalizedVeilleeEmploiDate.getTime()) {
+      setShowVeilleeEmploiImage(true);
+    } else {
+      setShowVeilleeEmploiImage(false);
+    }
+
     if (normalizedSearchDate.getTime() === normalizedDimancheDate.getTime()) {
       setShowDimancheImage(true);
     } else {
       setShowDimancheImage(false);
+    }
+
+    if (
+      normalizedSearchDate >= normalizedFemmesBeneluxStart &&
+      normalizedSearchDate <= normalizedFemmesBeneluxEnd
+    ) {
+      setShowFemmesBeneluxImage(true);
+    } else {
+      setShowFemmesBeneluxImage(false);
     }
 
 
@@ -471,6 +493,13 @@ const RideSearch = () => {
                   disponibles pour le covoiturage
                 </em>
               </p>
+              <p className="text-sm text-muted-foreground italic mb-2 text-center sm:text-left">
+                <span className="inline-block w-3 h-3 bg-blue-300 rounded-full mr-2 align-middle"></span>
+                <em>
+                  Les dates surlignées en bleu clair indiquent des événements
+                  spéciaux de l'église pour proposer des trajets.
+                </em>
+              </p>
               <Label>Date de départ</Label>
               <Calendar
                 mode="single"
@@ -491,6 +520,15 @@ const RideSearch = () => {
                         date.getFullYear() === availableDate.getFullYear()
                     );
                   },
+                  femmesBenelux: (date) => {
+                    // 26-28 septembre 2025
+                    return (
+                      date.getFullYear() === 2025 &&
+                      date.getMonth() === 8 &&
+                      date.getDate() >= 26 &&
+                      date.getDate() <= 28
+                    );
+                  },
                   selected: (date) =>
                     date.getDate() === searchParams.date.getDate() &&
                     date.getMonth() === searchParams.date.getMonth() &&
@@ -501,6 +539,11 @@ const RideSearch = () => {
                   highlighted: {
                     backgroundColor: "#f97316",
                     color: "white",
+                    borderRadius: "9999px",
+                  },
+                  femmesBenelux: {
+                    backgroundColor: "#bae6fd",
+                    color: "#0369a1",
                     borderRadius: "9999px",
                   },
                   selected: {
@@ -573,6 +616,17 @@ const RideSearch = () => {
         ref={searchResultsRef}
         className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
       >
+        {showFemmesBeneluxImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/femmesbenelux.png"
+              alt="Événement Femmes Benelux ICC Covoiturage"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
         {showDimancheImage && hasSearched && (
           <div className="my-4 w-full flex justify-center col-span-full">
             <Image
@@ -584,13 +638,27 @@ const RideSearch = () => {
             />
           </div>
         )}
+
+        {
+          showVeilleeEmploiImage && hasSearched && (
+            <div className="my-4 w-full flex justify-center col-span-full">
+              <Image
+                src="/images/emploi.png"
+                alt="Veillée Emploi ICC Covoiturage"
+                width={1200}
+                height={630}
+                className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+              />
+            </div>
+          )
+        }
         {showSpecialEventImage && hasSearched && (
           <div className="my-4 w-full flex justify-center col-span-full">
             <Image
               src="/images/royale.png"
               alt="Événement spécial ICC Covoiturage"
-              width={1200} // Ajout de la largeur
-              height={630} // Ajout de la hauteur
+              width={1200} 
+              height={630} 
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
             />
           </div>

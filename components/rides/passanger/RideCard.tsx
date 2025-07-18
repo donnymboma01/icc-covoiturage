@@ -51,7 +51,7 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4">
         <Avatar className="h-12 w-12">
           <AvatarImage
-            src={driver.profilePicture || "/default-avatar.png"}
+            src={driver.profilePicture || ""}
             alt={driver.fullName}
           />
         </Avatar>
