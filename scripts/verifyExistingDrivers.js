@@ -2,7 +2,7 @@
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, getDocs, doc, setDoc } = require('firebase/firestore');
 
-// Configuration Firebase (à remplacer par vos propres valeurs)
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -20,19 +20,19 @@ async function verifyExistingDrivers() {
   try {
     console.log('Début de la vérification des conducteurs existants...');
     
-    // Récupérer tous les utilisateurs qui sont conducteurs
+
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('isDriver', '==', true));
     const querySnapshot = await getDocs(q);
     
     console.log(`Nombre de conducteurs trouvés: ${querySnapshot.size}`);
     
-    // Pour chaque conducteur, créer ou mettre à jour son document de vérification
+
     let count = 0;
     for (const userDoc of querySnapshot.docs) {
       const userId = userDoc.id;
       
-      // Créer un document de vérification pour ce conducteur
+
       await setDoc(doc(db, 'driverVerifications', userId), {
         isVerified: true,
         verifiedAt: new Date(),
@@ -49,7 +49,6 @@ async function verifyExistingDrivers() {
   }
 }
 
-// Exécuter le script
 verifyExistingDrivers()
   .then(() => {
     console.log('Script terminé avec succès.');
