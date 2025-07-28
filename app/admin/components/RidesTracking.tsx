@@ -19,18 +19,18 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { 
-    getFirestore, 
-    collection, 
+import {
+    getFirestore,
+    collection,
     query,
-     where, 
-     getDocs, 
-     Timestamp, 
-     getDoc, 
-     doc as firestoreDoc, 
-     QueryDocumentSnapshot, 
-     DocumentData 
-    } 
+    where,
+    getDocs,
+    Timestamp,
+    getDoc,
+    doc as firestoreDoc,
+    QueryDocumentSnapshot,
+    DocumentData
+}
     from 'firebase/firestore';
 import { app } from '@/app/config/firebase-config';
 
@@ -180,25 +180,6 @@ const RidesTracking = () => {
         <div className="p-2 sm:p-4 space-y-4 sm:space-y-6">
             <h2 className="text-xl sm:text-2xl font-bold">Suivi des Trajets</h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <Card className="p-3 sm:p-4">
-                    <h3 className="text-sm font-semibold">Total des trajets</h3>
-                    <p className="text-xl sm:text-2xl">{stats.totalRides}</p>
-                </Card>
-                <Card className="p-3 sm:p-4">
-                    <h3 className="text-sm font-semibold">Trajets actifs</h3>
-                    <p className="text-xl sm:text-2xl">{stats.activeRides}</p>
-                </Card>
-                <Card className="p-3 sm:p-4">
-                    <h3 className="text-sm font-semibold">Places offertes</h3>
-                    <p className="text-xl sm:text-2xl">{stats.totalSeatsOffered}</p>
-                </Card>
-                <Card className="p-3 sm:p-4">
-                    <h3 className="text-sm font-semibold">Places réservées</h3>
-                    <p className="text-xl sm:text-2xl">{stats.totalSeatsBooked}</p>
-                </Card>
-            </div>
-
             <div className="flex flex-col space-y-3">
                 <Input
                     placeholder="Rechercher un trajet..."
@@ -294,3 +275,23 @@ const RidesTracking = () => {
 };
 
 export default RidesTracking;
+
+
+{/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <Card className="p-3 sm:p-4">
+        <h3 className="text-sm font-semibold">Total des trajets</h3>
+        <p className="text-xl sm:text-2xl">{stats.totalRides}</p>
+    </Card>
+    <Card className="p-3 sm:p-4">
+        <h3 className="text-sm font-semibold">Trajets actifs</h3>
+        <p className="text-xl sm:text-2xl">{stats.activeRides}</p>
+    </Card>
+    <Card className="p-3 sm:p-4">
+        <h3 className="text-sm font-semibold">Places offertes</h3>
+        <p className="text-xl sm:text-2xl">{stats.totalSeatsOffered}</p>
+    </Card>
+    <Card className="p-3 sm:p-4">
+        <h3 className="text-sm font-semibold">Places réservées</h3>
+        <p className="text-xl sm:text-2xl">{stats.totalSeatsBooked}</p>
+    </Card>
+</div> */}
