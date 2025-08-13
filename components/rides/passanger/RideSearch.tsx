@@ -109,6 +109,7 @@ const RideSearch = () => {
   const [showDimancheImage, setShowDimancheImage] = useState(false);
   const [showFemmesBeneluxImage, setShowFemmesBeneluxImage] = useState(false);
   const [showVeilleeEmploiImage, setShowVeilleeEmploiImage] = useState(false);
+  const [showBelgiumTourImage, setShowBelgiumTourImage] = useState(false);
 
   const { user } = useAuth();
 
@@ -205,6 +206,8 @@ const RideSearch = () => {
     const femmesBeneluxStart = new Date(2025, 8, 26); // 26 septembre 2025
     const femmesBeneluxEnd = new Date(2025, 8, 28);   // 28 septembre 2025
     const veilleeEmploiDate = new Date(2025, 6, 18); // 18 Juillet 2025
+    const belgiumTourStart = new Date(2025, 7, 29); // 29 août 2025
+    const belgiumTourEnd = new Date(2025, 7, 30); // 30 août 2025
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -219,6 +222,8 @@ const RideSearch = () => {
     const normalizedFemmesBeneluxStart = normalizeDate(femmesBeneluxStart);
     const normalizedFemmesBeneluxEnd = normalizeDate(femmesBeneluxEnd);
     const normalizedVeilleeEmploiDate = normalizeDate(veilleeEmploiDate);
+    const normalizedBelgiumTourStart = normalizeDate(belgiumTourStart);
+    const normalizedBelgiumTourEnd = normalizeDate(belgiumTourEnd);
 
     if (
       normalizedSearchDate >= normalizedStartDate &&
@@ -250,6 +255,11 @@ const RideSearch = () => {
       setShowFemmesBeneluxImage(false);
     }
 
+    if (normalizedSearchDate >= normalizedBelgiumTourStart && normalizedSearchDate <= normalizedBelgiumTourEnd) {
+      setShowBelgiumTourImage(true);
+    } else {
+      setShowBelgiumTourImage(false);
+    }
 
     try {
       const startOfDay = new Date(currentSearchParams.date);
@@ -627,10 +637,11 @@ const RideSearch = () => {
             />
           </div>
         )}
-        {showDimancheImage && hasSearched && (
+
+        {showBelgiumTourImage && hasSearched && (
           <div className="my-4 w-full flex justify-center col-span-full">
             <Image
-              src="/images/dimanche.png"
+              src="/images/belgiumtour.png"
               alt="Dimanche spécial ICC Covoiturage"
               width={1200}
               height={630}
@@ -657,8 +668,8 @@ const RideSearch = () => {
             <Image
               src="/images/royale.png"
               alt="Événement spécial ICC Covoiturage"
-              width={1200} 
-              height={630} 
+              width={1200}
+              height={630}
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
             />
           </div>

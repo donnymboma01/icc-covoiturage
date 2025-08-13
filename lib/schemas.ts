@@ -101,11 +101,18 @@ export const RegisterSchema = z
       if (!data.vehicle) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Les informations du véhicule sont requises pour les conducteurs",
+          message:
+            "Les informations du véhicule sont requises pour les conducteurs",
           path: ["vehicle"],
         });
       } else {
-        if (!data.vehicle.brand || !data.vehicle.model || !data.vehicle.color || !data.vehicle.seats || !data.vehicle.licensePlate) {
+        if (
+          !data.vehicle.brand ||
+          !data.vehicle.model ||
+          !data.vehicle.color ||
+          !data.vehicle.seats ||
+          !data.vehicle.licensePlate
+        ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: "Toutes les informations du véhicule sont requises",
