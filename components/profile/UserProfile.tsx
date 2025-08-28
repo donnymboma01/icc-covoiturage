@@ -265,29 +265,37 @@ const UserProfile = ({
         return;
       }
 
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (!("Notification" in window)) {
+        toast.error("Votre navigateur ne supporte pas les notifications");
+        return;
+      }
 
-      if (isMobile) {
-        const newToken = await requestPermission();
-        console.log("Mobile FCM Token:", newToken);
+      if (!("serviceWorker" in navigator)) {
+        toast.error("Votre navigateur ne supporte pas les notifications push");
+        return;
+      }
 
-        if (newToken && user?.uid) {
-          await onUpdateUser({ fcmToken: newToken });
-          setNotificationsEnabled(true);
-          toast.success("Notifications activées");
+      console.log("Début de l'activation des notifications...");
+      const newToken = await requestPermission();
+      console.log("Token reçu:", newToken);
+
+      if (newToken && user?.uid) {
+        await onUpdateUser({ fcmToken: newToken });
+        setNotificationsEnabled(true);
+        toast.success("🔔 Notifications activées avec succès !");
+        
+        if (Notification.permission === "granted") {
+          new Notification("Notifications activées !", {
+            body: "Vous recevrez maintenant les notifications de covoiturage",
+            icon: "/icon-192x192.png"
+          });
         }
       } else {
-        const newToken = await requestPermission();
-        console.log("Desktop FCM Token:", newToken);
-
-        if (newToken && user?.uid) {
-          await onUpdateUser({ fcmToken: newToken });
-          setNotificationsEnabled(true);
-          toast.success("Notifications activées");
-        }
+        toast.error("Impossible d'activer les notifications. Vérifiez vos paramètres de navigateur.");
       }
     } catch (error) {
       console.error("Erreur notifications:", error);
+      toast.error("Erreur lors de l'activation des notifications");
     }
   };
 
@@ -323,7 +331,6 @@ const UserProfile = ({
         isActive: true,
       });
 
-      // Générer et stocker un code de vérification pour le conducteur
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       await setDoc(doc(db, "driverVerifications", user?.uid || ""), {
         userId: user?.uid,
@@ -332,10 +339,8 @@ const UserProfile = ({
         createdAt: new Date()
       });
 
-      // Stocker l'ID de l'utilisateur dans un cookie pour la page de vérification
       document.cookie = `pendingDriverId=${user?.uid}; path=/; max-age=86400; SameSite=Strict`;
 
-      // Envoyer le code de vérification par email
       const emailResponse = await fetch("/api/send-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -351,7 +356,6 @@ const UserProfile = ({
 
       toast.success("Vous êtes maintenant conducteur ! Veuillez vérifier votre email pour activer votre compte.");
 
-      // Rediriger vers la page de vérification
       window.location.href = "/verify-driver";
     } catch (error) {
       console.error("Erreur en passant à l'état de conducteur :", error);
@@ -404,27 +408,6 @@ const UserProfile = ({
               <span className="hidden sm:inline">Signaler problème</span>
             </Button>
           </div>
-
-
-          {/* <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-2">
-            <Button
-              variant="ghost"
-              className="text-white"
-              onClick={() => setShowFeedbackModal(true)}
-            >
-              <MdFlag className="mr-2" />
-              <span className="sm:hidden">Signaler</span>
-              <span className="hidden sm:inline">Signaler problème</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="text-white flex flex-col items-center"
-              onClick={() => setIsEditing(true)}
-            >
-              <FaUserEdit className="text-xl mb-1" />
-              <span className="text-xs">Modifier</span>
-            </Button>
-          </div> */}
 
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
             <div className="relative">

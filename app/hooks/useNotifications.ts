@@ -25,43 +25,45 @@ export const useNotifications = () => {
     try {
       console.log("Starting FCM permission request");
 
-      // Special handling for iOS
-      if (isIOSDevice()) {
-        const messaging = getMessaging(app);
-        const currentToken = await getToken(messaging, {
-          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-        });
-
-        if (currentToken) {
-          console.log("iOS FCM token obtained:", currentToken);
-          setToken(currentToken);
-          setIsEnabled(true);
-          return currentToken;
-        }
+      if (!("Notification" in window)) {
+        console.error("Ce navigateur ne supporte pas les notifications");
         return null;
       }
 
-      if ("serviceWorker" in navigator) {
-        const registration = await navigator.serviceWorker.register(
-          "/firebase-messaging-sw.js"
-        );
-        console.log("Service Worker registered", registration);
-
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          const messaging = getMessaging(app);
-          const currentToken = await getToken(messaging, {
-            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-            serviceWorkerRegistration: registration,
-          });
-
-          if (currentToken) {
-            setToken(currentToken);
-            setIsEnabled(true);
-            return currentToken;
-          }
-        }
+      if (!("serviceWorker" in navigator)) {
+        console.error("Ce navigateur ne supporte pas les service workers");
+        return null;
       }
+
+      const registration = await navigator.serviceWorker.register(
+        "/firebase-messaging-sw.js"
+      );
+      console.log("Service Worker registered successfully:", registration);
+
+      await navigator.serviceWorker.ready;
+
+      const permission = await Notification.requestPermission();
+      console.log("Notification permission:", permission);
+
+      if (permission === "granted") {
+        const messaging = getMessaging(app);
+        const currentToken = await getToken(messaging, {
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
+
+        if (currentToken) {
+          console.log("FCM token obtained:", currentToken);
+          setToken(currentToken);
+          setIsEnabled(true);
+          return currentToken;
+        } else {
+          console.error("Aucun token FCM généré");
+        }
+      } else {
+        console.error("Permission de notification refusée:", permission);
+      }
+
       return null;
     } catch (error) {
       console.error("Error requesting permission:", error);

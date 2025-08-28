@@ -17,25 +17,42 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// console.log("Firebase messaging : ", messaging)
+console.log("🔥 Service Worker Firebase Messaging initialisé");
 
 messaging.onBackgroundMessage((payload) => {
   try {
-    console.log("Received background message:", payload);
-    const notificationTitle = payload.notification.title;
+    console.log("📨 Message reçu en arrière-plan:", payload);
+    
+    const notificationTitle = payload.notification?.title || "Nouvelle notification";
     const notificationOptions = {
-      body: payload.notification.body,
+      body: payload.notification?.body || "Vous avez une nouvelle notification",
       icon: "/icon-192x192.png",
-      badge: "/badge-72x72.png",
+      badge: "/icon-192x192.png",
       vibrate: [200, 100, 200],
       tag: payload.data?.tag || "default",
+      requireInteraction: true, 
+      silent: false, 
+      data: payload.data, 
     };
 
+    console.log("🔔 Affichage de la notification:", notificationTitle, notificationOptions);
+    
     return self.registration.showNotification(
       notificationTitle,
       notificationOptions
     );
   } catch (error) {
-    console.error("Erreur de visualisation de notifications :", error);
+    console.error("❌ Erreur de visualisation de notifications:", error);
   }
+});
+
+
+self.addEventListener('notificationclick', function(event) {
+  console.log('🖱️ Clic sur notification:', event.notification);
+  
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.openWindow('/')
+  );
 });
