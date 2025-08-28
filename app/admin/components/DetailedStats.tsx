@@ -47,6 +47,7 @@ interface Booking {
     status: 'pending' | 'confirmed' | 'cancelled';
     seatsBooked: number;
     specialNotes?: string;
+    driverResponseNote?: string; 
     passengerName?: string;
     driverName?: string;
     departureAddress?: string;
@@ -247,7 +248,7 @@ const DetailedStats = () => {
 
     return (
         <div className="p-3 sm:p-4 space-y-4 sm:space-y-6">
-            {/* <h2 className="text-xl sm:text-2xl font-bold">Statistiques Détaillées</h2> */}
+           
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {/* <Card className="p-3 sm:p-4">

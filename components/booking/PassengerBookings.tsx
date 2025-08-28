@@ -4,6 +4,8 @@
 import { useState, useEffect, useRef } from "react";
 import LocationSharingControl from "../rides/LocationSharingControl";
 import LocationSharingMap from "../rides/LocationSharingMap";
+import ChatWindow from "../messaging/ChatWindow";
+import UnreadMessagesIndicator from "../messaging/UnreadMessagesIndicator";
 import Image from "next/image";
 import {
   getFirestore,
@@ -60,6 +62,7 @@ interface Booking {
   bookingDate: Timestamp;
   rejectionReason?: string;
   viewed: boolean;
+  driverResponseNote?: string; // Note de réponse du conducteur au passager
 }
 
 interface Ride {
@@ -92,6 +95,20 @@ const PassengerBookings = () => {
   );
 
   const [selectedBookingForTracking, setSelectedBookingForTracking] = useState<string | null>(null);
+
+  // États pour la messagerie
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<{
+    id: string;
+    name: string;
+    avatar?: string;
+    rideId: string;
+    rideInfo?: {
+      departure: string;
+      arrival: string;
+      date: string;
+    };
+  } | null>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -179,6 +196,7 @@ const PassengerBookings = () => {
           bookingDate: data.bookingDate,
           rejectionReason: data.rejectionReason,
           viewed: data.viewed ?? false,
+          driverResponseNote: data.driverResponseNote, 
         } as Booking;
       });
 
@@ -259,6 +277,24 @@ const PassengerBookings = () => {
         }
       }, 100);
     }
+  };
+
+  const handleOpenChat = (rideId: string, driverId: string, driverName: string) => {
+    const ride = rideDetails[rideId];
+    const driver = driverDetails[driverId];
+    
+    setSelectedDriver({
+      id: driverId,
+      name: driverName,
+      avatar: driver?.profilePicture,
+      rideId: rideId,
+      rideInfo: ride ? {
+        departure: ride.departureAddress,
+        arrival: ride.arrivalAddress,
+        date: ride.departureTime.toDate().toLocaleDateString("fr-FR")
+      } : undefined
+    });
+    setIsChatOpen(true);
   };
 
   if (loading) return <div>Chargement de vos réservations...</div>;
@@ -390,7 +426,7 @@ const PassengerBookings = () => {
                         ride.meetingPointNote && (
                           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
                             <p className="text-sm font-medium text-blue-800 mb-1">
-                              <strong>Note du conducteur :</strong>
+                              <strong>Note générale du trajet :</strong>
                             </p>
                             <p className="text-sm text-blue-700 whitespace-pre-wrap">
                               {ride.meetingPointNote}
@@ -398,16 +434,39 @@ const PassengerBookings = () => {
                           </div>
                         )}
 
+                      {booking.status === "accepted" &&
+                        booking.driverResponseNote && (
+                          <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
+                            <p className="text-sm font-medium text-green-800 mb-1">
+                              <strong>Réponse personnalisée du conducteur :</strong>
+                            </p>
+                            <p className="text-sm text-green-700 whitespace-pre-wrap">
+                              {booking.driverResponseNote}
+                            </p>
+                          </div>
+                        )}
+
                       {booking.status === "accepted" && (
-                        <div className="mt-4">
-                          <Button
-                            variant="outline"
-                            onClick={() => handleToggleLocationSharing(booking.id)}
-                          >
-                            {selectedBookingForTracking === booking.id
-                              ? "Masquer la carte"
-                              : "Voir/Partager la localisation"}
-                          </Button>
+                        <div className="mt-4 space-y-2">
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleToggleLocationSharing(booking.id)}
+                            >
+                              {selectedBookingForTracking === booking.id
+                                ? "Masquer la carte"
+                                : "Voir/Partager la localisation"}
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              onClick={() => handleOpenChat(booking.rideId, ride.driverId, driver.fullName)}
+                              className="flex items-center gap-2 relative"
+                            >
+                              💬 Contacter le conducteur
+                              <UnreadMessagesIndicator />
+                            </Button>
+                          </div>
 
                           {selectedBookingForTracking === booking.id && (
                             <div className="mt-4 space-y-4" ref={mapRef}>
@@ -504,6 +563,22 @@ const PassengerBookings = () => {
             );
           })}
         </div>
+      )}
+
+      {/* Fenêtre de chat */}
+      {selectedDriver && (
+        <ChatWindow
+          isOpen={isChatOpen}
+          onClose={() => {
+            setIsChatOpen(false);
+            setSelectedDriver(null);
+          }}
+          otherUserId={selectedDriver.id}
+          otherUserName={selectedDriver.name}
+          otherUserAvatar={selectedDriver.avatar}
+          rideId={selectedDriver.rideId}
+          rideInfo={selectedDriver.rideInfo}
+        />
       )}
     </div>
   );

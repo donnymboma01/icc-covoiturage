@@ -4,6 +4,8 @@
 import { useState, useEffect, useRef } from "react";
 import LocationSharingControl from "../rides/LocationSharingControl";
 import LocationSharingMap from "../rides/LocationSharingMap";
+import ChatWindow from "../messaging/ChatWindow";
+import UnreadMessagesIndicator from "../messaging/UnreadMessagesIndicator";
 import {
   getFirestore,
   collection,
@@ -39,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { MdVerified } from "react-icons/md";
+import { sendBookingAcceptedMessage } from "@/utils/messaging-service";
 
 const REJECTION_REASONS = [
   "Horaires ne correspondent plus",
@@ -70,6 +73,7 @@ interface Booking {
   seatsBooked: number;
   specialNotes: string;
   bookingDate: Timestamp;
+  driverResponseNote?: string;
 }
 
 interface Passenger {
@@ -97,6 +101,19 @@ const DriverBookings = () => {
   const [meetingNote, setMeetingNote] = useState("");
 
   const [selectedBookingForTracking, setSelectedBookingForTracking] = useState<string | null>(null);
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedPassenger, setSelectedPassenger] = useState<{
+    id: string;
+    name: string;
+    avatar?: string;
+    rideId: string;
+    rideInfo?: {
+      departure: string;
+      arrival: string;
+      date: string;
+    };
+  } | null>(null);
 
   const [passengerDetails, setPassengerDetails] = useState<{
     [key: string]: Passenger;
@@ -289,11 +306,18 @@ const DriverBookings = () => {
       await updateDoc(doc(db, "bookings", booking.id), {
         status: "accepted",
         updatedAt: Timestamp.now(),
+        driverResponseNote: meetingNote,
       });
 
-      await updateDoc(doc(db, "rides", booking.rideId), {
-        meetingPointNote: meetingNote,
-      });
+      if (user?.uid && passengerDetails[booking.passengerId]) {
+        await sendBookingAcceptedMessage(
+          user.uid,
+          booking.passengerId,
+          booking.rideId,
+          user.fullName || "Le conducteur",
+          passengerDetails[booking.passengerId].fullName
+        );
+      }
 
       setIsAcceptDialogOpen(false);
       setMeetingNote("");
@@ -317,6 +341,24 @@ const DriverBookings = () => {
         }
       }, 100);
     }
+  };
+
+  const handleOpenChat = (rideId: string, passengerId: string, passengerName: string) => {
+    const ride = rideDetails[rideId];
+    const passenger = passengerDetails[passengerId];
+    
+    setSelectedPassenger({
+      id: passengerId,
+      name: passengerName,
+      avatar: passenger?.profilePicture,
+      rideId: rideId,
+      rideInfo: ride ? {
+        departure: ride.departureAddress,
+        arrival: ride.arrivalAddress,
+        date: ride.departureTime.toDate().toLocaleDateString("fr-FR")
+      } : undefined
+    });
+    setIsChatOpen(true);
   };
 
   if (loading) return <div>Chargement des réservations...</div>;
@@ -460,15 +502,26 @@ const DriverBookings = () => {
                       )}
 
                     {booking.status === "accepted" && (
-                      <div className="mt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => handleToggleLocationSharing(booking.id)}
-                        >
-                          {selectedBookingForTracking === booking.id
-                            ? "Masquer la carte"
-                            : "Voir/Partager la localisation"}
-                        </Button>
+                      <div className="mt-4 space-y-2">
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            variant="outline"
+                            onClick={() => handleToggleLocationSharing(booking.id)}
+                          >
+                            {selectedBookingForTracking === booking.id
+                              ? "Masquer la carte"
+                              : "Voir/Partager la localisation"}
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            onClick={() => handleOpenChat(booking.rideId, booking.passengerId, passengerDetails[booking.passengerId]?.fullName || "Passager")}
+                            className="flex items-center gap-2 relative"
+                          >
+                            💬 Contacter le passager
+                            <UnreadMessagesIndicator />
+                          </Button>
+                        </div>
 
                         {selectedBookingForTracking === booking.id && (
                           <div className="mt-4 space-y-4" ref={mapRef}>
@@ -512,6 +565,22 @@ const DriverBookings = () => {
         noteValue={meetingNote}
         onNoteChange={setMeetingNote}
       />
+
+      {/* Fenêtre de chat */}
+      {selectedPassenger && (
+        <ChatWindow
+          isOpen={isChatOpen}
+          onClose={() => {
+            setIsChatOpen(false);
+            setSelectedPassenger(null);
+          }}
+          otherUserId={selectedPassenger.id}
+          otherUserName={selectedPassenger.name}
+          otherUserAvatar={selectedPassenger.avatar}
+          rideId={selectedPassenger.rideId}
+          rideInfo={selectedPassenger.rideInfo}
+        />
+      )}
     </div>
   );
 };
@@ -572,16 +641,16 @@ const AcceptDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-foreground">Ajouter une note pour le passager</DialogTitle>
+          <DialogTitle className="text-foreground">Réponse personnalisée au passager</DialogTitle>
           <DialogDescription className="text-foreground/70">
-            Précisez le point de rencontre exact ou toute information utile pour
-            faciliter la rencontre.
+            Ajoutez une note spécifique pour ce passager (différente de la note générale du trajet).
+            Précisez des informations particulières pour faciliter la rencontre.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <textarea
             className="min-h-[100px] p-3 border rounded-md bg-background text-foreground"
-            placeholder="Ex: Je serai garé sur le parking de l'église, voiture bleue Peugeot 208. Vous pouvez me retrouver près de l'entrée principale."
+            placeholder="Ex: Pour vous, je serai 10 min en avance. Appelez-moi quand vous arrivez au parking. Attention, l'entrée principale est fermée, utilisez l'entrée côté rue Victor Hugo."
             value={noteValue}
             onChange={(e) => onNoteChange(e.target.value)}
           />

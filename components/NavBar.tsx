@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/app/hooks/useAuth";
 import { MdAdminPanelSettings } from "react-icons/md";
 import { app } from "@/app/config/firebase-config";
+import UnreadMessagesIndicator from "@/components/messaging/UnreadMessagesIndicator";
+import { markAllConversationsAsViewed } from "@/utils/messaging-service";
 import {
   signOut,
   getAuth,
@@ -32,6 +34,8 @@ import {
   MdBookmarkAdd,
   MdClose,
   MdEventSeat,
+  MdMessage,
+  MdMoreHoriz,
 } from "react-icons/md";
 import {
   collection,
@@ -51,6 +55,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import NotificationBell from "./NotificationBell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
@@ -357,127 +367,422 @@ const NavBar = () => {
   };
 
   const DriverNavigation = () => (
-    <div className="flex flex-col lg:flex-row gap-4 w-full">
-      <Link
-        href="/dashboard/driver"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
+    <>
+    
+      <div className="hidden lg:flex gap-2 w-full">
+        <Link
+          href="/dashboard/driver"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-auto"
         >
-          <MdAddRoad /> Créer un trajet
-        </Button>
-      </Link>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 whitespace-nowrap"
+          >
+            <MdAddRoad /> Créer un trajet
+          </Button>
+        </Link>
 
-      <Link
-        href="/dashboard/driver/bookings"
-        onClick={handleBookingsClick}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start relative group"
+        <Link
+          href="/dashboard/driver/bookings"
+          onClick={handleBookingsClick}
+          className="w-auto"
         >
-          <NotificationBell count={bookingsCount} hasNew={hasNewBookings} />
-          <span className="ml-2">Les demandes de trajet</span>
-        </Button>
-      </Link>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 whitespace-nowrap relative"
+          >
+            <NotificationBell count={bookingsCount} hasNew={hasNewBookings} />
+            <span className="ml-2">Demandes</span>
+          </Button>
+        </Link>
 
-      <Link
-        href="/rides/history"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
+        <Link
+          href="/messages"
+          onClick={async () => {
+            setIsDrawerOpen(false);
+            if (user?.uid) {
+              await markAllConversationsAsViewed(user.uid);
+            }
+          }}
+          className="w-auto"
         >
-          <MdHistory /> Mes trajets publiés{" "}
-          <span className="ml-1">({activeRidesCount})</span>
-        </Button>
-      </Link>
-      <Link
-        href="/dashboard/passanger"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
-        >
-          <MdBookmarkAdd /> Trouver un trajet
-        </Button>
-      </Link>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 whitespace-nowrap relative"
+          >
+            <MdMessage />
+            <span>Messages</span>
+            <UnreadMessagesIndicator variant="navigation" />
+          </Button>
+        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2 whitespace-nowrap"
+            >
+              <MdMoreHoriz /> Plus
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem asChild>
+              <Link
+                href="/rides/history"
+                onClick={() => setIsDrawerOpen(false)}
+                className="flex items-center gap-2 w-full"
+              >
+                <MdHistory className="h-4 w-4" />
+                <span>Mes trajets publiés ({activeRidesCount})</span>
+              </Link>
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem asChild>
+              <Link
+                href="/dashboard/passanger"
+                onClick={() => setIsDrawerOpen(false)}
+                className="flex items-center gap-2 w-full"
+              >
+                <MdBookmarkAdd className="h-4 w-4" />
+                <span>Trouver un trajet</span>
+              </Link>
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem asChild>
+              <Link
+                href="/dashboard/passanger/bookings"
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  handleViewBookings();
+                }}
+                className="flex items-center gap-2 w-full"
+              >
+                {hasNewReservationStatus ? (
+                  <NotificationBell
+                    count={newStatusCount}
+                    hasNew={true}
+                    type="reservation"
+                    status={latestReservationStatus}
+                  />
+                ) : (
+                  <MdEventSeat className="h-4 w-4" />
+                )}
+                <span>Mes réservations</span>
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
 
-      <Link
-        href="/dashboard/passanger/bookings"
-        onClick={() => {
-          setIsDrawerOpen(false);
-          handleViewBookings();
-        }}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
+      <div className="flex flex-col lg:hidden gap-4 w-full">
+        <Link
+          href="/dashboard/driver"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-full"
         >
-          {hasNewReservationStatus ? (
-            <NotificationBell
-              count={newStatusCount}
-              hasNew={true}
-              type="reservation"
-              status={latestReservationStatus}
-            />
-          ) : (
-            <MdEventSeat />
-          )}
-          Mes réservations
-        </Button>
-      </Link>
-    </div>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            <MdAddRoad /> Créer un trajet
+          </Button>
+        </Link>
+
+        <Link
+          href="/dashboard/driver/bookings"
+          onClick={handleBookingsClick}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start relative group"
+          >
+            <NotificationBell count={bookingsCount} hasNew={hasNewBookings} />
+            <span className="ml-2">Les demandes de trajet</span>
+          </Button>
+        </Link>
+
+        <Link
+          href="/messages"
+          onClick={async () => {
+            setIsDrawerOpen(false);
+            if (user?.uid) {
+              await markAllConversationsAsViewed(user.uid);
+            }
+          }}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start relative"
+          >
+            <MdMessage />
+            <span>Messages</span>
+            <UnreadMessagesIndicator variant="navigation" />
+          </Button>
+        </Link>
+
+        <Link
+          href="/rides/history"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            <MdHistory /> Mes trajets publiés{" "}
+            <span className="ml-1">({activeRidesCount})</span>
+          </Button>
+        </Link>
+
+        <Link
+          href="/dashboard/passanger"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            <MdBookmarkAdd /> Trouver un trajet
+          </Button>
+        </Link>
+
+        <Link
+          href="/dashboard/passanger/bookings"
+          onClick={() => {
+            setIsDrawerOpen(false);
+            handleViewBookings();
+          }}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            {hasNewReservationStatus ? (
+              <NotificationBell
+                count={newStatusCount}
+                hasNew={true}
+                type="reservation"
+                status={latestReservationStatus}
+              />
+            ) : (
+              <MdEventSeat />
+            )}
+            Mes réservations
+          </Button>
+        </Link>
+      </div>
+    </>
   );
 
   const PassengerNavigation = () => (
-    <div className="flex flex-col lg:flex-row gap-4 w-full">
-      <Link
-        href="/dashboard/passanger"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
+    <>
+      <div className="hidden lg:flex gap-2 w-full">
+        <Link
+          href="/dashboard/passanger"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-auto"
         >
-          <MdBookmarkAdd /> Trouver un trajet
-        </Button>
-      </Link>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 whitespace-nowrap"
+          >
+            <MdBookmarkAdd /> Trouver un trajet
+          </Button>
+        </Link>
 
-      <Link
-        href="/dashboard/passanger/bookings"
-        onClick={() => setIsDrawerOpen(false)}
-        className="w-full"
-      >
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2 w-full justify-start"
+        <Link
+          href="/dashboard/passanger/bookings"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-auto"
         >
-          {hasNewReservationStatus ? (
-            <NotificationBell
-              count={newStatusCount}
-              hasNew={true}
-              type="reservation"
-              status={latestReservationStatus}
-            />
-          ) : (
-            <MdEventSeat />
-          )}
-          Mes réservations
-        </Button>
-      </Link>
-    </div>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 whitespace-nowrap"
+          >
+            {hasNewReservationStatus ? (
+              <NotificationBell
+                count={newStatusCount}
+                hasNew={true}
+                type="reservation"
+                status={latestReservationStatus}
+              />
+            ) : (
+              <MdEventSeat />
+            )}
+            Mes réservations
+          </Button>
+        </Link>
+
+        <Link
+          href="/messages"
+          onClick={async () => {
+            setIsDrawerOpen(false);
+            if (user?.uid) {
+              await markAllConversationsAsViewed(user.uid);
+            }
+          }}
+          className="w-auto"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 whitespace-nowrap relative"
+          >
+            <MdMessage />
+            <span>Messages</span>
+            <UnreadMessagesIndicator variant="navigation" />
+          </Button>
+        </Link>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2 whitespace-nowrap"
+            >
+              <MdMoreHoriz /> Plus
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem asChild>
+              <Link
+                href="/dashboard/driver"
+                onClick={() => setIsDrawerOpen(false)}
+                className="flex items-center gap-2 w-full"
+              >
+                <MdAddRoad className="h-4 w-4" />
+                <span>Créer un trajet</span>
+              </Link>
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem asChild>
+              <Link
+                href="/dashboard/driver/bookings"
+                onClick={handleBookingsClick}
+                className="flex items-center gap-2 w-full"
+              >
+                <NotificationBell count={bookingsCount} hasNew={hasNewBookings} />
+                <span className="ml-2">Demandes de trajet</span>
+              </Link>
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem asChild>
+              <Link
+                href="/rides/history"
+                onClick={() => setIsDrawerOpen(false)}
+                className="flex items-center gap-2 w-full"
+              >
+                <MdHistory className="h-4 w-4" />
+                <span>Mes trajets publiés ({activeRidesCount})</span>
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="flex flex-col lg:hidden gap-4 w-full">
+        <Link
+          href="/dashboard/passanger"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            <MdBookmarkAdd /> Trouver un trajet
+          </Button>
+        </Link>
+
+        <Link
+          href="/dashboard/passanger/bookings"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            {hasNewReservationStatus ? (
+              <NotificationBell
+                count={newStatusCount}
+                hasNew={true}
+                type="reservation"
+                status={latestReservationStatus}
+              />
+            ) : (
+              <MdEventSeat />
+            )}
+            Mes réservations
+          </Button>
+        </Link>
+
+        <Link
+          href="/messages"
+          onClick={async () => {
+            setIsDrawerOpen(false);
+            if (user?.uid) {
+              await markAllConversationsAsViewed(user.uid);
+            }
+          }}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start relative"
+          >
+            <MdMessage />
+            <span>Messages</span>
+            <UnreadMessagesIndicator variant="navigation" />
+          </Button>
+        </Link>
+
+        <Link
+          href="/dashboard/driver"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            <MdAddRoad /> Créer un trajet
+          </Button>
+        </Link>
+
+        <Link
+          href="/dashboard/driver/bookings"
+          onClick={handleBookingsClick}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start relative"
+          >
+            <NotificationBell count={bookingsCount} hasNew={hasNewBookings} />
+            <span className="ml-2">Les demandes de trajet</span>
+          </Button>
+        </Link>
+
+        <Link
+          href="/rides/history"
+          onClick={() => setIsDrawerOpen(false)}
+          className="w-full"
+        >
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 w-full justify-start"
+          >
+            <MdHistory /> Mes trajets publiés{" "}
+            <span className="ml-1">({activeRidesCount})</span>
+          </Button>
+        </Link>
+      </div>
+    </>
   );
 
   const MobileDrawer = () => (
