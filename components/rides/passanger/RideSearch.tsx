@@ -73,7 +73,7 @@ const getDriverData = async (driverId: string): Promise<Driver> => {
 
   const driverData = driverSnap.docs[0]?.data() as Driver;
 
-  // Vérifier si le conducteur est vérifié
+
   const verificationSnap = await getDoc(doc(db, "driverVerifications", driverId));
   if (verificationSnap.exists()) {
     const verificationData = verificationSnap.data();
@@ -110,6 +110,7 @@ const RideSearch = () => {
   const [showFemmesBeneluxImage, setShowFemmesBeneluxImage] = useState(false);
   const [showVeilleeEmploiImage, setShowVeilleeEmploiImage] = useState(false);
   const [showBelgiumTourImage, setShowBelgiumTourImage] = useState(false);
+  const [showGdrsImage, setShowGdrsImage] = useState(false);
 
   const { user } = useAuth();
 
@@ -208,6 +209,7 @@ const RideSearch = () => {
     const veilleeEmploiDate = new Date(2025, 6, 18); // 18 Juillet 2025
     const belgiumTourStart = new Date(2025, 7, 29); // 29 août 2025
     const belgiumTourEnd = new Date(2025, 7, 30); // 30 août 2025
+    const gdrsDate = new Date(2025, 9, 11); // 11 octobre 2025 (samedi)
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -224,6 +226,7 @@ const RideSearch = () => {
     const normalizedVeilleeEmploiDate = normalizeDate(veilleeEmploiDate);
     const normalizedBelgiumTourStart = normalizeDate(belgiumTourStart);
     const normalizedBelgiumTourEnd = normalizeDate(belgiumTourEnd);
+    const normalizedGdrsDate = normalizeDate(gdrsDate);
 
     if (
       normalizedSearchDate >= normalizedStartDate &&
@@ -259,6 +262,12 @@ const RideSearch = () => {
       setShowBelgiumTourImage(true);
     } else {
       setShowBelgiumTourImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedGdrsDate.getTime()) {
+      setShowGdrsImage(true);
+    } else {
+      setShowGdrsImage(false);
     }
 
     try {
@@ -539,6 +548,14 @@ const RideSearch = () => {
                       date.getDate() <= 28
                     );
                   },
+                  gdrs: (date) => {
+                    // 11 octobre 2025 (samedi)
+                    return (
+                      date.getFullYear() === 2025 &&
+                      date.getMonth() === 9 &&
+                      date.getDate() === 11
+                    );
+                  },
                   selected: (date) =>
                     date.getDate() === searchParams.date.getDate() &&
                     date.getMonth() === searchParams.date.getMonth() &&
@@ -552,6 +569,11 @@ const RideSearch = () => {
                     borderRadius: "9999px",
                   },
                   femmesBenelux: {
+                    backgroundColor: "#bae6fd",
+                    color: "#0369a1",
+                    borderRadius: "9999px",
+                  },
+                  gdrs: {
                     backgroundColor: "#bae6fd",
                     color: "#0369a1",
                     borderRadius: "9999px",
@@ -643,6 +665,18 @@ const RideSearch = () => {
             <Image
               src="/images/belgiumtour.png"
               alt="Dimanche spécial ICC Covoiturage"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showGdrsImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/gdrs.png"
+              alt="Événement GDRS ICC Covoiturage - 11 octobre 2025"
               width={1200}
               height={630}
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
