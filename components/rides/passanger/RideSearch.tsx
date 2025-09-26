@@ -540,6 +540,17 @@ const RideSearch = () => {
                     );
                   },
                   femmesBenelux: (date) => {
+                    // Vérifier d'abord s'il y a des trajets disponibles
+                    const hasAvailableRides = availableDates.some(
+                      (availableDate) =>
+                        date.getDate() === availableDate.getDate() &&
+                        date.getMonth() === availableDate.getMonth() &&
+                        date.getFullYear() === availableDate.getFullYear()
+                    );
+                    
+                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+                    if (hasAvailableRides) return false;
+                    
                     // 26-28 septembre 2025
                     return (
                       date.getFullYear() === 2025 &&
@@ -549,6 +560,17 @@ const RideSearch = () => {
                     );
                   },
                   gdrs: (date) => {
+                    // Vérifier d'abord s'il y a des trajets disponibles
+                    const hasAvailableRides = availableDates.some(
+                      (availableDate) =>
+                        date.getDate() === availableDate.getDate() &&
+                        date.getMonth() === availableDate.getMonth() &&
+                        date.getFullYear() === availableDate.getFullYear()
+                    );
+                    
+                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+                    if (hasAvailableRides) return false;
+                    
                     // 11 octobre 2025 (samedi)
                     return (
                       date.getFullYear() === 2025 &&
