@@ -111,6 +111,9 @@ const RideSearch = () => {
   const [showVeilleeEmploiImage, setShowVeilleeEmploiImage] = useState(false);
   const [showBelgiumTourImage, setShowBelgiumTourImage] = useState(false);
   const [showGdrsImage, setShowGdrsImage] = useState(false);
+  const [showKhayilImage, setShowKhayilImage] = useState(false);
+  const [showDaghewardImage, setShowDaghewardImage] = useState(false);
+  const [showCampHommeImage, setShowCampHommeImage] = useState(false);
 
   const { user } = useAuth();
 
@@ -210,6 +213,12 @@ const RideSearch = () => {
     const belgiumTourStart = new Date(2025, 7, 29); // 29 août 2025
     const belgiumTourEnd = new Date(2025, 7, 30); // 30 août 2025
     const gdrsDate = new Date(2025, 9, 11); // 11 octobre 2025 (samedi)
+    const khayilStart = new Date(2025, 9, 22); // 22 octobre 2025
+    const khayilEnd = new Date(2025, 9, 26); // 26 octobre 2025
+    const daghewardStart = new Date(2025, 9, 26); // 26 octobre 2025
+    const daghewardEnd = new Date(2025, 9, 28); // 28 octobre 2025
+    const campHommeStart = new Date(2025, 10, 7); // 7 novembre 2025
+    const campHommeEnd = new Date(2025, 10, 8); // 8 novembre 2025
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -227,6 +236,12 @@ const RideSearch = () => {
     const normalizedBelgiumTourStart = normalizeDate(belgiumTourStart);
     const normalizedBelgiumTourEnd = normalizeDate(belgiumTourEnd);
     const normalizedGdrsDate = normalizeDate(gdrsDate);
+    const normalizedKhayilStart = normalizeDate(khayilStart);
+    const normalizedKhayilEnd = normalizeDate(khayilEnd);
+    const normalizedDaghewardStart = normalizeDate(daghewardStart);
+    const normalizedDaghewardEnd = normalizeDate(daghewardEnd);
+    const normalizedCampHommeStart = normalizeDate(campHommeStart);
+    const normalizedCampHommeEnd = normalizeDate(campHommeEnd);
 
     if (
       normalizedSearchDate >= normalizedStartDate &&
@@ -268,6 +283,33 @@ const RideSearch = () => {
       setShowGdrsImage(true);
     } else {
       setShowGdrsImage(false);
+    }
+
+    if (
+      normalizedSearchDate >= normalizedKhayilStart &&
+      normalizedSearchDate <= normalizedKhayilEnd
+    ) {
+      setShowKhayilImage(true);
+    } else {
+      setShowKhayilImage(false);
+    }
+
+    if (
+      normalizedSearchDate >= normalizedDaghewardStart &&
+      normalizedSearchDate <= normalizedDaghewardEnd
+    ) {
+      setShowDaghewardImage(true);
+    } else {
+      setShowDaghewardImage(false);
+    }
+
+    if (
+      normalizedSearchDate >= normalizedCampHommeStart &&
+      normalizedSearchDate <= normalizedCampHommeEnd
+    ) {
+      setShowCampHommeImage(true);
+    } else {
+      setShowCampHommeImage(false);
     }
 
     try {
@@ -567,15 +609,72 @@ const RideSearch = () => {
                         date.getMonth() === availableDate.getMonth() &&
                         date.getFullYear() === availableDate.getFullYear()
                     );
-                    
-                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+               
                     if (hasAvailableRides) return false;
-                    
-                    // 11 octobre 2025 (samedi)
                     return (
                       date.getFullYear() === 2025 &&
                       date.getMonth() === 9 &&
                       date.getDate() === 11
+                    );
+                  },
+                  khayil: (date) => {
+                    // Vérifier d'abord s'il y a des trajets disponibles
+                    const hasAvailableRides = availableDates.some(
+                      (availableDate) =>
+                        date.getDate() === availableDate.getDate() &&
+                        date.getMonth() === availableDate.getMonth() &&
+                        date.getFullYear() === availableDate.getFullYear()
+                    );
+                    
+                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+                    if (hasAvailableRides) return false;
+                    
+                    // 22-26 octobre 2025
+                    return (
+                      date.getFullYear() === 2025 &&
+                      date.getMonth() === 9 &&
+                      date.getDate() >= 22 &&
+                      date.getDate() <= 26
+                    );
+                  },
+                  dagheward: (date) => {
+                    // Vérifier d'abord s'il y a des trajets disponibles
+                    const hasAvailableRides = availableDates.some(
+                      (availableDate) =>
+                        date.getDate() === availableDate.getDate() &&
+                        date.getMonth() === availableDate.getMonth() &&
+                        date.getFullYear() === availableDate.getFullYear()
+                    );
+                    
+                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+                    if (hasAvailableRides) return false;
+                    
+                    // 26-28 octobre 2025
+                    return (
+                      date.getFullYear() === 2025 &&
+                      date.getMonth() === 9 &&
+                      date.getDate() >= 26 &&
+                      date.getDate() <= 28
+                    );
+                  },
+                  campHomme: (date) => {
+                    // Vérifier d'abord s'il y a des trajets disponibles
+                    const hasAvailableRides = availableDates.some(
+                      (availableDate) =>
+                        date.getDate() === availableDate.getDate() &&
+                        date.getMonth() === availableDate.getMonth() &&
+                        date.getFullYear() === availableDate.getFullYear()
+                    );
+                    
+                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+                    if (hasAvailableRides) return false;
+                    
+                    // 7-8 novembre 2025
+                    return (
+                      date.getFullYear() === 2025 &&
+                      date.getMonth() === 10 &&
+                      date.getDate() >= 7 &&
+                      date.getDate() <= 8
                     );
                   },
                   selected: (date) =>
@@ -596,6 +695,21 @@ const RideSearch = () => {
                     borderRadius: "9999px",
                   },
                   gdrs: {
+                    backgroundColor: "#bae6fd",
+                    color: "#0369a1",
+                    borderRadius: "9999px",
+                  },
+                  khayil: {
+                    backgroundColor: "#bae6fd",
+                    color: "#0369a1",
+                    borderRadius: "9999px",
+                  },
+                  dagheward: {
+                    backgroundColor: "#bae6fd",
+                    color: "#0369a1",
+                    borderRadius: "9999px",
+                  },
+                  campHomme: {
                     backgroundColor: "#bae6fd",
                     color: "#0369a1",
                     borderRadius: "9999px",
@@ -699,6 +813,42 @@ const RideSearch = () => {
             <Image
               src="/images/gdrs.png"
               alt="Événement GDRS ICC Covoiturage - 11 octobre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showKhayilImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/khayil.png"
+              alt="Événement Khayil ICC Covoiturage - 22-26 octobre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showDaghewardImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/dagheward.png"
+              alt="Événement Dagheward ICC Covoiturage - 26-28 octobre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showCampHommeImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/camphomme.png"
+              alt="Camp Homme ICC Covoiturage - 7-8 novembre 2025"
               width={1200}
               height={630}
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
