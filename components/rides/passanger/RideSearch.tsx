@@ -114,6 +114,11 @@ const RideSearch = () => {
   const [showKhayilImage, setShowKhayilImage] = useState(false);
   const [showDaghewardImage, setShowDaghewardImage] = useState(false);
   const [showCampHommeImage, setShowCampHommeImage] = useState(false);
+  const [showEjpAvengersImage, setShowEjpAvengersImage] = useState(false);
+  const [showEjpLoickImage, setShowEjpLoickImage] = useState(false);
+  const [showEjpPierreImage, setShowEjpPierreImage] = useState(false);
+  const [showEjpSamuelImage, setShowEjpSamuelImage] = useState(false);
+  const [showEjpTeddyImage, setShowEjpTeddyImage] = useState(false);
 
   const { user } = useAuth();
 
@@ -155,7 +160,7 @@ const RideSearch = () => {
       );
 
       const querySnapshot = await getDocs(q);
-      console.log("Trajets disponibles trouvés:", querySnapshot.size); // Debug
+      console.log("Trajets disponibles trouvés:", querySnapshot.size); 
 
       const dates = querySnapshot.docs.map((doc) => {
         const rideData = doc.data();
@@ -219,6 +224,11 @@ const RideSearch = () => {
     const daghewardEnd = new Date(2025, 9, 28); // 28 octobre 2025
     const campHommeStart = new Date(2025, 10, 7); // 7 novembre 2025
     const campHommeEnd = new Date(2025, 10, 8); // 8 novembre 2025
+    const ejpAvengersDate = new Date(2025, 10, 12); // 12 novembre 2025 (mercredi)
+    const ejpLoickDate = new Date(2025, 10, 13); // 13 novembre 2025 (jeudi)
+    const ejpPierreDate = new Date(2025, 10, 14); // 14 novembre 2025 (vendredi)
+    const ejpSamuelDate = new Date(2025, 10, 15); // 15 novembre 2025 (samedi)
+    const ejpTeddyDate = new Date(2025, 10, 16); // 16 novembre 2025 (dimanche)
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -242,6 +252,11 @@ const RideSearch = () => {
     const normalizedDaghewardEnd = normalizeDate(daghewardEnd);
     const normalizedCampHommeStart = normalizeDate(campHommeStart);
     const normalizedCampHommeEnd = normalizeDate(campHommeEnd);
+    const normalizedEjpAvengersDate = normalizeDate(ejpAvengersDate);
+    const normalizedEjpLoickDate = normalizeDate(ejpLoickDate);
+    const normalizedEjpPierreDate = normalizeDate(ejpPierreDate);
+    const normalizedEjpSamuelDate = normalizeDate(ejpSamuelDate);
+    const normalizedEjpTeddyDate = normalizeDate(ejpTeddyDate);
 
     if (
       normalizedSearchDate >= normalizedStartDate &&
@@ -310,6 +325,36 @@ const RideSearch = () => {
       setShowCampHommeImage(true);
     } else {
       setShowCampHommeImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedEjpAvengersDate.getTime()) {
+      setShowEjpAvengersImage(true);
+    } else {
+      setShowEjpAvengersImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedEjpLoickDate.getTime()) {
+      setShowEjpLoickImage(true);
+    } else {
+      setShowEjpLoickImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedEjpPierreDate.getTime()) {
+      setShowEjpPierreImage(true);
+    } else {
+      setShowEjpPierreImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedEjpSamuelDate.getTime()) {
+      setShowEjpSamuelImage(true);
+    } else {
+      setShowEjpSamuelImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedEjpTeddyDate.getTime()) {
+      setShowEjpTeddyImage(true);
+    } else {
+      setShowEjpTeddyImage(false);
     }
 
     try {
@@ -677,6 +722,26 @@ const RideSearch = () => {
                       date.getDate() <= 8
                     );
                   },
+                  ejpWeek: (date) => {
+                    // Vérifier d'abord s'il y a des trajets disponibles
+                    const hasAvailableRides = availableDates.some(
+                      (availableDate) =>
+                        date.getDate() === availableDate.getDate() &&
+                        date.getMonth() === availableDate.getMonth() &&
+                        date.getFullYear() === availableDate.getFullYear()
+                    );
+                    
+                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+                    if (hasAvailableRides) return false;
+                    
+                    // 12-16 novembre 2025
+                    return (
+                      date.getFullYear() === 2025 &&
+                      date.getMonth() === 10 &&
+                      date.getDate() >= 12 &&
+                      date.getDate() <= 16
+                    );
+                  },
                   selected: (date) =>
                     date.getDate() === searchParams.date.getDate() &&
                     date.getMonth() === searchParams.date.getMonth() &&
@@ -710,6 +775,11 @@ const RideSearch = () => {
                     borderRadius: "9999px",
                   },
                   campHomme: {
+                    backgroundColor: "#bae6fd",
+                    color: "#0369a1",
+                    borderRadius: "9999px",
+                  },
+                  ejpWeek: {
                     backgroundColor: "#bae6fd",
                     color: "#0369a1",
                     borderRadius: "9999px",
@@ -849,6 +919,66 @@ const RideSearch = () => {
             <Image
               src="/images/camphomme.png"
               alt="Camp Homme ICC Covoiturage - 7-8 novembre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showEjpAvengersImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/ejp/avengers.png"
+              alt="EJP Avengers ICC Covoiturage - 12 novembre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showEjpLoickImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/ejp/loick.png"
+              alt="EJP Loick ICC Covoiturage - 13 novembre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showEjpPierreImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/ejp/pierre.png"
+              alt="EJP Pierre ICC Covoiturage - 14 novembre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showEjpSamuelImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/ejp/samuel.png"
+              alt="EJP Samuel ICC Covoiturage - 15 novembre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showEjpTeddyImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/ejp/teddy.png"
+              alt="EJP Teddy ICC Covoiturage - 16 novembre 2025"
               width={1200}
               height={630}
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
