@@ -120,29 +120,6 @@ const CreateRideForm = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
-  // const loadVehicleData = async () => {
-  //   if (!user?.uid) return;
-
-  //   try {
-  //     const vehicleQuery = query(
-  //       collection(db, "vehicles"),
-  //       where("userId", "==", user.uid),
-  //       where("isActive", "==", true)
-  //     );
-  //     const vehicleSnapshot = await getDocs(vehicleQuery);
-
-  //     if (!vehicleSnapshot.empty) {
-  //       const vehicleData = vehicleSnapshot.docs[0].data() as Vehicle;
-  //       setVehicleSeats(vehicleData.seats);
-  //     }
-  //   } catch (error) {
-  //     console.error("Erreur lors du chargement du véhicule:", error);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   loadVehicleData();
-  // }, [user]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -262,7 +239,7 @@ const CreateRideForm = () => {
         {[
           { id: "culte", label: "Culte du dimanche", icon: "🙏" },
           { id: "priere", label: "Réunion de prière", icon: "✝️" },
-          { id: "evenement", label: "Semaine Royale", icon: "🎉" },
+          { id: "evenement", label: "Nuit de la traversée", icon: "🎆🎇" },
           { id: "autre", label: "Autre", icon: "📌" },
         ].map((service) => (
           <div
