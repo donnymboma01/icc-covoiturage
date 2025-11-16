@@ -119,6 +119,7 @@ const RideSearch = () => {
   const [showEjpPierreImage, setShowEjpPierreImage] = useState(false);
   const [showEjpSamuelImage, setShowEjpSamuelImage] = useState(false);
   const [showEjpTeddyImage, setShowEjpTeddyImage] = useState(false);
+  const [showNt2026Image, setShowNt2026Image] = useState(false);
 
   const { user } = useAuth();
 
@@ -229,6 +230,7 @@ const RideSearch = () => {
     const ejpPierreDate = new Date(2025, 10, 14); // 14 novembre 2025 (vendredi)
     const ejpSamuelDate = new Date(2025, 10, 15); // 15 novembre 2025 (samedi)
     const ejpTeddyDate = new Date(2025, 10, 16); // 16 novembre 2025 (dimanche)
+    const nt2026Date = new Date(2025, 11, 31); // 31 décembre 2025
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -257,6 +259,7 @@ const RideSearch = () => {
     const normalizedEjpPierreDate = normalizeDate(ejpPierreDate);
     const normalizedEjpSamuelDate = normalizeDate(ejpSamuelDate);
     const normalizedEjpTeddyDate = normalizeDate(ejpTeddyDate);
+    const normalizedNt2026Date = normalizeDate(nt2026Date);
 
     if (
       normalizedSearchDate >= normalizedStartDate &&
@@ -355,6 +358,12 @@ const RideSearch = () => {
       setShowEjpTeddyImage(true);
     } else {
       setShowEjpTeddyImage(false);
+    }
+
+    if (normalizedSearchDate.getTime() === normalizedNt2026Date.getTime()) {
+      setShowNt2026Image(true);
+    } else {
+      setShowNt2026Image(false);
     }
 
     try {
@@ -742,6 +751,25 @@ const RideSearch = () => {
                       date.getDate() <= 16
                     );
                   },
+                  nt2026: (date) => {
+                    // Vérifier d'abord s'il y a des trajets disponibles
+                    const hasAvailableRides = availableDates.some(
+                      (availableDate) =>
+                        date.getDate() === availableDate.getDate() &&
+                        date.getMonth() === availableDate.getMonth() &&
+                        date.getFullYear() === availableDate.getFullYear()
+                    );
+                    
+                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
+                    if (hasAvailableRides) return false;
+                    
+                    // 31 décembre 2025
+                    return (
+                      date.getFullYear() === 2025 &&
+                      date.getMonth() === 11 &&
+                      date.getDate() === 31
+                    );
+                  },
                   selected: (date) =>
                     date.getDate() === searchParams.date.getDate() &&
                     date.getMonth() === searchParams.date.getMonth() &&
@@ -780,6 +808,11 @@ const RideSearch = () => {
                     borderRadius: "9999px",
                   },
                   ejpWeek: {
+                    backgroundColor: "#bae6fd",
+                    color: "#0369a1",
+                    borderRadius: "9999px",
+                  },
+                  nt2026: {
                     backgroundColor: "#bae6fd",
                     color: "#0369a1",
                     borderRadius: "9999px",
@@ -979,6 +1012,18 @@ const RideSearch = () => {
             <Image
               src="/ejp/teddy.png"
               alt="EJP Teddy ICC Covoiturage - 16 novembre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showNt2026Image && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/nt2026.png"
+              alt="Nouvelle An 2026 ICC Covoiturage - 31 décembre 2025"
               width={1200}
               height={630}
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
