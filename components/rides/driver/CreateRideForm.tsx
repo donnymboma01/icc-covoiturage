@@ -209,7 +209,7 @@ const CreateRideForm = () => {
 
       await addDoc(collection(db, "rides"), rideData);
       toast.success("Trajet créé avec succès !");
-      router.push("/dashboard/driver");
+      router.push("/rides/history");
     } catch (error) {
       console.error("Erreur création trajet:", error);
       toast.error("Erreur lors de la création du trajet");
@@ -344,6 +344,7 @@ const CreateRideForm = () => {
                 })
               }
               min={new Date().toISOString().slice(0, 16)}
+              className="dark:text-white dark:bg-slate-800 dark:[color-scheme:dark]"
             />
           </div>
 
@@ -419,41 +420,21 @@ const CreateRideForm = () => {
           Détails du trajet
         </Label>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Places disponibles</Label>
-            <Input
-              type="number"
-              min={1}
-              max={vehicle ? vehicle.seats - 1 : 4}
-              value={formData.availableSeats}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  availableSeats: parseInt(e.target.value),
-                })
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Participation (Gratuit recommandé)</Label>
-            <div className="relative">
-              <FaEuroSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                type="number"
-                min={0}
-                value={formData.price}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    price: parseInt(e.target.value),
-                  })
-                }
-                className="pl-10"
-              />
-            </div>
-          </div>
+        <div className="space-y-2">
+          <Label>Places disponibles</Label>
+          <Input
+            type="number"
+            min={1}
+            max={vehicle ? vehicle.seats - 1 : 4}
+            value={formData.availableSeats}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                availableSeats: parseInt(e.target.value),
+              })
+            }
+            className="dark:text-white dark:bg-slate-800"
+          />
         </div>
 
         <div className="space-y-2">

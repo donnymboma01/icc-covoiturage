@@ -21,6 +21,7 @@ import {
   geohashQueryBounds,
 } from "geofire-common";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { app } from "../../../app/config/firebase-config";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,17 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/app/hooks/useAuth";
 import { getCoordinates } from "@/utils/geocoding";
+import { FaMap, FaList, FaTimes } from "react-icons/fa";
+
+// Dynamic import for MapboxMap to avoid SSR issues
+const MapboxMap = dynamic(() => import("@/components/maps/MapboxMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[500px] w-full bg-slate-100 animate-pulse rounded-xl flex items-center justify-center">
+      <p className="text-slate-400">Chargement de la carte...</p>
+    </div>
+  ),
+});
 
 interface GeoLocation {
   lat: number;
@@ -66,13 +78,14 @@ interface Driver {
   isVerified?: boolean;
 }
 
+const db = getFirestore(app);
+
 const getDriverData = async (driverId: string): Promise<Driver> => {
   const driverSnap = await getDocs(
     query(collection(db, "users"), where("uid", "==", driverId))
   );
 
   const driverData = driverSnap.docs[0]?.data() as Driver;
-
 
   const verificationSnap = await getDoc(doc(db, "driverVerifications", driverId));
   if (verificationSnap.exists()) {
@@ -84,8 +97,6 @@ const getDriverData = async (driverId: string): Promise<Driver> => {
 
   return driverData;
 };
-
-const db = getFirestore(app);
 
 const RideSearch = () => {
   const [searchParams, setSearchParams] = useState({
@@ -101,25 +112,12 @@ const RideSearch = () => {
   const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
     []
   );
-  const [highlightedDates, setHighlightedDates] = useState<Date[]>([]);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
-  const [searchTriggered, setSearchTriggered] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [showSpecialEventImage, setShowSpecialEventImage] = useState(false);
-  const [showDimancheImage, setShowDimancheImage] = useState(false);
-  const [showFemmesBeneluxImage, setShowFemmesBeneluxImage] = useState(false);
-  const [showVeilleeEmploiImage, setShowVeilleeEmploiImage] = useState(false);
-  const [showBelgiumTourImage, setShowBelgiumTourImage] = useState(false);
-  const [showGdrsImage, setShowGdrsImage] = useState(false);
-  const [showKhayilImage, setShowKhayilImage] = useState(false);
-  const [showDaghewardImage, setShowDaghewardImage] = useState(false);
-  const [showCampHommeImage, setShowCampHommeImage] = useState(false);
-  const [showEjpAvengersImage, setShowEjpAvengersImage] = useState(false);
-  const [showEjpLoickImage, setShowEjpLoickImage] = useState(false);
-  const [showEjpPierreImage, setShowEjpPierreImage] = useState(false);
-  const [showEjpSamuelImage, setShowEjpSamuelImage] = useState(false);
-  const [showEjpTeddyImage, setShowEjpTeddyImage] = useState(false);
   const [showNt2026Image, setShowNt2026Image] = useState(false);
+  const [showMapView, setShowMapView] = useState(false);
+  const [allAvailableRides, setAllAvailableRides] = useState<Array<Ride & { driver: Driver }>>([]);
+  const [selectedRide, setSelectedRide] = useState<(Ride & { driver: Driver }) | null>(null);
 
   const { user } = useAuth();
 
@@ -130,7 +128,6 @@ const RideSearch = () => {
       const churchesRef = collection(db, "churches");
       const churchesSnapshot = await getDocs(churchesRef);
 
-      // Pour Jason & Djedou : ceci permet d'éviter les doublons des églises.
       const churchMap = new Map();
       churchesSnapshot.docs.forEach((doc) => {
         const church = doc.data();
@@ -161,7 +158,6 @@ const RideSearch = () => {
       );
 
       const querySnapshot = await getDocs(q);
-      console.log("Trajets disponibles trouvés:", querySnapshot.size); 
 
       const dates = querySnapshot.docs.map((doc) => {
         const rideData = doc.data();
@@ -201,35 +197,51 @@ const RideSearch = () => {
     }
   };
 
+  // Fetch all available rides for map view
+  const fetchAllRidesForMap = async () => {
+    try {
+      const ridesRef = collection(db, "rides");
+      const q = query(
+        ridesRef,
+        where("status", "==", "active"),
+        where("departureTime", ">=", new Date())
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      const ridesWithDrivers = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const rideData = doc.data() as Ride;
+          const driverData = await getDriverData(rideData.driverId);
+          return {
+            ...rideData,
+            id: doc.id,
+            driver: driverData,
+          };
+        })
+      );
+
+      setAllAvailableRides(ridesWithDrivers);
+    } catch (error) {
+      console.error("Erreur lors du chargement des trajets:", error);
+    }
+  };
+
   useEffect(() => {
     fetchAllAvailableRides();
   }, []);
+
+  useEffect(() => {
+    if (showMapView) {
+      fetchAllRidesForMap();
+    }
+  }, [showMapView]);
 
   const handleSearch = async (currentSearchParams = searchParams) => {
     setLoading(true);
     setHasSearched(true);
 
     const searchDate = currentSearchParams.date;
-    const startDate = new Date(2025, 5, 30); // Juin (mois 5)
-    const endDate = new Date(2025, 6, 6);   // Juillet (mois 6)
-    const dimancheDate = new Date(2025, 6, 20); // 20 juillet 2025
-    const femmesBeneluxStart = new Date(2025, 8, 26); // 26 septembre 2025
-    const femmesBeneluxEnd = new Date(2025, 8, 28);   // 28 septembre 2025
-    const veilleeEmploiDate = new Date(2025, 6, 18); // 18 Juillet 2025
-    const belgiumTourStart = new Date(2025, 7, 29); // 29 août 2025
-    const belgiumTourEnd = new Date(2025, 7, 30); // 30 août 2025
-    const gdrsDate = new Date(2025, 9, 11); // 11 octobre 2025 (samedi)
-    const khayilStart = new Date(2025, 9, 22); // 22 octobre 2025
-    const khayilEnd = new Date(2025, 9, 26); // 26 octobre 2025
-    const daghewardStart = new Date(2025, 9, 26); // 26 octobre 2025
-    const daghewardEnd = new Date(2025, 9, 28); // 28 octobre 2025
-    const campHommeStart = new Date(2025, 10, 7); // 7 novembre 2025
-    const campHommeEnd = new Date(2025, 10, 8); // 8 novembre 2025
-    const ejpAvengersDate = new Date(2025, 10, 12); // 12 novembre 2025 (mercredi)
-    const ejpLoickDate = new Date(2025, 10, 13); // 13 novembre 2025 (jeudi)
-    const ejpPierreDate = new Date(2025, 10, 14); // 14 novembre 2025 (vendredi)
-    const ejpSamuelDate = new Date(2025, 10, 15); // 15 novembre 2025 (samedi)
-    const ejpTeddyDate = new Date(2025, 10, 16); // 16 novembre 2025 (dimanche)
     const nt2026Date = new Date(2025, 11, 31); // 31 décembre 2025
 
     const normalizeDate = (date: Date) => {
@@ -239,127 +251,9 @@ const RideSearch = () => {
     };
 
     const normalizedSearchDate = normalizeDate(searchDate);
-    const normalizedStartDate = normalizeDate(startDate);
-    const normalizedEndDate = normalizeDate(endDate);
-    const normalizedDimancheDate = normalizeDate(dimancheDate);
-    const normalizedFemmesBeneluxStart = normalizeDate(femmesBeneluxStart);
-    const normalizedFemmesBeneluxEnd = normalizeDate(femmesBeneluxEnd);
-    const normalizedVeilleeEmploiDate = normalizeDate(veilleeEmploiDate);
-    const normalizedBelgiumTourStart = normalizeDate(belgiumTourStart);
-    const normalizedBelgiumTourEnd = normalizeDate(belgiumTourEnd);
-    const normalizedGdrsDate = normalizeDate(gdrsDate);
-    const normalizedKhayilStart = normalizeDate(khayilStart);
-    const normalizedKhayilEnd = normalizeDate(khayilEnd);
-    const normalizedDaghewardStart = normalizeDate(daghewardStart);
-    const normalizedDaghewardEnd = normalizeDate(daghewardEnd);
-    const normalizedCampHommeStart = normalizeDate(campHommeStart);
-    const normalizedCampHommeEnd = normalizeDate(campHommeEnd);
-    const normalizedEjpAvengersDate = normalizeDate(ejpAvengersDate);
-    const normalizedEjpLoickDate = normalizeDate(ejpLoickDate);
-    const normalizedEjpPierreDate = normalizeDate(ejpPierreDate);
-    const normalizedEjpSamuelDate = normalizeDate(ejpSamuelDate);
-    const normalizedEjpTeddyDate = normalizeDate(ejpTeddyDate);
     const normalizedNt2026Date = normalizeDate(nt2026Date);
 
-    if (
-      normalizedSearchDate >= normalizedStartDate &&
-      normalizedSearchDate <= normalizedEndDate
-    ) {
-      setShowSpecialEventImage(true);
-    } else {
-      setShowSpecialEventImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedVeilleeEmploiDate.getTime()) {
-      setShowVeilleeEmploiImage(true);
-    } else {
-      setShowVeilleeEmploiImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedDimancheDate.getTime()) {
-      setShowDimancheImage(true);
-    } else {
-      setShowDimancheImage(false);
-    }
-
-    if (
-      normalizedSearchDate >= normalizedFemmesBeneluxStart &&
-      normalizedSearchDate <= normalizedFemmesBeneluxEnd
-    ) {
-      setShowFemmesBeneluxImage(true);
-    } else {
-      setShowFemmesBeneluxImage(false);
-    }
-
-    if (normalizedSearchDate >= normalizedBelgiumTourStart && normalizedSearchDate <= normalizedBelgiumTourEnd) {
-      setShowBelgiumTourImage(true);
-    } else {
-      setShowBelgiumTourImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedGdrsDate.getTime()) {
-      setShowGdrsImage(true);
-    } else {
-      setShowGdrsImage(false);
-    }
-
-    if (
-      normalizedSearchDate >= normalizedKhayilStart &&
-      normalizedSearchDate <= normalizedKhayilEnd
-    ) {
-      setShowKhayilImage(true);
-    } else {
-      setShowKhayilImage(false);
-    }
-
-    if (
-      normalizedSearchDate >= normalizedDaghewardStart &&
-      normalizedSearchDate <= normalizedDaghewardEnd
-    ) {
-      setShowDaghewardImage(true);
-    } else {
-      setShowDaghewardImage(false);
-    }
-
-    if (
-      normalizedSearchDate >= normalizedCampHommeStart &&
-      normalizedSearchDate <= normalizedCampHommeEnd
-    ) {
-      setShowCampHommeImage(true);
-    } else {
-      setShowCampHommeImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedEjpAvengersDate.getTime()) {
-      setShowEjpAvengersImage(true);
-    } else {
-      setShowEjpAvengersImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedEjpLoickDate.getTime()) {
-      setShowEjpLoickImage(true);
-    } else {
-      setShowEjpLoickImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedEjpPierreDate.getTime()) {
-      setShowEjpPierreImage(true);
-    } else {
-      setShowEjpPierreImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedEjpSamuelDate.getTime()) {
-      setShowEjpSamuelImage(true);
-    } else {
-      setShowEjpSamuelImage(false);
-    }
-
-    if (normalizedSearchDate.getTime() === normalizedEjpTeddyDate.getTime()) {
-      setShowEjpTeddyImage(true);
-    } else {
-      setShowEjpTeddyImage(false);
-    }
-
+    // Show NT2026 image if searching for that date
     if (normalizedSearchDate.getTime() === normalizedNt2026Date.getTime()) {
       setShowNt2026Image(true);
     } else {
@@ -379,10 +273,8 @@ const RideSearch = () => {
         where("departureTime", "<=", endOfDay)
       );
 
-
       let filteredDriverIds: string[] = [];
       if (currentSearchParams.churchId !== "all") {
-
         const usersRef = collection(db, "users");
         const usersQuery = query(
           usersRef,
@@ -540,6 +432,153 @@ const RideSearch = () => {
     }
   };
 
+  // Render Map View Component
+  const renderMapView = () => {
+    const ridesWithLocation = allAvailableRides.filter(ride => ride.departureLocation?.lat && ride.departureLocation?.lng);
+    
+    const markers = ridesWithLocation.map(ride => ({
+      longitude: ride.departureLocation.lng,
+      latitude: ride.departureLocation.lat,
+      color: "#f97316",
+    }));
+
+    // Calculate center based on markers or default to Brussels
+    const center = markers.length > 0
+      ? {
+          lat: markers.reduce((sum: number, m) => sum + m.latitude, 0) / markers.length,
+          lng: markers.reduce((sum: number, m) => sum + m.longitude, 0) / markers.length,
+        }
+      : { lat: 50.8503, lng: 4.3517 };
+
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <FaMap className="text-orange-500" />
+                Tous les trajets disponibles
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {ridesWithLocation.length} trajet{ridesWithLocation.length > 1 ? 's' : ''} disponible{ridesWithLocation.length > 1 ? 's' : ''}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowMapView(false);
+                setSelectedRide(null);
+              }}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+            >
+              <FaTimes className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex flex-col lg:flex-row h-[calc(90vh-80px)]">
+            {/* Map */}
+            <div className="flex-1 h-[300px] lg:h-full">
+              {ridesWithLocation.length > 0 ? (
+                <MapboxMap
+                  initialViewState={{
+                    latitude: center.lat,
+                    longitude: center.lng,
+                    zoom: 9
+                  }}
+                  markers={markers}
+                  onMapClick={() => setSelectedRide(null)}
+                  height="100%"
+                  width="100%"
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                  <div className="text-center p-8">
+                    <FaMap className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Aucun trajet disponible
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Aucun trajet n'est disponible pour le moment
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Rides List Sidebar */}
+            <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l dark:border-slate-700 overflow-y-auto bg-gray-50 dark:bg-slate-800">
+              <div className="p-4 space-y-3">
+                {ridesWithLocation.length > 0 ? (
+                  ridesWithLocation.map((ride) => (
+                    <Card
+                      key={ride.id}
+                      className={`p-3 cursor-pointer transition-all hover:shadow-md ${
+                        selectedRide?.id === ride.id 
+                          ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                          : 'hover:bg-white dark:hover:bg-slate-700'
+                      }`}
+                      onClick={() => setSelectedRide(ride)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center flex-shrink-0">
+                          <span className="text-orange-600 dark:text-orange-400 font-semibold text-sm">
+                            {ride.driver.fullName?.charAt(0) || 'C'}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 dark:text-white truncate">
+                            {ride.departureAddress}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            → {ride.arrivalAddress}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                              {(ride.departureTime as Timestamp).toDate().toLocaleDateString('fr-FR', { 
+                                day: '2-digit',
+                                month: 'short'
+                              })} à {(ride.departureTime as Timestamp).toDate().toLocaleTimeString('fr-FR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                            <span className="text-xs text-gray-400">•</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {ride.availableSeats} place{ride.availableSeats > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {selectedRide?.id === ride.id && (
+                        <div className="mt-3 pt-3 border-t dark:border-slate-600">
+                          <Button
+                            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `/rides/${ride.id}`;
+                            }}
+                          >
+                            Voir les détails
+                          </Button>
+                        </div>
+                      )}
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p>Aucun trajet avec localisation disponible</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       <Card className="p-4 sm:p-6">
@@ -562,7 +601,7 @@ const RideSearch = () => {
                     departure: e.target.value,
                   })
                 }
-                className="w-full"
+                className="w-full dark:text-white dark:bg-slate-800"
               />
             </div>
 
@@ -574,7 +613,7 @@ const RideSearch = () => {
                 onChange={(e) =>
                   setSearchParams({ ...searchParams, arrival: e.target.value })
                 }
-                className="w-full"
+                className="w-full dark:text-white dark:bg-slate-800"
               />
             </div>
 
@@ -635,124 +674,7 @@ const RideSearch = () => {
                         date.getFullYear() === availableDate.getFullYear()
                     );
                   },
-                  femmesBenelux: (date) => {
-                    // Vérifier d'abord s'il y a des trajets disponibles
-                    const hasAvailableRides = availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-                    
-                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
-                    if (hasAvailableRides) return false;
-                    
-                    // 26-28 septembre 2025
-                    return (
-                      date.getFullYear() === 2025 &&
-                      date.getMonth() === 8 &&
-                      date.getDate() >= 26 &&
-                      date.getDate() <= 28
-                    );
-                  },
-                  gdrs: (date) => {
-                    // Vérifier d'abord s'il y a des trajets disponibles
-                    const hasAvailableRides = availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-               
-                    if (hasAvailableRides) return false;
-                    return (
-                      date.getFullYear() === 2025 &&
-                      date.getMonth() === 9 &&
-                      date.getDate() === 11
-                    );
-                  },
-                  khayil: (date) => {
-                    // Vérifier d'abord s'il y a des trajets disponibles
-                    const hasAvailableRides = availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-                    
-                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
-                    if (hasAvailableRides) return false;
-                    
-                    // 22-26 octobre 2025
-                    return (
-                      date.getFullYear() === 2025 &&
-                      date.getMonth() === 9 &&
-                      date.getDate() >= 22 &&
-                      date.getDate() <= 26
-                    );
-                  },
-                  dagheward: (date) => {
-                    // Vérifier d'abord s'il y a des trajets disponibles
-                    const hasAvailableRides = availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-                    
-                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
-                    if (hasAvailableRides) return false;
-                    
-                    // 26-28 octobre 2025
-                    return (
-                      date.getFullYear() === 2025 &&
-                      date.getMonth() === 9 &&
-                      date.getDate() >= 26 &&
-                      date.getDate() <= 28
-                    );
-                  },
-                  campHomme: (date) => {
-                    // Vérifier d'abord s'il y a des trajets disponibles
-                    const hasAvailableRides = availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-                    
-                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
-                    if (hasAvailableRides) return false;
-                    
-                    // 7-8 novembre 2025
-                    return (
-                      date.getFullYear() === 2025 &&
-                      date.getMonth() === 10 &&
-                      date.getDate() >= 7 &&
-                      date.getDate() <= 8
-                    );
-                  },
-                  ejpWeek: (date) => {
-                    // Vérifier d'abord s'il y a des trajets disponibles
-                    const hasAvailableRides = availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-                    
-                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
-                    if (hasAvailableRides) return false;
-                    
-                    // 12-16 novembre 2025
-                    return (
-                      date.getFullYear() === 2025 &&
-                      date.getMonth() === 10 &&
-                      date.getDate() >= 12 &&
-                      date.getDate() <= 16
-                    );
-                  },
                   nt2026: (date) => {
-                    // Vérifier d'abord s'il y a des trajets disponibles
                     const hasAvailableRides = availableDates.some(
                       (availableDate) =>
                         date.getDate() === availableDate.getDate() &&
@@ -760,7 +682,6 @@ const RideSearch = () => {
                         date.getFullYear() === availableDate.getFullYear()
                     );
                     
-                    // Si des trajets sont disponibles, ne pas appliquer le style bleu
                     if (hasAvailableRides) return false;
                     
                     // 31 décembre 2025
@@ -780,36 +701,6 @@ const RideSearch = () => {
                   highlighted: {
                     backgroundColor: "#f97316",
                     color: "white",
-                    borderRadius: "9999px",
-                  },
-                  femmesBenelux: {
-                    backgroundColor: "#bae6fd",
-                    color: "#0369a1",
-                    borderRadius: "9999px",
-                  },
-                  gdrs: {
-                    backgroundColor: "#bae6fd",
-                    color: "#0369a1",
-                    borderRadius: "9999px",
-                  },
-                  khayil: {
-                    backgroundColor: "#bae6fd",
-                    color: "#0369a1",
-                    borderRadius: "9999px",
-                  },
-                  dagheward: {
-                    backgroundColor: "#bae6fd",
-                    color: "#0369a1",
-                    borderRadius: "9999px",
-                  },
-                  campHomme: {
-                    backgroundColor: "#bae6fd",
-                    color: "#0369a1",
-                    borderRadius: "9999px",
-                  },
-                  ejpWeek: {
-                    backgroundColor: "#bae6fd",
-                    color: "#0369a1",
                     borderRadius: "9999px",
                   },
                   nt2026: {
@@ -840,19 +731,34 @@ const RideSearch = () => {
                     seats: parseInt(e.target.value),
                   })
                 }
-                className="w-full"
+                className="w-full dark:text-white dark:bg-slate-800"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Button
-              type="submit"
-              className="w-full sm:w-auto sm:min-w-[200px] mx-auto block"
-              disabled={loading || !user}
-            >
-              {loading ? "Recherche en cours..." : "Rechercher"}
-            </Button>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                type="submit"
+                className="w-full sm:w-auto sm:min-w-[200px]"
+                disabled={loading || !user}
+              >
+                <FaList className="mr-2" />
+                {loading ? "Recherche en cours..." : "Rechercher"}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto sm:min-w-[200px] border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                onClick={() => setShowMapView(true)}
+                disabled={!user}
+              >
+                <FaMap className="mr-2" />
+                Voir sur la carte
+              </Button>
+            </div>
+            
             {!user && (
               <p className="text-center text-sm text-muted-foreground mt-2">
                 <span className="flex flex-wrap items-center justify-center gap-2">
@@ -883,142 +789,13 @@ const RideSearch = () => {
         </form>
       </Card>
 
+      {/* Map View Modal */}
+      {showMapView && renderMapView()}
+
       <div
         ref={searchResultsRef}
         className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
       >
-        {showFemmesBeneluxImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/images/femmesbenelux.png"
-              alt="Événement Femmes Benelux ICC Covoiturage"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showBelgiumTourImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/images/belgiumtour.png"
-              alt="Dimanche spécial ICC Covoiturage"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showGdrsImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/images/gdrs.png"
-              alt="Événement GDRS ICC Covoiturage - 11 octobre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showKhayilImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/images/khayil.png"
-              alt="Événement Khayil ICC Covoiturage - 22-26 octobre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showDaghewardImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/images/dagheward.png"
-              alt="Événement Dagheward ICC Covoiturage - 26-28 octobre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showCampHommeImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/images/camphomme.png"
-              alt="Camp Homme ICC Covoiturage - 7-8 novembre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showEjpAvengersImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/ejp/avengers.png"
-              alt="EJP Avengers ICC Covoiturage - 12 novembre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showEjpLoickImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/ejp/loick.png"
-              alt="EJP Loick ICC Covoiturage - 13 novembre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showEjpPierreImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/ejp/pierre.png"
-              alt="EJP Pierre ICC Covoiturage - 14 novembre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showEjpSamuelImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/ejp/samuel.png"
-              alt="EJP Samuel ICC Covoiturage - 15 novembre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
-        {showEjpTeddyImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/ejp/teddy.png"
-              alt="EJP Teddy ICC Covoiturage - 16 novembre 2025"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
-
         {showNt2026Image && hasSearched && (
           <div className="my-4 w-full flex justify-center col-span-full">
             <Image
@@ -1031,30 +808,6 @@ const RideSearch = () => {
           </div>
         )}
 
-        {
-          showVeilleeEmploiImage && hasSearched && (
-            <div className="my-4 w-full flex justify-center col-span-full">
-              <Image
-                src="/images/emploi.png"
-                alt="Veillée Emploi ICC Covoiturage"
-                width={1200}
-                height={630}
-                className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-              />
-            </div>
-          )
-        }
-        {showSpecialEventImage && hasSearched && (
-          <div className="my-4 w-full flex justify-center col-span-full">
-            <Image
-              src="/images/royale.png"
-              alt="Événement spécial ICC Covoiturage"
-              width={1200}
-              height={630}
-              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
-            />
-          </div>
-        )}
         {hasSearched ? (
           rides.length > 0 ? (
             rides.map((ride) => (
@@ -1072,7 +825,7 @@ const RideSearch = () => {
             ))
           ) : (
             <div className="col-span-full">
-              <div className="text-center p-8 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="text-center p-8 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                 <svg
                   className="w-12 h-12 text-orange-400 mx-auto mb-4"
                   fill="none"
@@ -1086,10 +839,10 @@ const RideSearch = () => {
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                   />
                 </svg>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Aucun trajet disponible
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                   Désolé, nous n'avons trouvé aucun trajet correspondant à vos
                   critères de recherche. Essayez de modifier vos paramètres ou
                   choisissez une autre date.

@@ -21,13 +21,14 @@ interface RideSummaryProps {
 
 const RideSummary = ({ formData }: RideSummaryProps) => {
   const getServiceLabel = (serviceType: string) => {
-    const services = {
-      culte: "Culte du dimanche",
-      priere: "Réunion de prière",
-      evenement: "Événement spécial",
-      autre: "Autre",
+    const services: Record<string, string> = {
+      "Culte de dimanche": "Culte du dimanche",
+      "Etude biblique": "Étude biblique",
+      "Prière": "Réunion de prière",
+      "Evénement spécial": "Événement spécial",
+      "Autre": "Autre",
     };
-    return services[serviceType as keyof typeof services] || "Non spécifié";
+    return services[serviceType] || serviceType || "Non spécifié";
   };
 
   return (

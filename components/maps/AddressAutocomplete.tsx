@@ -106,14 +106,14 @@ const AddressAutocomplete = ({
             </div>
 
             {showSuggestions && suggestions.length > 0 && (
-                <ul className="absolute z-50 w-full bg-white mt-1 border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                <ul className="absolute z-50 w-full bg-white dark:bg-slate-800 mt-1 border border-gray-200 dark:border-slate-600 rounded-md shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion) => (
                         <li
                             key={suggestion.id}
                             onClick={() => handleSelect(suggestion)}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2 text-sm"
+                            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-2 text-sm text-gray-900 dark:text-white"
                         >
-                            <FaMapMarkerAlt className="text-gray-400 flex-shrink-0" />
+                            <FaMapMarkerAlt className="text-gray-400 dark:text-gray-300 flex-shrink-0" />
                             <span className="truncate">{suggestion.place_name}</span>
                         </li>
                     ))}

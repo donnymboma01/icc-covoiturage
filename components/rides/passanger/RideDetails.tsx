@@ -238,12 +238,12 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
           <div className="rounded-xl overflow-hidden shadow-sm border border-slate-100">
             <MapboxMap
               initialViewState={{
-                latitude: ride.departureLocation.lat,
-                longitude: ride.departureLocation.lng,
-                zoom: 10
+                latitude: (ride.departureLocation.lat + ride.arrivalLocation.lat) / 2,
+                longitude: (ride.departureLocation.lng + ride.arrivalLocation.lng) / 2,
+                zoom: 9
               }}
               height="300px"
-              interactive={false} // Static view for details
+              interactive={true}
               markers={[
                 { latitude: ride.departureLocation.lat, longitude: ride.departureLocation.lng, color: "#22c55e" },
                 { latitude: ride.arrivalLocation.lat, longitude: ride.arrivalLocation.lng, color: "#ef4444" }
