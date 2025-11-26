@@ -67,7 +67,7 @@ export default function Home() {
 
       <div className="absolute bottom-4 text-center w-full">
         <p className="text-sm md:text-base lg:text-lg font-medium tracking-wider text-yellow-400 italic">
-          version 2.0
+          version 3.0
         </p>
       </div>
 

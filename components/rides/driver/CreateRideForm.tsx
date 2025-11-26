@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import {
   addDoc,
@@ -50,7 +50,7 @@ import { getCoordinates } from "../../../utils/geocoding";
 import AddressAutocomplete from "@/components/maps/AddressAutocomplete";
 import RoutePreview from "@/components/maps/RoutePreview";
 
-// Dynamic import for MapboxMap to avoid SSR issues
+
 const MapboxMap = dynamic(() => import("@/components/maps/MapboxMap"), {
   ssr: false,
   loading: () => (
@@ -91,7 +91,6 @@ const CreateRideForm = () => {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [isMapVisible, setIsMapVisible] = useState(false);
 
-  // Coordinates state for Mapbox
   const [startCoords, setStartCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [endCoords, setEndCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
@@ -118,15 +117,23 @@ const CreateRideForm = () => {
     const fetchChurches = async () => {
       const churchesRef = collection(db, "churches");
       const snapshot = await getDocs(churchesRef);
-      const churchesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-        ...doc.data(),
-      }));
+      
+      const churchMap = new Map();
+      snapshot.docs.forEach((doc) => {
+        const church = doc.data();
+        const normalizedName = church.name?.trim().toLowerCase();
+        if (normalizedName && !churchMap.has(normalizedName)) {
+          churchMap.set(normalizedName, {
+            id: doc.id,
+            name: church.name.trim(),
+          });
+        }
+      });
 
-      // Sort alphabetically
-      churchesData.sort((a, b) => a.name.localeCompare(b.name));
-      setChurches(churchesData);
+      const uniqueChurches = Array.from(churchMap.values());
+    
+      uniqueChurches.sort((a, b) => a.name.localeCompare(b.name));
+      setChurches(uniqueChurches);
     };
 
     const fetchVehicle = async () => {
@@ -160,7 +167,6 @@ const CreateRideForm = () => {
     setLoading(true);
 
     try {
-      // Get coordinates if not already set (fallback)
       let depLat = startCoords?.lat;
       let depLng = startCoords?.lng;
       let arrLat = endCoords?.lat;
@@ -374,7 +380,7 @@ const CreateRideForm = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg">
+        <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
           <Switch
             checked={formData.isRecurring}
             onCheckedChange={(checked) =>
@@ -382,8 +388,8 @@ const CreateRideForm = () => {
             }
           />
           <div className="space-y-0.5">
-            <Label>Trajet récurrent</Label>
-            <p className="text-sm text-muted-foreground">
+            <Label className="dark:text-white">Trajet récurrent</Label>
+            <p className="text-sm text-muted-foreground dark:text-slate-400">
               Ce trajet se répète régulièrement
             </p>
           </div>
@@ -448,7 +454,7 @@ const CreateRideForm = () => {
           />
         </div>
 
-        <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg">
+        <div className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
           <Switch
             checked={formData.displayPhoneNumber}
             onCheckedChange={(checked) =>
@@ -456,11 +462,11 @@ const CreateRideForm = () => {
             }
           />
           <div className="space-y-0.5">
-            <Label className="flex items-center gap-2">
+            <Label className="flex items-center gap-2 dark:text-white">
               <FaPhone className="text-green-600" />
               Afficher mon numéro
             </Label>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground dark:text-slate-400">
               Permettre aux passagers de voir votre numéro après réservation
             </p>
           </div>
@@ -480,8 +486,8 @@ const CreateRideForm = () => {
       <Card className="p-6 shadow-xl border-t-4 border-t-orange-500">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">Proposer un trajet</h1>
-            <span className="text-sm font-medium text-gray-500">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Proposer un trajet</h1>
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
               Étape {step} sur 4
             </span>
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import React, { memo, useMemo } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
@@ -28,23 +29,28 @@ interface RideCardProps {
   onClick?: () => void;
 }
 
-const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
-  const isPast = new Date() > ride.departureTime;
-  const isFull = ride.availableSeats === 0;
+const RideCard = memo(({ ride, driver, onClick }: RideCardProps) => {
+  const isPast = useMemo(() => new Date() > ride.departureTime, [ride.departureTime]);
+  const isFull = useMemo(() => ride.availableSeats === 0, [ride.availableSeats]);
 
-  const getBadgeVariant = () => {
-    if (isPast) return "destructive";
-    if (isFull) return "secondary";
-    return "default";
-  };
+  const badgeInfo = useMemo(() => {
+    if (isPast) return { variant: "destructive" as const, text: "Trajet terminé" };
+    if (isFull) return { variant: "secondary" as const, text: "Complet" };
+    return { 
+      variant: "default" as const, 
+      text: `${ride.availableSeats} place${ride.availableSeats > 1 ? "s" : ""} disponible${ride.availableSeats > 1 ? "s" : ""}` 
+    };
+  }, [isPast, isFull, ride.availableSeats]);
 
-  const getBadgeText = () => {
-    if (isPast) return "Trajet terminé";
-    if (isFull) return "Complet";
-    return `${ride.availableSeats} place${
-      ride.availableSeats > 1 ? "s" : ""
-    } disponible${ride.availableSeats > 1 ? "s" : ""}`;
-  };
+  const formattedDate = useMemo(() => 
+    format(ride.departureTime, "EEEE d MMMM yyyy", { locale: fr }), 
+    [ride.departureTime]
+  );
+  
+  const formattedTime = useMemo(() => 
+    format(ride.departureTime, "HH:mm"), 
+    [ride.departureTime]
+  );
 
   return (
     <Card className="p-3 sm:p-4 hover:shadow-lg transition-shadow">
@@ -79,7 +85,7 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
               </div>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 text-center">
-              {format(ride.departureTime, "EEEE d MMMM yyyy", { locale: fr })}
+              {formattedDate}
             </p>
           </div>
 
@@ -87,7 +93,7 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
             <div className="flex items-center gap-2">
               <MdAccessTime className="text-slate-400 shrink-0" />
               <span className="text-xs sm:text-sm">
-                {format(ride.departureTime, "HH:mm")}
+                {formattedTime}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -105,7 +111,7 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-2">
-            <Badge variant={getBadgeVariant()}>{getBadgeText()}</Badge>
+            <Badge variant={badgeInfo.variant}>{badgeInfo.text}</Badge>
             <Button
               onClick={onClick}
               variant="outline"
@@ -119,5 +125,8 @@ const RideCard = ({ ride, driver, onClick }: RideCardProps) => {
       </div>
     </Card>
   );
-};
+});
+
+RideCard.displayName = "RideCard";
+
 export default RideCard;

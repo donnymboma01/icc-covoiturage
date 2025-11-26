@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   collection,
   query,
@@ -121,6 +121,45 @@ const RideSearch = () => {
 
   const { user } = useAuth();
 
+  // Memoized available dates set for O(1) lookup
+  const availableDatesSet = useMemo(() => {
+    const set = new Set<string>();
+    availableDates.forEach(date => {
+      set.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+    });
+    return set;
+  }, [availableDates]);
+
+  // Memoized function to check if date has available rides
+  const hasRidesOnDate = useCallback((date: Date) => {
+    return availableDatesSet.has(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+  }, [availableDatesSet]);
+
+  // Memoized rides for map view
+  const ridesWithLocation = useMemo(() => 
+    allAvailableRides.filter(ride => ride.departureLocation?.lat && ride.departureLocation?.lng),
+    [allAvailableRides]
+  );
+
+  // Memoized markers for map
+  const mapMarkers = useMemo(() => 
+    ridesWithLocation.map(ride => ({
+      longitude: ride.departureLocation.lng,
+      latitude: ride.departureLocation.lat,
+      color: "#f97316",
+    })),
+    [ridesWithLocation]
+  );
+
+  // Memoized center calculation for map
+  const mapCenter = useMemo(() => {
+    if (mapMarkers.length === 0) return { lat: 50.8503, lng: 4.3517 };
+    return {
+      lat: mapMarkers.reduce((sum: number, m) => sum + m.latitude, 0) / mapMarkers.length,
+      lng: mapMarkers.reduce((sum: number, m) => sum + m.longitude, 0) / mapMarkers.length,
+    };
+  }, [mapMarkers]);
+
   const searchResultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -197,7 +236,6 @@ const RideSearch = () => {
     }
   };
 
-  // Fetch all available rides for map view
   const fetchAllRidesForMap = async () => {
     try {
       const ridesRef = collection(db, "rides");
@@ -237,12 +275,41 @@ const RideSearch = () => {
     }
   }, [showMapView]);
 
+  const handleDepartureChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchParams(prev => ({ ...prev, departure: e.target.value }));
+  }, []);
+
+  const handleArrivalChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchParams(prev => ({ ...prev, arrival: e.target.value }));
+  }, []);
+
+  const handleChurchChange = useCallback((value: string) => {
+    setSearchParams(prev => ({ ...prev, churchId: value }));
+  }, []);
+
+  const handleSeatsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchParams(prev => ({ ...prev, seats: parseInt(e.target.value) || 1 }));
+  }, []);
+
+  const handleRideClick = useCallback((rideId: string) => {
+    window.location.href = `/rides/${rideId}`;
+  }, []);
+
+  const handleCloseMapView = useCallback(() => {
+    setShowMapView(false);
+    setSelectedRide(null);
+  }, []);
+
+  const handleOpenMapView = useCallback(() => {
+    setShowMapView(true);
+  }, []);
+
   const handleSearch = async (currentSearchParams = searchParams) => {
     setLoading(true);
     setHasSearched(true);
 
     const searchDate = currentSearchParams.date;
-    const nt2026Date = new Date(2025, 11, 31); // 31 décembre 2025
+    const nt2026Date = new Date(2025, 11, 31); 
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -253,7 +320,6 @@ const RideSearch = () => {
     const normalizedSearchDate = normalizeDate(searchDate);
     const normalizedNt2026Date = normalizeDate(nt2026Date);
 
-    // Show NT2026 image if searching for that date
     if (normalizedSearchDate.getTime() === normalizedNt2026Date.getTime()) {
       setShowNt2026Image(true);
     } else {
@@ -432,28 +498,11 @@ const RideSearch = () => {
     }
   };
 
-  // Render Map View Component
   const renderMapView = () => {
-    const ridesWithLocation = allAvailableRides.filter(ride => ride.departureLocation?.lat && ride.departureLocation?.lng);
-    
-    const markers = ridesWithLocation.map(ride => ({
-      longitude: ride.departureLocation.lng,
-      latitude: ride.departureLocation.lat,
-      color: "#f97316",
-    }));
-
-    // Calculate center based on markers or default to Brussels
-    const center = markers.length > 0
-      ? {
-          lat: markers.reduce((sum: number, m) => sum + m.latitude, 0) / markers.length,
-          lng: markers.reduce((sum: number, m) => sum + m.longitude, 0) / markers.length,
-        }
-      : { lat: 50.8503, lng: 4.3517 };
-
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-          {/* Header */}
+          
           <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -465,28 +514,25 @@ const RideSearch = () => {
               </p>
             </div>
             <button
-              onClick={() => {
-                setShowMapView(false);
-                setSelectedRide(null);
-              }}
+              onClick={handleCloseMapView}
               className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
             >
               <FaTimes className="w-5 h-5 text-gray-500" />
             </button>
           </div>
 
-          {/* Content */}
+          
           <div className="flex flex-col lg:flex-row h-[calc(90vh-80px)]">
             {/* Map */}
             <div className="flex-1 h-[300px] lg:h-full">
               {ridesWithLocation.length > 0 ? (
                 <MapboxMap
                   initialViewState={{
-                    latitude: center.lat,
-                    longitude: center.lng,
+                    latitude: mapCenter.lat,
+                    longitude: mapCenter.lng,
                     zoom: 9
                   }}
-                  markers={markers}
+                  markers={mapMarkers}
                   onMapClick={() => setSelectedRide(null)}
                   height="100%"
                   width="100%"
@@ -595,12 +641,7 @@ const RideSearch = () => {
               <Input
                 placeholder="Entrez une ville, ou une adresse complète"
                 value={searchParams.departure}
-                onChange={(e) =>
-                  setSearchParams({
-                    ...searchParams,
-                    departure: e.target.value,
-                  })
-                }
+                onChange={handleDepartureChange}
                 className="w-full dark:text-white dark:bg-slate-800"
               />
             </div>
@@ -610,9 +651,7 @@ const RideSearch = () => {
               <Input
                 placeholder="Entrez une ville, ou une adresse complète"
                 value={searchParams.arrival}
-                onChange={(e) =>
-                  setSearchParams({ ...searchParams, arrival: e.target.value })
-                }
+                onChange={handleArrivalChange}
                 className="w-full dark:text-white dark:bg-slate-800"
               />
             </div>
@@ -621,9 +660,7 @@ const RideSearch = () => {
               <Label>Église (optionnel)</Label>
               <Select
                 value={searchParams.churchId}
-                onValueChange={(value) =>
-                  setSearchParams({ ...searchParams, churchId: value })
-                }
+                onValueChange={handleChurchChange}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Toutes les églises" />
@@ -666,24 +703,9 @@ const RideSearch = () => {
                   }
                 }}
                 modifiers={{
-                  highlighted: (date) => {
-                    return availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-                  },
+                  highlighted: hasRidesOnDate,
                   nt2026: (date) => {
-                    const hasAvailableRides = availableDates.some(
-                      (availableDate) =>
-                        date.getDate() === availableDate.getDate() &&
-                        date.getMonth() === availableDate.getMonth() &&
-                        date.getFullYear() === availableDate.getFullYear()
-                    );
-                    
-                    if (hasAvailableRides) return false;
-                    
+                    if (hasRidesOnDate(date)) return false;
                     // 31 décembre 2025
                     return (
                       date.getFullYear() === 2025 &&
@@ -725,12 +747,7 @@ const RideSearch = () => {
                 min={1}
                 placeholder="Nombre de places"
                 value={searchParams.seats}
-                onChange={(e) =>
-                  setSearchParams({
-                    ...searchParams,
-                    seats: parseInt(e.target.value),
-                  })
-                }
+                onChange={handleSeatsChange}
                 className="w-full dark:text-white dark:bg-slate-800"
               />
             </div>
@@ -751,7 +768,7 @@ const RideSearch = () => {
                 type="button"
                 variant="outline"
                 className="w-full sm:w-auto sm:min-w-[200px] border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
-                onClick={() => setShowMapView(true)}
+                onClick={handleOpenMapView}
                 disabled={!user}
               >
                 <FaMap className="mr-2" />
@@ -818,9 +835,7 @@ const RideSearch = () => {
                   departureTime: ride.departureTime.toDate(),
                 }}
                 driver={ride.driver}
-                onClick={() => {
-                  window.location.href = `/rides/${ride.id}`;
-                }}
+                onClick={() => handleRideClick(ride.id)}
               />
             ))
           ) : (
