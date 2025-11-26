@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Timestamp } from "firebase/firestore";
 import { MdEdit } from "react-icons/md";
-import MapComponent from "./MapComponent";
+// import MapComponent from "./MapComponent";
 import { toast } from "sonner";
 
 interface Ride {

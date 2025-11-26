@@ -30,6 +30,18 @@ import {
 import BookingForm from "@/components/booking/BookingForm";
 import Modal from "@/components/ui/Modal";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import RoutePreview from "@/components/maps/RoutePreview";
+
+// Dynamic import for MapboxMap
+const MapboxMap = dynamic(() => import("@/components/maps/MapboxMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] w-full bg-slate-100 animate-pulse rounded-xl flex items-center justify-center">
+      <p className="text-slate-400">Chargement de la carte...</p>
+    </div>
+  ),
+});
 
 const db = getFirestore(app);
 
@@ -63,6 +75,19 @@ interface Ride {
   waypoints?: string[];
   displayPhoneNumber: boolean;
   meetingPointNote?: string;
+  // New fields for Mapbox
+  departureLocation?: {
+    lat: number;
+    lng: number;
+  };
+  arrivalLocation?: {
+    lat: number;
+    lng: number;
+  };
+  routeInfo?: {
+    distanceKm: string;
+    durationMin: number;
+  };
 }
 
 interface Church {
@@ -88,13 +113,11 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
           const rideData = rideDoc.data();
           const driverId = rideData.driverId;
 
-
           const driverRef = doc(db, "users", driverId);
           const driverDoc = await getDoc(driverRef);
 
           if (driverDoc.exists()) {
             const driverData = driverDoc.data() as Driver;
-
 
             const verificationRef = doc(db, "driverVerifications", driverId);
             const verificationDoc = await getDoc(verificationRef);
@@ -107,7 +130,6 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             setDriver(driverData);
           }
 
-
           setRide({
             id: rideDoc.id,
             ...rideData,
@@ -118,7 +140,6 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
             const churchDoc = await getDoc(
               doc(db, "churches", rideData.churchId)
             );
-            console.log("Church Data:", churchDoc.data());
             if (churchDoc.exists()) {
               setChurch({
                 id: churchDoc.id,
@@ -212,6 +233,30 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
           </div>
         </div>
 
+        {/* Map Visualization */}
+        {ride.departureLocation && ride.arrivalLocation && (
+          <div className="rounded-xl overflow-hidden shadow-sm border border-slate-100">
+            <MapboxMap
+              initialViewState={{
+                latitude: ride.departureLocation.lat,
+                longitude: ride.departureLocation.lng,
+                zoom: 10
+              }}
+              height="300px"
+              interactive={false} // Static view for details
+              markers={[
+                { latitude: ride.departureLocation.lat, longitude: ride.departureLocation.lng, color: "#22c55e" },
+                { latitude: ride.arrivalLocation.lat, longitude: ride.arrivalLocation.lng, color: "#ef4444" }
+              ]}
+            >
+              <RoutePreview
+                start={ride.departureLocation}
+                end={ride.arrivalLocation}
+              />
+            </MapboxMap>
+          </div>
+        )}
+
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <MdAccessTime className="text-xl text-gray-500" />
@@ -237,8 +282,17 @@ const RideDetails = ({ rideId }: RideDetailsProps) => {
                 À : {ride.arrivalAddress}
               </p>
             </div>
+
+            {ride.routeInfo && (
+              <div className="flex gap-4 ml-7 text-sm text-gray-500">
+                <span>{ride.routeInfo.distanceKm} km</span>
+                <span>•</span>
+                <span>~{ride.routeInfo.durationMin} min</span>
+              </div>
+            )}
+
             {ride.meetingPointNote && (
-              <div className="flex items-start gap-2 bg-orange-50 p-3 rounded-lg border-l-4 border-orange-200">
+              <div className="flex items-start gap-2 bg-orange-50 p-3 rounded-lg border-l-4 border-orange-200 mt-2">
                 <MdInfo className="text-xl text-orange-500 mt-1 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-orange-800 mb-1">

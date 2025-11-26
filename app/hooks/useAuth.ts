@@ -2,11 +2,15 @@ import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useState, useEffect } from "react";
 
-interface ExtendedUser extends User {
+export interface ExtendedUser extends User {
   isDriver?: boolean;
   isAdmin?: boolean;
   fullName?: string;
   churchIds?: string[];
+  isVerified?: boolean;
+  isStar?: boolean;
+  // phoneNumber is already in User as string | null
+  profilePicture?: string;
 }
 
 export const useAuth = () => {
@@ -18,6 +22,8 @@ export const useAuth = () => {
     isAdmin?: boolean;
     fullName?: string;
     churchIds?: string[];
+    phoneNumber?: string;
+    profilePicture?: string;
   }) => {
     if (!user?.uid) return;
 
@@ -45,6 +51,10 @@ export const useAuth = () => {
             isAdmin: userData.isAdmin,
             fullName: userData.fullName,
             churchIds: userData.churchIds,
+            isVerified: userData.isVerified,
+            isStar: userData.isStar,
+            phoneNumber: userData.phoneNumber || firebaseUser.phoneNumber || null,
+            profilePicture: userData.profilePicture || firebaseUser.photoURL || undefined,
           });
         } else {
           setUser(firebaseUser);

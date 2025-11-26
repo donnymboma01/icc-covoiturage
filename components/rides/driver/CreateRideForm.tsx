@@ -4,43 +4,60 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
+import { useAuth } from "@/app/hooks/useAuth";
 import {
   addDoc,
   collection,
+  getFirestore,
+  Timestamp,
   getDocs,
   query,
   where,
-  getFirestore,
-  onSnapshot,
+  getDoc,
+  doc,
 } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 import { app } from "@/app/config/firebase-config";
-import { useAuth } from "@/app/hooks/useAuth";
 import { toast } from "sonner";
-import ChurchSelector from "./ChrurchSelector";
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaMapMarkerAlt,
+  FaChair,
+  FaEuroSign,
+  FaCar,
+  FaPhone,
+  FaInfoCircle,
+} from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import RideSummary from "./RidesSummary";
 import { ErrorBoundary } from "react-error-boundary";
 import { geohashForLocation } from "geofire-common";
 import { getCoordinates } from "../../../utils/geocoding";
+import AddressAutocomplete from "@/components/maps/AddressAutocomplete";
+import RoutePreview from "@/components/maps/RoutePreview";
 
-export const prepareRideLocation = async (address: string) => {
-  const coordinates = await getCoordinates(address);
-  return {
-    lat: coordinates.lat,
-    lng: coordinates.lng,
-    geohash: geohashForLocation([coordinates.lat, coordinates.lng]),
-  };
-};
-
-const MapComponent = dynamic(() => import("./MapComponent"), {
+// Dynamic import for MapboxMap to avoid SSR issues
+const MapboxMap = dynamic(() => import("@/components/maps/MapboxMap"), {
   ssr: false,
-  loading: () => <div>Chargement de la carte...</div>,
+  loading: () => (
+    <div className="h-[400px] w-full bg-slate-100 animate-pulse rounded-xl flex items-center justify-center">
+      <p className="text-slate-400">Chargement de la carte...</p>
+    </div>
+  ),
 });
 
 interface RideFormData {
@@ -63,41 +80,22 @@ interface Vehicle {
   seats: number;
 }
 
-const MapWithErrorBoundary = ({
-  setFormData,
-  formData,
-  isMapVisible,
-}: {
-  setFormData: React.Dispatch<React.SetStateAction<RideFormData>>;
-  formData: RideFormData;
-  isMapVisible: boolean;
-}) => {
-  return (
-    <ErrorBoundary
-      fallback={
-        <div>Une erreur est survenue lors du chargement de la carte</div>
-      }
-    >
-      <MapComponent
-        onDepartureSelect={(address) =>
-          setFormData({ ...formData, departureAddress: address })
-        }
-        onArrivalSelect={(address) =>
-          setFormData({ ...formData, arrivalAddress: address })
-        }
-        isMapVisible={isMapVisible}
-      />
-    </ErrorBoundary>
-  );
-};
-
 const CreateRideForm = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const db = getFirestore(app);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [vehicleSeats, setVehicleSeats] = useState<number>(0);
-  const [seatsError, setSeatsError] = useState<string>("");
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [churches, setChurches] = useState<Array<{ id: string; name: string }>>(
+    []
+  );
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [isMapVisible, setIsMapVisible] = useState(false);
+
+  // Coordinates state for Mapbox
+  const [startCoords, setStartCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [endCoords, setEndCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
+
   const [formData, setFormData] = useState<RideFormData>({
     churchId: "",
     churchName: "",
@@ -105,329 +103,457 @@ const CreateRideForm = () => {
     arrivalAddress: "",
     departureTime: new Date(),
     availableSeats: 1,
+    price: 0,
     waypoints: [],
     isRecurring: false,
-    serviceType: "",
+    frequency: "weekly",
+    serviceType: "Culte de dimanche",
     displayPhoneNumber: false,
+    meetingPointNote: "",
   });
-  const [isMapVisible, setIsMapVisible] = useState(true);
+
+  const db = getFirestore(app);
+
+  useEffect(() => {
+    const fetchChurches = async () => {
+      const churchesRef = collection(db, "churches");
+      const snapshot = await getDocs(churchesRef);
+      const churchesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        ...doc.data(),
+      }));
+
+      // Sort alphabetically
+      churchesData.sort((a, b) => a.name.localeCompare(b.name));
+      setChurches(churchesData);
+    };
+
+    const fetchVehicle = async () => {
+      if (user?.uid) {
+        const vehicleRef = doc(db, "vehicles", user.uid);
+        const vehicleSnap = await getDoc(vehicleRef);
+        if (vehicleSnap.exists()) {
+          setVehicle(vehicleSnap.data() as Vehicle);
+          setFormData((prev) => ({
+            ...prev,
+            availableSeats: Math.max(1, (vehicleSnap.data() as Vehicle).seats - 1),
+          }));
+        }
+      }
+    };
+
+    fetchChurches();
+    fetchVehicle();
+  }, [user]);
 
   const handleNext = () => {
-    setCurrentStep((prev) => prev + 1);
+    setStep((prev) => prev + 1);
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => prev - 1);
+    setStep((prev) => prev - 1);
   };
 
-
-  useEffect(() => {
-    if (!user?.uid) return;
-
-    console.log("Setting up vehicle listener for user:", user.uid);
-
-    const vehicleRef = collection(db, "vehicles");
-    const q = query(
-      vehicleRef,
-      where("userId", "==", user.uid),
-      where("isActive", "==", true)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const vehicleData = snapshot.docs[0].data() as Vehicle;
-        console.log("Firestore Vehicle Document:", snapshot.docs[0].id);
-        console.log("Full Vehicle Data:", vehicleData);
-        console.log("Current seats value in state:", vehicleSeats);
-        console.log("New seats value from Firestore:", vehicleData.seats);
-        setVehicleSeats(vehicleData.seats);
-      } else {
-        console.log("No active vehicle found for user");
-      }
-    }, (error) => {
-      console.error("Vehicle snapshot error:", error);
-    });
-
-    return () => {
-      console.log("Cleaning up vehicle listener");
-      unsubscribe();
-    };
-  }, [user?.uid]);
-
-
-
   const handleCreateRide = async () => {
-    if (!user?.isDriver) {
-      toast.error("Vous devez être conducteur pour créer un trajet");
-      return;
-    }
-
-    if (formData.availableSeats > vehicleSeats) {
-      toast.error(
-        "Le nombre de places proposées dépasse la capacité de votre véhicule"
-      );
-      return;
-    }
-
-    console.log("User status:", user?.isDriver);
+    if (!user) return;
+    setLoading(true);
 
     try {
-      const departureLocation = await prepareRideLocation(
-        formData.departureAddress
-      );
-      const arrivalLocation = await prepareRideLocation(
-        formData.arrivalAddress
-      );
+      // Get coordinates if not already set (fallback)
+      let depLat = startCoords?.lat;
+      let depLng = startCoords?.lng;
+      let arrLat = endCoords?.lat;
+      let arrLng = endCoords?.lng;
 
-      console.log("User:", user);
-      const vehicleQuery = query(
-        collection(db, "vehicles"),
-        where("userId", "==", user.uid),
-        where("isActive", "==", true)
-      );
-      const vehicleSnapshot = await getDocs(vehicleQuery);
-
-      if (vehicleSnapshot.empty) {
-        toast.error("Vous devez d'abord enregistrer un véhicule");
-        return;
+      if (!depLat || !depLng) {
+        const depCoords = await getCoordinates(formData.departureAddress);
+        depLat = depCoords.lat;
+        depLng = depCoords.lng;
       }
+
+      if (!arrLat || !arrLng) {
+        const arrCoords = await getCoordinates(formData.arrivalAddress);
+        arrLat = arrCoords.lat;
+        arrLng = arrCoords.lng;
+      }
+
+      const departureHash = geohashForLocation([depLat, depLng]);
+      const arrivalHash = geohashForLocation([arrLat, arrLng]);
 
       const rideData = {
+        ...formData,
         driverId: user.uid,
-        churchId: formData.churchId,
-        churchName: formData.churchName,
-        departureAddress: formData.departureAddress,
-        arrivalAddress: formData.arrivalAddress,
-        departureLocation,
-        arrivalLocation,
-        departureTime: formData.departureTime,
-        availableSeats: formData.availableSeats,
-        isRecurring: formData.isRecurring,
+        driverName: user.fullName || "Conducteur",
+        driverPhoto: user.profilePicture || null,
+        driverIsVerified: user.isVerified || false,
+        driverIsStar: user.isStar || false,
         status: "active",
-        waypoints: formData.waypoints,
-        price: formData.price || 0,
-        createdAt: new Date(),
-        serviceType: formData.serviceType,
-        ...(formData.isRecurring && { frequency: formData.frequency }),
-        displayPhoneNumber: formData.displayPhoneNumber,
-        meetingPointNote: formData.meetingPointNote || "",
+        createdAt: Timestamp.now(),
+        departureTime: Timestamp.fromDate(new Date(formData.departureTime)),
+        departureLocation: {
+          lat: depLat,
+          lng: depLng,
+          geohash: departureHash,
+        },
+        arrivalLocation: {
+          lat: arrLat,
+          lng: arrLng,
+          geohash: arrivalHash,
+        },
+        routeInfo: routeInfo ? {
+          distanceKm: (routeInfo.distance / 1000).toFixed(1),
+          durationMin: Math.round(routeInfo.duration / 60)
+        } : null
       };
 
-      const docRef = await addDoc(collection(db, "rides"), rideData);
-
-      toast.success("Votre trajet a été créé");
-
-      router.push("/rides/history");
-      console.log("Departure Location:", departureLocation);
-      console.log("Arrival Location:", arrivalLocation);
-    } catch (error: unknown) {
-      console.error("Détails complets de l'erreur:", error);
-      if (error instanceof Error) {
-        toast.error(`Impossible de créer le trajet : ${error.message}`);
-      } else {
-        toast.error(
-          "Une erreur inconnue s'est produite lors de la création du trajet"
-        );
-      }
+      await addDoc(collection(db, "rides"), rideData);
+      toast.success("Trajet créé avec succès !");
+      router.push("/dashboard/driver");
+    } catch (error) {
+      console.error("Erreur création trajet:", error);
+      toast.error("Erreur lors de la création du trajet");
+    } finally {
+      setLoading(false);
     }
   };
 
   const renderStepOne = () => (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Type de service</h2>
-      <div className="grid grid-cols-2 gap-4">
-        {[
-          { id: "culte", label: "Culte du dimanche", icon: "🙏" },
-          { id: "priere", label: "Réunion de prière", icon: "✝️" },
-          { id: "evenement", label: "Nuit de la traversée", icon: "🎆🎇" },
-          { id: "autre", label: "Autre", icon: "📌" },
-        ].map((service) => (
-          <div
-            key={service.id}
-            onClick={() =>
-              setFormData({ ...formData, serviceType: service.id })
-            }
-            className={`
-              p-4 rounded-lg border-2 cursor-pointer transition-all
-              ${formData.serviceType === service.id
-                ? "border-primary bg-primary/10"
-                : "border-gray-200 hover:border-primary/50"
-              }
-            `}
-          >
-            <div className="flex flex-col items-center space-y-2">
-              <span className="text-2xl">{service.icon}</span>
-              <span className="font-medium text-center">{service.label}</span>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-4">
+        <Label className="text-lg font-semibold flex items-center gap-2">
+          <FaMapMarkerAlt className="text-orange-500" />
+          Itinéraire
+        </Label>
+
+        <div className="grid gap-4">
+          <div className="space-y-2">
+            <Label>Départ</Label>
+            <AddressAutocomplete
+              value={formData.departureAddress}
+              onChange={(address, coords) => {
+                setFormData({ ...formData, departureAddress: address });
+                if (coords) {
+                  setStartCoords(coords);
+                  setIsMapVisible(true);
+                }
+              }}
+              placeholder="D'où partez-vous ?"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Arrivée</Label>
+            <AddressAutocomplete
+              value={formData.arrivalAddress}
+              onChange={(address, coords) => {
+                setFormData({ ...formData, arrivalAddress: address });
+                if (coords) {
+                  setEndCoords(coords);
+                  setIsMapVisible(true);
+                }
+              }}
+              placeholder="Où allez-vous ?"
+            />
+          </div>
+        </div>
+
+        {/* Mapbox Map Integration */}
+        <div className={`transition-all duration-500 ease-in-out overflow-hidden rounded-xl shadow-lg border border-slate-200 ${isMapVisible ? 'h-[400px] opacity-100' : 'h-0 opacity-0'}`}>
+          {isMapVisible && (
+            <MapboxMap
+              initialViewState={{
+                latitude: startCoords?.lat || 50.8503,
+                longitude: startCoords?.lng || 4.3517,
+                zoom: 11
+              }}
+              markers={[
+                ...(startCoords ? [{ latitude: startCoords.lat, longitude: startCoords.lng, color: "#22c55e" }] : []),
+                ...(endCoords ? [{ latitude: endCoords.lat, longitude: endCoords.lng, color: "#ef4444" }] : [])
+              ]}
+            >
+              <RoutePreview
+                start={startCoords}
+                end={endCoords}
+                onRouteCalculated={(dist, dur) => setRouteInfo({ distance: dist, duration: dur })}
+              />
+            </MapboxMap>
+          )}
+        </div>
+
+        {routeInfo && (
+          <div className="bg-blue-50 p-4 rounded-lg flex items-center justify-between text-blue-800">
+            <div className="flex items-center gap-2">
+              <FaCar />
+              <span className="font-semibold">Distance: {(routeInfo.distance / 1000).toFixed(1)} km</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FaClock />
+              <span className="font-semibold">Durée: {Math.round(routeInfo.duration / 60)} min</span>
             </div>
           </div>
-        ))}
+        )}
+
+        <div className="space-y-2">
+          <Label>Église de destination (Optionnel)</Label>
+          <Select
+            value={formData.churchId}
+            onValueChange={(value) => {
+              const church = churches.find((c) => c.id === value);
+              setFormData({
+                ...formData,
+                churchId: value,
+                churchName: church?.name || "",
+              });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner une église" />
+            </SelectTrigger>
+            <SelectContent>
+              {churches.map((church) => (
+                <SelectItem key={church.id} value={church.id}>
+                  {church.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );
 
   const renderStepTwo = () => (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Informations du trajet</h2>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-4">
-        <div>
-          <Label htmlFor="departureTime">Date et heure de départ</Label>
-          <Input
-            type="datetime-local"
-            id="departureTime"
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                departureTime: new Date(e.target.value),
-              })
-            }
-          />
-        </div>
-        <div>
-          <Label htmlFor="seats">Nombre de places disponibles</Label>
-          <Input
-            type="number"
-            id="seats"
-            min="1"
-            max={vehicleSeats}
-            value={formData.availableSeats}
-            onChange={(e) => {
-              const seats = parseInt(e.target.value);
-              if (seats > vehicleSeats) {
-                setSeatsError(
-                  `Vous ne pouvez pas proposer plus de ${vehicleSeats} places (capacité de votre véhicule)`
-                );
-              } else {
-                setSeatsError("");
-              }
-              setFormData({
-                ...formData,
-                availableSeats: seats,
-              });
-            }}
-          />
-          {seatsError && <p className="text-orange-500 mt-2">{seatsError}</p>}
-        </div>
+        <Label className="text-lg font-semibold flex items-center gap-2">
+          <FaClock className="text-orange-500" />
+          Date et Heure
+        </Label>
 
-        <div className="space-y-2">
-          <Label htmlFor="displayPhoneNumber">
-            Affichage du numéro de téléphone
-          </Label>
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="displayPhoneNumber"
-              checked={formData.displayPhoneNumber}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Date et heure de départ</Label>
+            <Input
+              type="datetime-local"
+              value={formData.departureTime.toISOString().slice(0, 16)}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  displayPhoneNumber: e.target.checked,
+                  departureTime: new Date(e.target.value),
                 })
               }
-              className="h-4 w-4 rounded border-gray-300"
+              min={new Date().toISOString().slice(0, 16)}
             />
-            <span className="text-sm text-gray-600">
-              Autoriser l'affichage de mon numéro de téléphone aux passagers
-            </span>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Type de service</Label>
+            <Select
+              value={formData.serviceType}
+              onValueChange={(value) =>
+                setFormData({ ...formData, serviceType: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Type de service" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Culte de dimanche">
+                  Culte de dimanche
+                </SelectItem>
+                <SelectItem value="Etude biblique">Etude biblique</SelectItem>
+                <SelectItem value="Prière">Réunion de prière</SelectItem>
+                <SelectItem value="Evénement spécial">
+                  Evénement spécial
+                </SelectItem>
+                <SelectItem value="Autre">Autre</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
+
+        <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg">
+          <Switch
+            checked={formData.isRecurring}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, isRecurring: checked })
+            }
+          />
+          <div className="space-y-0.5">
+            <Label>Trajet récurrent</Label>
+            <p className="text-sm text-muted-foreground">
+              Ce trajet se répète régulièrement
+            </p>
+          </div>
+        </div>
+
+        {formData.isRecurring && (
+          <div className="space-y-2 pl-6 border-l-2 border-orange-200">
+            <Label>Fréquence</Label>
+            <Select
+              value={formData.frequency}
+              onValueChange={(value: "weekly" | "monthly") =>
+                setFormData({ ...formData, frequency: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                <SelectItem value="monthly">Mensuel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
     </div>
   );
 
   const renderStepThree = () => (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Adresses</h2>
-      <div style={{ display: currentStep === 3 ? "block" : "none" }}>
-        <MapWithErrorBoundary
-          setFormData={setFormData}
-          formData={formData}
-          isMapVisible={isMapVisible}
-        />
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-4">
+        <Label className="text-lg font-semibold flex items-center gap-2">
+          <FaChair className="text-orange-500" />
+          Détails du trajet
+        </Label>
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Places disponibles</Label>
+            <Input
+              type="number"
+              min={1}
+              max={vehicle ? vehicle.seats - 1 : 4}
+              value={formData.availableSeats}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  availableSeats: parseInt(e.target.value),
+                })
+              }
+            />
+          </div>
 
-        <div className="mt-4">
-          <Label htmlFor="meetingPointNote">Point de rencontre précis</Label>
-          <Input
-            id="meetingPointNote"
-            placeholder="Ex: Devant l'entrée principale, près de l'arrêt de bus..."
-            value={formData.meetingPointNote || ""}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                meetingPointNote: e.target.value,
-              })
-            }
-          />
-          <p className="text-sm text-gray-500 mt-1">
-            Précisez où exactement vous retrouverez vos passagers
-          </p>
+          <div className="space-y-2">
+            <Label>Participation (Gratuit recommandé)</Label>
+            <div className="relative">
+              <FaEuroSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                type="number"
+                min={0}
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    price: parseInt(e.target.value),
+                  })
+                }
+                className="pl-10"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex justify-center mt-4">
-          <p
-            className="text-orange-500 italic cursor-pointer hover:underline"
-            onClick={() => setIsMapVisible(!isMapVisible)}
-          >
-            {isMapVisible ? "cacher la carte" : "afficher la carte"}
-          </p>
+        <div className="space-y-2">
+          <Label>Note pour le point de rendez-vous</Label>
+          <Textarea
+            placeholder="Ex: Je vous attends devant la boulangerie..."
+            value={formData.meetingPointNote}
+            onChange={(e) =>
+              setFormData({ ...formData, meetingPointNote: e.target.value })
+            }
+          />
+        </div>
+
+        <div className="flex items-center space-x-2 bg-slate-50 p-4 rounded-lg">
+          <Switch
+            checked={formData.displayPhoneNumber}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, displayPhoneNumber: checked })
+            }
+          />
+          <div className="space-y-0.5">
+            <Label className="flex items-center gap-2">
+              <FaPhone className="text-green-600" />
+              Afficher mon numéro
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Permettre aux passagers de voir votre numéro après réservation
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 
   const renderStepFour = () => (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Récapitulatif</h2>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <RideSummary formData={formData} />
     </div>
   );
 
-  const steps = {
-    1: renderStepOne,
-    2: renderStepTwo,
-    3: renderStepThree,
-    4: renderStepFour,
-  };
-
   return (
-    <main className="container mx-auto p-6">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Créer un trajet</h1>
-          <p className="text-slate-500">
-            Proposez un trajet aux membres de votre église
-          </p>
+    <div className="max-w-3xl mx-auto p-4">
+      <Card className="p-6 shadow-xl border-t-4 border-t-orange-500">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">Proposer un trajet</h1>
+            <span className="text-sm font-medium text-gray-500">
+              Étape {step} sur 4
+            </span>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-orange-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(step / 4) * 100}%` }}
+            ></div>
+          </div>
         </div>
 
-        <Separator />
+        <div className="min-h-[400px]">
+          {step === 1 && renderStepOne()}
+          {step === 2 && renderStepTwo()}
+          {step === 3 && renderStepThree()}
+          {step === 4 && renderStepFour()}
+        </div>
 
-        <Card className="p-6">
-          {steps[currentStep as keyof typeof steps]()}
-          <div className="flex justify-between mt-6">
-            {currentStep > 1 && (
-              <Button onClick={handlePrevious} variant="outline">
-                Précédent
-              </Button>
-            )}
-            {currentStep < 4 ? (
-              <Button onClick={handleNext} className="ml-auto">
-                Suivant
-              </Button>
-            ) : (
-              <Button
-                onClick={handleCreateRide}
-                className="ml-auto"
-                disabled={
-                  !formData.departureAddress || !formData.arrivalAddress
-                }
-              >
-                Créer le trajet
-              </Button>
-            )}
-          </div>
-        </Card>
-      </div>
-    </main>
+        <div className="flex justify-between mt-8 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={step === 1}
+            className="w-32"
+          >
+            Précédent
+          </Button>
+
+          {step < 4 ? (
+            <Button
+              onClick={handleNext}
+              className="w-32 bg-orange-600 hover:bg-orange-700 text-white"
+              disabled={
+                (step === 1 && (!formData.departureAddress || !formData.arrivalAddress)) ||
+                (step === 3 && formData.availableSeats < 1)
+              }
+            >
+              Suivant
+            </Button>
+          ) : (
+            <Button
+              onClick={handleCreateRide}
+              disabled={loading}
+              className="w-32 bg-green-600 hover:bg-green-700 text-white"
+            >
+              {loading ? "Création..." : "Publier"}
+            </Button>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 };
 

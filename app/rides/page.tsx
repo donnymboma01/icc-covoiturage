@@ -1,6 +1,7 @@
 import React from "react";
 import PageLayout from "@/components/PageLayout";
 import RideSearch from "@/components/rides/passanger/RideSearch";
+import SmartSearch from "@/components/rides/passanger/SmartSearch";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,6 +19,7 @@ const RidePage = () => {
     >
       <div className="flex flex-col gap-4">
         <CustomBreadcrumb name="Rechercher un trajet" />
+        <SmartSearch />
         <RideSearch />
       </div>
     </PageLayout>

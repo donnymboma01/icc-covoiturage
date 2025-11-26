@@ -3,7 +3,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import LocationSharingControl from "../rides/LocationSharingControl";
-import LocationSharingMap from "../rides/LocationSharingMap";
+import LiveTracking from "../maps/LiveTracking";
 import ChatWindow from "../messaging/ChatWindow";
 import UnreadMessagesIndicator from "../messaging/UnreadMessagesIndicator";
 import {
@@ -330,11 +330,11 @@ const DriverBookings = () => {
     setSelectedBookingForTracking(
       selectedBookingForTracking === bookingId ? null : bookingId
     );
-    
+
     if (selectedBookingForTracking !== bookingId) {
       setTimeout(() => {
         if (mapRef.current) {
-          mapRef.current.scrollIntoView({ 
+          mapRef.current.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           });
@@ -346,7 +346,7 @@ const DriverBookings = () => {
   const handleOpenChat = (rideId: string, passengerId: string, passengerName: string) => {
     const ride = rideDetails[rideId];
     const passenger = passengerDetails[passengerId];
-    
+
     setSelectedPassenger({
       id: passengerId,
       name: passengerName,
@@ -512,7 +512,7 @@ const DriverBookings = () => {
                               ? "Masquer la carte"
                               : "Voir/Partager la localisation"}
                           </Button>
-                          
+
                           <Button
                             variant="outline"
                             onClick={() => handleOpenChat(booking.rideId, booking.passengerId, passengerDetails[booking.passengerId]?.fullName || "Passager")}
@@ -533,11 +533,8 @@ const DriverBookings = () => {
                               userType="driver"
                             />
 
-                            <LocationSharingMap
+                            <LiveTracking
                               bookingId={booking.id}
-                              passengerId={booking.passengerId}
-                              driverId={user?.uid || ""}
-                              currentUserId={user?.uid || ""}
                             />
                           </div>
                         )}

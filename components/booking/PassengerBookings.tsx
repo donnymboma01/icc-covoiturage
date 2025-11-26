@@ -3,7 +3,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import LocationSharingControl from "../rides/LocationSharingControl";
-import LocationSharingMap from "../rides/LocationSharingMap";
+import LiveTracking from "../maps/LiveTracking";
 import ChatWindow from "../messaging/ChatWindow";
 import UnreadMessagesIndicator from "../messaging/UnreadMessagesIndicator";
 import Image from "next/image";
@@ -196,7 +196,7 @@ const PassengerBookings = () => {
           bookingDate: data.bookingDate,
           rejectionReason: data.rejectionReason,
           viewed: data.viewed ?? false,
-          driverResponseNote: data.driverResponseNote, 
+          driverResponseNote: data.driverResponseNote,
         } as Booking;
       });
 
@@ -266,11 +266,11 @@ const PassengerBookings = () => {
     setSelectedBookingForTracking(
       selectedBookingForTracking === bookingId ? null : bookingId
     );
-    
+
     if (selectedBookingForTracking !== bookingId) {
       setTimeout(() => {
         if (mapRef.current) {
-          mapRef.current.scrollIntoView({ 
+          mapRef.current.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
           });
@@ -282,7 +282,7 @@ const PassengerBookings = () => {
   const handleOpenChat = (rideId: string, driverId: string, driverName: string) => {
     const ride = rideDetails[rideId];
     const driver = driverDetails[driverId];
-    
+
     setSelectedDriver({
       id: driverId,
       name: driverName,
@@ -457,7 +457,7 @@ const PassengerBookings = () => {
                                 ? "Masquer la carte"
                                 : "Voir/Partager la localisation"}
                             </Button>
-                            
+
                             <Button
                               variant="outline"
                               onClick={() => handleOpenChat(booking.rideId, ride.driverId, driver.fullName)}
@@ -478,11 +478,8 @@ const PassengerBookings = () => {
                                 userType="passenger"
                               />
 
-                              <LocationSharingMap
+                              <LiveTracking
                                 bookingId={booking.id}
-                                passengerId={user?.uid || ""}
-                                driverId={rideDetails[booking.rideId]?.driverId || ""}
-                                currentUserId={user?.uid || ""}
                               />
                             </div>
                           )}
