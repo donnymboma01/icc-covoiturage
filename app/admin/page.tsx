@@ -15,6 +15,7 @@ import UsersManagement from './components/UsersManagement';
 import { useAuth } from "@/app/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import ChurchManagement from './components/ChurchManagement';
+import EventNotification from './components/EventNotification';
 
 interface Stats {
   totalUsers: number;
@@ -112,7 +113,7 @@ const AdminDashboard = () => {
           <TabsTrigger value="churches">Églises</TabsTrigger>
           <TabsTrigger value="rides">Trajets</TabsTrigger>
           <TabsTrigger value="bookings">Réservations</TabsTrigger>
-          {/* <TabsTrigger value="feedback">Retours</TabsTrigger> */}
+          <TabsTrigger value="notifications" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-6">
@@ -184,6 +185,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="bookings" className="mt-6">
           <BookingsManagement />
+        </TabsContent>
+
+        <TabsContent value="notifications" className="mt-6">
+          <EventNotification />
         </TabsContent>
 
         <TabsContent value="feedback" className="mt-6">
