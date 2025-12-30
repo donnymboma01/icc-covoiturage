@@ -9,15 +9,10 @@ const withPWA = require("next-pwa")({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    config.resolve.alias["leaflet"] = path.resolve(
-      __dirname,
-      "node_modules/leaflet"
-    );
-    return config;
-  },
-  experimental: {
-    turbopack: {},
+  turbopack: {
+    resolveAlias: {
+      leaflet: path.resolve(__dirname, "node_modules/leaflet"),
+    },
   },
   serverExternalPackages: ["firebase-admin"],
   images: {
