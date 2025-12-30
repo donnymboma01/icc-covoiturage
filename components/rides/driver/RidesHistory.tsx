@@ -53,23 +53,42 @@ const RidesHistory = () => {
     try {
       if (updatedData.availableSeats !== undefined) {
         const bookingsRef = collection(db, "bookings");
-        const q = query(
+        const acceptedQuery = query(
           bookingsRef,
           where("rideId", "==", rideId),
           where("status", "==", "accepted")
         );
-        const bookingsSnapshot = await getDocs(q);
+        const pendingQuery = query(
+          bookingsRef,
+          where("rideId", "==", rideId),
+          where("status", "==", "pending")
+        );
 
-        const totalBookedSeats = bookingsSnapshot.docs.reduce(
+        const [acceptedSnapshot, pendingSnapshot] = await Promise.all([
+          getDocs(acceptedQuery),
+          getDocs(pendingQuery)
+        ]);
+
+        const acceptedSeats = acceptedSnapshot.docs.reduce(
           (total, doc) => total + doc.data().seatsBooked,
           0
         );
+        const pendingSeats = pendingSnapshot.docs.reduce(
+          (total, doc) => total + doc.data().seatsBooked,
+          0
+        );
+        const totalBookedSeats = acceptedSeats + pendingSeats;
 
-        if (updatedData.availableSeats < totalBookedSeats) {
+        const newTotalSeats = updatedData.availableSeats;
+
+        if (newTotalSeats < acceptedSeats) {
           throw new Error(
             "Cannot reduce seats below number of accepted bookings"
           );
         }
+
+        const realAvailableSeats = newTotalSeats - totalBookedSeats;
+        updatedData.availableSeats = Math.max(0, realAvailableSeats);
       }
 
       const rideRef = doc(db, "rides", rideId);

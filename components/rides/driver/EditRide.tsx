@@ -150,7 +150,7 @@ export function RideEditDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier le nombre des places</DialogTitle>
+          <DialogTitle>Modifier le nombre total de places</DialogTitle>
         </DialogHeader>
         <form
           onSubmit={handleSubmit}
@@ -218,22 +218,15 @@ export function RideEditDialog({
                 />
               </div> */}
               <div>
-                <label>Nombre des places disponibles</label>
-                {/* <Input
-                  type="number"
-                  value={formData.availableSeats}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      availableSeats: parseInt(e.target.value),
-                    }))
-                  }
-                /> */}
+                <label>Nombre total de places à proposer</label>
+                <p className="text-sm text-gray-500 mb-2">
+                  Entrez le nombre total de places que vous souhaitez offrir (les places déjà réservées seront déduites automatiquement)
+                </p>
                 <Input
                   type="number"
                   value={formData.availableSeats}
                   onChange={handleSeatsChange}
-                  min="0"
+                  min="1"
                 />
               </div>
             </div>
