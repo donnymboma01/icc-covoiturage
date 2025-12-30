@@ -16,7 +16,9 @@ const nextConfig = {
     );
     return config;
   },
-  experimental: {},
+  experimental: {
+    turbopack: {},
+  },
   serverExternalPackages: ["firebase-admin"],
   images: {
     remotePatterns: [
