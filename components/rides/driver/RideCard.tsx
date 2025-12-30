@@ -61,7 +61,7 @@ interface Ride {
 interface RideCardProps {
   ride: Ride;
   onDelete: () => void;
-  onUpdate: (updatedData: Partial<Ride>) => Promise<void>;
+  onUpdate: (updatedData: Partial<Ride> & { seatsToAdd?: number }) => Promise<void>;
 }
 
 const RideCard = ({

@@ -6,6 +6,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import {
   collection,
   getDocs,
+  getDoc,
   query,
   where,
   getFirestore,
@@ -47,55 +48,31 @@ const RidesHistory = () => {
 
   const handleUpdateRide = async (
     rideId: string,
-    updatedData: Partial<Ride>
+    updatedData: Partial<Ride> & { seatsToAdd?: number }
   ) => {
     const db = getFirestore();
     try {
-      if (updatedData.availableSeats !== undefined) {
-        const bookingsRef = collection(db, "bookings");
-        const acceptedQuery = query(
-          bookingsRef,
-          where("rideId", "==", rideId),
-          where("status", "==", "accepted")
-        );
-        const pendingQuery = query(
-          bookingsRef,
-          where("rideId", "==", rideId),
-          where("status", "==", "pending")
-        );
+      const rideRef = doc(db, "rides", rideId);
+      const rideDoc = await getDoc(rideRef);
 
-        const [acceptedSnapshot, pendingSnapshot] = await Promise.all([
-          getDocs(acceptedQuery),
-          getDocs(pendingQuery)
-        ]);
-
-        const acceptedSeats = acceptedSnapshot.docs.reduce(
-          (total, doc) => total + doc.data().seatsBooked,
-          0
-        );
-        const pendingSeats = pendingSnapshot.docs.reduce(
-          (total, doc) => total + doc.data().seatsBooked,
-          0
-        );
-        const totalBookedSeats = acceptedSeats + pendingSeats;
-
-        const newTotalSeats = updatedData.availableSeats;
-
-        if (newTotalSeats < acceptedSeats) {
-          throw new Error(
-            "Cannot reduce seats below number of accepted bookings"
-          );
-        }
-
-        const realAvailableSeats = newTotalSeats - totalBookedSeats;
-        updatedData.availableSeats = Math.max(0, realAvailableSeats);
+      if (!rideDoc.exists()) {
+        throw new Error("Trajet non trouvé");
       }
 
-      const rideRef = doc(db, "rides", rideId);
-      await updateDoc(rideRef, {
-        ...updatedData,
-        updatedAt: Timestamp.now(),
-      });
+      const currentRide = rideDoc.data();
+
+      if (updatedData.seatsToAdd !== undefined && updatedData.seatsToAdd > 0) {
+        const newAvailableSeats = (currentRide.availableSeats || 0) + updatedData.seatsToAdd;
+        await updateDoc(rideRef, {
+          availableSeats: newAvailableSeats,
+          updatedAt: Timestamp.now(),
+        });
+      } else if (updatedData.status !== undefined) {
+        await updateDoc(rideRef, {
+          status: updatedData.status,
+          updatedAt: Timestamp.now(),
+        });
+      }
     } catch (error) {
       console.error("Erreur lors de la mise à jour:", error);
       throw error;

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react/no-unescaped-entities */
 "use client";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Timestamp } from "firebase/firestore";
 import { MdEdit } from "react-icons/md";
-// import MapComponent from "./MapComponent";
 import { toast } from "sonner";
 
 interface Ride {
@@ -34,108 +31,49 @@ interface Ride {
 
 interface RideEditDialogProps {
   ride: Ride;
-  onSave: (updatedData: Partial<Ride>) => Promise<void>;
+  onSave: (updatedData: Partial<Ride> & { seatsToAdd?: number }) => Promise<void>;
   carCapacity: number;
 }
 
 export function RideEditDialog({
   ride,
   onSave,
-  carCapacity,
 }: RideEditDialogProps) {
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    departureAddress: ride.departureAddress,
-    arrivalAddress: ride.arrivalAddress,
-    departureTime: ride.departureTime.toDate(),
-    availableSeats: ride.availableSeats,
-  });
+  const [seatsToAdd, setSeatsToAdd] = useState(1);
 
   useEffect(() => {
     if (open) {
-      setFormData({
-        departureAddress: ride.departureAddress,
-        arrivalAddress: ride.arrivalAddress,
-        departureTime: ride.departureTime.toDate(),
-        availableSeats: ride.availableSeats,
-      });
+      setSeatsToAdd(1);
     }
-  }, [open, ride]);
-
-  const validateSeats = (seats: number) => {
-    if (seats < 0) {
-      toast.error("Le nombre de places doit être positif");
-      return false;
-    }
-    return true;
-  };
-
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateSeats(formData.availableSeats)) {
+    if (seatsToAdd < 1) {
+      toast.error("Vous devez ajouter au moins 1 place");
       return;
     }
 
     try {
-      const updatedData = {
-        availableSeats: formData.availableSeats,
-        departureTime: Timestamp.fromDate(formData.departureTime),
-      };
-
-      await onSave(updatedData);
+      await onSave({
+        seatsToAdd: seatsToAdd,
+      });
       setOpen(false);
-      toast.success("Modifications enregistrées avec succès");
+      toast.success(`${seatsToAdd} place(s) ajoutée(s) avec succès`);
     } catch (error) {
-      toast.error(
-        "Impossible de réduire le nombre de places - des réservations sont déjà confirmées"
-      );
+      toast.error("Erreur lors de l'ajout des places");
     }
   };
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   if (!validateSeats(formData.availableSeats)) {
-  //     return;
-  //   }
-
-  //   try {
-  //     await onSave({
-  //       ...formData,
-  //       departureTime: Timestamp.fromDate(formData.departureTime),
-  //     });
-  //     setOpen(false);
-  //     toast.success("Modifications enregistrées avec succès");
-  //   } catch (error) {
-  //     console.error("Error saving:", error);
-  //     toast.error("Erreur lors de l'enregistrement");
-  //   }
-  // };
 
   const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    if (isNaN(value) || value < 0) {
-      toast.error("Le nombre de places doit être positif");
+    if (isNaN(value) || value < 1) {
       return;
     }
-    setFormData((prev) => ({
-      ...prev,
-      availableSeats: value,
-    }));
+    setSeatsToAdd(value);
   };
-
-  // const handleSeatsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const value = parseInt(e.target.value);
-  //   if (value > carCapacity) {
-  //     toast.error(`Maximum ${carCapacity} places disponibles`);
-  //     return;
-  //   }
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     availableSeats: value,
-  //   }));
-  // };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -145,12 +83,12 @@ export function RideEditDialog({
           className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
         >
           <MdEdit className="mr-2" />
-          Modifier
+          Ajouter des places
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>Modifier le nombre total de places</DialogTitle>
+          <DialogTitle>Ajouter des places</DialogTitle>
         </DialogHeader>
         <form
           onSubmit={handleSubmit}
@@ -158,77 +96,24 @@ export function RideEditDialog({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="space-y-4">
-            {/* <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label>Adresse de départ</label>
-                <Input
-                  value={formData.departureAddress}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      departureAddress: e.target.value,
-                    }))
-                  }
-                  className="mb-2"
-                />
-              </div>
-              <div>
-                <label>Adresse d'arrivée</label>
-                <Input
-                  value={formData.arrivalAddress}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      arrivalAddress: e.target.value,
-                    }))
-                  }
-                  className="mb-2"
-                />
-              </div>
-            </div> */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Places actuellement disponibles : <strong>{ride.availableSeats}</strong>
+              </p>
+            </div>
 
-            {/* <div onClick={(e) => e.stopPropagation()}>
-              <MapComponent
-                onDepartureSelect={(address) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    departureAddress: address,
-                  }))
-                }
-                onArrivalSelect={(address) =>
-                  setFormData((prev) => ({ ...prev, arrivalAddress: address }))
-                }
-                initialDepartureAddress={ride.departureAddress}
-                initialArrivalAddress={ride.arrivalAddress}
+            <div>
+              <label className="block mb-2 font-medium">Nombre de places à ajouter</label>
+              <Input
+                type="number"
+                value={seatsToAdd}
+                onChange={handleSeatsChange}
+                min="1"
+                max="10"
               />
-            </div> */}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* <div>
-                <label>Date et heure de départ</label>
-                <Input
-                  type="datetime-local"
-                  value={formData.departureTime.toISOString().slice(0, 16)}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      departureTime: new Date(e.target.value),
-                    }))
-                  }
-                />
-              </div> */}
-              <div>
-                <label>Nombre total de places à proposer</label>
-                <p className="text-sm text-gray-500 mb-2">
-                  Entrez le nombre total de places que vous souhaitez offrir (les places déjà réservées seront déduites automatiquement)
-                </p>
-                <Input
-                  type="number"
-                  value={formData.availableSeats}
-                  onChange={handleSeatsChange}
-                  min="1"
-                />
-              </div>
+              <p className="text-sm text-gray-500 mt-2">
+                Après modification : {ride.availableSeats + seatsToAdd} place(s) disponible(s)
+              </p>
             </div>
           </div>
 
@@ -240,7 +125,9 @@ export function RideEditDialog({
             >
               Annuler
             </Button>
-            <Button type="submit">Enregistrer</Button>
+            <Button type="submit" disabled={seatsToAdd < 1}>
+              Ajouter {seatsToAdd} place(s)
+            </Button>
           </div>
         </form>
       </DialogContent>
