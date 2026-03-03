@@ -1,11 +1,17 @@
 import { writeFile, mkdir } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
+import { rateLimitByIP, RATE_LIMITS, createRateLimitResponse } from "@/lib/rate-limit";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; 
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export async function POST(request: NextRequest) {
+  const rateLimit = rateLimitByIP(request, RATE_LIMITS.UPLOAD);
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(RATE_LIMITS.UPLOAD, rateLimit.resetIn);
+  }
+
   try {
     const data = await request.formData();
     const file: File | null = data.get("file") as unknown as File;

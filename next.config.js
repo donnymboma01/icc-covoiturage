@@ -16,6 +16,8 @@ const nextConfig = {
   },
   serverExternalPackages: ["firebase-admin"],
   images: {
+    qualities: [100, 75],
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
@@ -24,6 +26,7 @@ const nextConfig = {
         pathname: "/v0/b/icc-covoitturage.firebasestorage.app/**",
       },
     ],
+    unoptimized: false,
   },
   output: "standalone",
 };

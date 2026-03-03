@@ -36,6 +36,7 @@ import { MdAccessTime, MdLocationOn, MdPerson, MdEuro } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Clock } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { sendBookingNotification } from "@/hooks/useBookingNotification";
 
 const db = getFirestore(app);
 
@@ -150,7 +151,7 @@ const BookingForm = ({
         return;
       }
 
-      await addDoc(collection(db, "bookings"), {
+      const bookingRef = await addDoc(collection(db, "bookings"), {
         rideId: ride.id,
         passengerId: user.uid,
         bookingDate: new Date(),
@@ -161,6 +162,15 @@ const BookingForm = ({
 
       await updateDoc(rideRef, {
         availableSeats: currentAvailableSeats - seats,
+      });
+
+      sendBookingNotification({
+        type: "new_booking",
+        bookingId: bookingRef.id,
+        rideId: ride.id,
+        driverId: ride.driverId,
+        passengerId: user.uid,
+        seatsBooked: seats,
       });
 
       setShowSuccessDialog(true);

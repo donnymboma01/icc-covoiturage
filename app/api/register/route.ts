@@ -3,8 +3,14 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/app/config/firebase-config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/app/config/firebase-config";
+import { rateLimitByIP, RATE_LIMITS, createRateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  const rateLimit = rateLimitByIP(req, RATE_LIMITS.PUBLIC_AUTH);
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(RATE_LIMITS.PUBLIC_AUTH, rateLimit.resetIn);
+  }
+
   try {
     if (!db || !auth) {
       return NextResponse.json(

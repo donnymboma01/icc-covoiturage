@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/app/config/firebase-config";
 import { Resend } from "resend";
-
-// const resend = new Resend(process.env.RESEND_API_KEY);
+import { rateLimitByIP, RATE_LIMITS, createRateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rateLimit = rateLimitByIP(request, RATE_LIMITS.SENSITIVE);
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(RATE_LIMITS.SENSITIVE, rateLimit.resetIn);
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     if (!db) {

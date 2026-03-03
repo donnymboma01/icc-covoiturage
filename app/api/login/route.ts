@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/app/config/firebase-config";
+import { rateLimitByIP, RATE_LIMITS, createRateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  const rateLimit = rateLimitByIP(req, RATE_LIMITS.PUBLIC_AUTH);
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(RATE_LIMITS.PUBLIC_AUTH, rateLimit.resetIn);
+  }
+
   try {
     if (!auth || !db) {
       return NextResponse.json(

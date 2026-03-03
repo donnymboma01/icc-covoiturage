@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { rateLimitByIP, RATE_LIMITS, createRateLimitResponse } from "@/lib/rate-limit";
 
 const APP_URL = "https://covoiturage.impactcentrechretien.eu";
 
@@ -38,6 +39,11 @@ function getAdminFirestore() {
 }
 
 export async function POST(request: Request) {
+  const rateLimit = rateLimitByIP(request, RATE_LIMITS.SENSITIVE);
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(RATE_LIMITS.SENSITIVE, rateLimit.resetIn);
+  }
+
   try {
     const { adminId, config, recipientType } = await request.json() as {
       adminId: string;

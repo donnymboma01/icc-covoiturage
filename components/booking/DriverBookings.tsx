@@ -42,6 +42,7 @@ import {
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { MdVerified } from "react-icons/md";
 import { sendBookingAcceptedMessage } from "@/utils/messaging-service";
+import { sendBookingNotification } from "@/hooks/useBookingNotification";
 
 const REJECTION_REASONS = [
   "Horaires ne correspondent plus",
@@ -293,6 +294,17 @@ const DriverBookings = () => {
         });
       }
 
+      if (user?.uid) {
+        sendBookingNotification({
+          type: "booking_rejected",
+          bookingId: selectedBooking.id,
+          rideId: selectedBooking.rideId,
+          driverId: user.uid,
+          passengerId: selectedBooking.passengerId,
+          seatsBooked: selectedBooking.seatsBooked,
+        });
+      }
+
       setIsRejectDialogOpen(false);
       setSelectedBooking(null);
     } catch (error) {
@@ -317,6 +329,15 @@ const DriverBookings = () => {
           user.fullName || "Le conducteur",
           passengerDetails[booking.passengerId].fullName
         );
+
+        sendBookingNotification({
+          type: "booking_accepted",
+          bookingId: booking.id,
+          rideId: booking.rideId,
+          driverId: user.uid,
+          passengerId: booking.passengerId,
+          seatsBooked: booking.seatsBooked,
+        });
       }
 
       setIsAcceptDialogOpen(false);
@@ -563,7 +584,6 @@ const DriverBookings = () => {
         onNoteChange={setMeetingNote}
       />
 
-      {/* Fenêtre de chat */}
       {selectedPassenger && (
         <ChatWindow
           isOpen={isChatOpen}

@@ -41,6 +41,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RideEditDialog } from "./EditRide";
+import { sendBookingNotification } from "@/hooks/useBookingNotification";
+import { useAuth } from "@/app/hooks/useAuth";
 // import { toast } from "sonner";
 
 interface Ride {
@@ -69,6 +71,7 @@ const RideCard = ({
   onDelete,
   onUpdate,
 }: RideCardProps & { onDelete: () => void }) => {
+  const { user } = useAuth();
   const departureDate = ride.departureTime.toDate();
   const [currentRide, setCurrentRide] = useState(ride);
   const db = getFirestore();
@@ -157,13 +160,38 @@ const RideCard = ({
       const bookingsSnapshot = await getDocs(q);
 
       const batch = writeBatch(db);
-      bookingsSnapshot.docs.forEach((doc) => {
-        batch.update(doc.ref, {
+      const notificationPromises: Promise<boolean>[] = [];
+
+      bookingsSnapshot.docs.forEach((bookingDoc) => {
+        const bookingData = bookingDoc.data();
+        batch.update(bookingDoc.ref, {
           status: "cancelled",
           updatedAt: Timestamp.now(),
         });
+
+        // Envoyer une notification email aux passagers avec réservation acceptée ou en attente
+        if (user?.uid && (bookingData.status === "accepted" || bookingData.status === "pending")) {
+          notificationPromises.push(
+            sendBookingNotification({
+              type: "ride_cancelled",
+              bookingId: bookingDoc.id,
+              rideId: ride.id,
+              driverId: user.uid,
+              passengerId: bookingData.passengerId,
+              seatsBooked: bookingData.seatsBooked,
+              cancellationReason: "Le conducteur a annulé ce trajet",
+            })
+          );
+        }
       });
+
       await batch.commit();
+
+      // Envoyer toutes les notifications en parallèle
+      if (notificationPromises.length > 0) {
+        await Promise.all(notificationPromises);
+      }
+
       console.log("trajet annulé avec succès");
     } catch (error) {
       console.error("Erreur lors de l'annulation:", error);

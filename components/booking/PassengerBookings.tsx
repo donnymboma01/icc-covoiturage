@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "../ui/button";
+import { sendBookingNotification } from "@/hooks/useBookingNotification";
 
 const handleBookingStatusUpdate = async (
   bookingId: string,
@@ -96,7 +97,6 @@ const PassengerBookings = () => {
 
   const [selectedBookingForTracking, setSelectedBookingForTracking] = useState<string | null>(null);
 
-  // États pour la messagerie
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<{
     id: string;
@@ -253,6 +253,17 @@ const PassengerBookings = () => {
       await updateDoc(rideRef, {
         availableSeats: newSeats,
       });
+
+      if (user?.uid && rideData.driverId) {
+        sendBookingNotification({
+          type: "booking_cancelled_by_passenger",
+          bookingId: bookingId,
+          rideId: bookingData.rideId,
+          driverId: rideData.driverId,
+          passengerId: user.uid,
+          seatsBooked: bookingData.seatsBooked,
+        });
+      }
 
       console.log(
         `Mise à jour du trajet ${bookingData.rideId} avec ${newSeats} places disponibles`
@@ -562,7 +573,6 @@ const PassengerBookings = () => {
         </div>
       )}
 
-      {/* Fenêtre de chat */}
       {selectedDriver && (
         <ChatWindow
           isOpen={isChatOpen}

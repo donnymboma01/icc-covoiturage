@@ -115,6 +115,7 @@ const RideSearch = () => {
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [showNt2026Image, setShowNt2026Image] = useState(false);
+  const [showImpactEuropeImage, setShowImpactEuropeImage] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
   const [allAvailableRides, setAllAvailableRides] = useState<Array<Ride & { driver: Driver }>>([]);
   const [selectedRide, setSelectedRide] = useState<(Ride & { driver: Driver }) | null>(null);
@@ -324,6 +325,18 @@ const RideSearch = () => {
       setShowNt2026Image(true);
     } else {
       setShowNt2026Image(false);
+    }
+
+    // Impact Europe 2026 : 29 avril – 3 mai 2026
+    const impactEuropeStart = normalizeDate(new Date(2026, 3, 29));
+    const impactEuropeEnd = normalizeDate(new Date(2026, 4, 3));
+    if (
+      normalizedSearchDate.getTime() >= impactEuropeStart.getTime() &&
+      normalizedSearchDate.getTime() <= impactEuropeEnd.getTime()
+    ) {
+      setShowImpactEuropeImage(true);
+    } else {
+      setShowImpactEuropeImage(false);
     }
 
     try {
@@ -691,6 +704,12 @@ const RideSearch = () => {
                   spéciaux de l'église pour proposer des trajets.
                 </em>
               </p>
+              <p className="text-sm text-muted-foreground italic mb-2 text-center sm:text-left">
+                <span className="inline-block w-3 h-3 bg-blue-700 rounded-full mr-2 align-middle"></span>
+                <em>
+                  Les dates en bleu foncé (29 avril – 3 mai 2026) correspondent à l'événement <strong>Impact Europe 2026</strong>.
+                </em>
+              </p>
               <Label>Date de départ</Label>
               <Calendar
                 mode="single"
@@ -713,6 +732,15 @@ const RideSearch = () => {
                       date.getDate() === 31
                     );
                   },
+                  impacteurope: (date) => {
+                    if (hasRidesOnDate(date)) return false;
+                    // Impact Europe : 29 avril – 3 mai 2026
+                    const d = new Date(date);
+                    d.setHours(0, 0, 0, 0);
+                    const start = new Date(2026, 3, 29);
+                    const end = new Date(2026, 4, 3);
+                    return d >= start && d <= end;
+                  },
                   selected: (date) =>
                     date.getDate() === searchParams.date.getDate() &&
                     date.getMonth() === searchParams.date.getMonth() &&
@@ -729,6 +757,12 @@ const RideSearch = () => {
                     backgroundColor: "#bae6fd",
                     color: "#0369a1",
                     borderRadius: "9999px",
+                  },
+                  impacteurope: {
+                    backgroundColor: "#1d4ed8",
+                    color: "white",
+                    borderRadius: "9999px",
+                    fontWeight: "bold",
                   },
                   selected: {
                     backgroundColor: "#1e293b",
@@ -818,6 +852,18 @@ const RideSearch = () => {
             <Image
               src="/images/nt2026.png"
               alt="Nouvelle An 2026 ICC Covoiturage - 31 décembre 2025"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showImpactEuropeImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/impacteurope.png"
+              alt="Impact Europe 2026 - 29 avril au 3 mai 2026"
               width={1200}
               height={630}
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"

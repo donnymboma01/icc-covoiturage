@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestore, collection, query, where, getDocs, getDoc, doc, Timestamp } from "firebase/firestore";
 import { app } from "@/app/config/firebase-config";
+import { rateLimitByIP, RATE_LIMITS, createRateLimitResponse } from "@/lib/rate-limit";
 
 const db = getFirestore(app);
 
@@ -199,6 +200,11 @@ async function formatResponse(rides: any[], userQuery: string, analysis: SearchA
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimit = rateLimitByIP(req, RATE_LIMITS.SEARCH);
+  if (!rateLimit.allowed) {
+    return createRateLimitResponse(RATE_LIMITS.SEARCH, rateLimit.resetIn);
+  }
+
   try {
     const { query: userQuery, userId, churchId, preferences } = await req.json();
 
