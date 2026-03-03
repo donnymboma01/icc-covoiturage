@@ -4,7 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { app } from "./app/config/firebase-config";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
