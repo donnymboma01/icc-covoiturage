@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     const userEmail = userData.email;
 
     const { data, error } = await resend.emails.send({
-      from: "ICC Covoiturage <no-reply@impactcentrechretien.eu>",
+      from: "ICC Covoiturage <iccdev@impactcentrechretien.eu>",
       to: [userEmail],
       subject: "Nouveau code de vérification ICC Covoiturage",
       html: `

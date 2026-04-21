@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const userType = isPassenger ? "passager" : "conducteur";
     
     const { data, error } = await resend.emails.send({
-      from: "ICC Covoiturage <no-reply@impactcentrechretien.eu>",
+      from: "ICC Covoiturage <iccdev@impactcentrechretien.eu>",
       to: [email],
       subject: subject,
       html: `

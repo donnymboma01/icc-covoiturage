@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const APP_URL = "https://covoiturage.impactcentrechretien.eu";
-const FROM_EMAIL = "ICC Covoiturage <no-reply@impactcentrechretien.eu>";
+const FROM_EMAIL = "ICC Covoiturage <iccdev@impactcentrechretien.eu>";
 
 export interface BookingEmailData {
   bookingId: string;

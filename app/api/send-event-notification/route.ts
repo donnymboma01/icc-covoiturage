@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
       try {
         const { error } = await resend.emails.send({
-          from: "ICC Covoiturage <no-reply@impactcentrechretien.eu>",
+          from: "ICC Covoiturage <iccdev@impactcentrechretien.eu>",
           to: [user.email],
           subject: config.emailSubject,
           html: generateEmailTemplate(user.fullName, config),
