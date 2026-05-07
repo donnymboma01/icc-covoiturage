@@ -116,6 +116,7 @@ const RideSearch = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [showNt2026Image, setShowNt2026Image] = useState(false);
   const [showImpactEuropeImage, setShowImpactEuropeImage] = useState(false);
+  const [showCampImage, setShowCampImage] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
   const [allAvailableRides, setAllAvailableRides] = useState<Array<Ride & { driver: Driver }>>([]);
   const [selectedRide, setSelectedRide] = useState<(Ride & { driver: Driver }) | null>(null);
@@ -337,6 +338,18 @@ const RideSearch = () => {
       setShowImpactEuropeImage(true);
     } else {
       setShowImpactEuropeImage(false);
+    }
+
+    // Camp 2026 : 13 – 15 mai 2026
+    const campStart = normalizeDate(new Date(2026, 4, 13));
+    const campEnd = normalizeDate(new Date(2026, 4, 15));
+    if (
+      normalizedSearchDate.getTime() >= campStart.getTime() &&
+      normalizedSearchDate.getTime() <= campEnd.getTime()
+    ) {
+      setShowCampImage(true);
+    } else {
+      setShowCampImage(false);
     }
 
     try {
@@ -704,12 +717,6 @@ const RideSearch = () => {
                   spéciaux de l'église pour proposer des trajets.
                 </em>
               </p>
-              <p className="text-sm text-muted-foreground italic mb-2 text-center sm:text-left">
-                <span className="inline-block w-3 h-3 bg-blue-700 rounded-full mr-2 align-middle"></span>
-                <em>
-                  Les dates en bleu foncé (29 avril – 3 mai 2026) correspondent à l'événement <strong>Impact Europe 2026</strong>.
-                </em>
-              </p>
               <Label>Date de départ</Label>
               <Calendar
                 mode="single"
@@ -723,23 +730,20 @@ const RideSearch = () => {
                 }}
                 modifiers={{
                   highlighted: hasRidesOnDate,
-                  nt2026: (date) => {
+                  specialEvent: (date) => {
                     if (hasRidesOnDate(date)) return false;
-                    // 31 décembre 2025
-                    return (
-                      date.getFullYear() === 2025 &&
-                      date.getMonth() === 11 &&
-                      date.getDate() === 31
-                    );
-                  },
-                  impacteurope: (date) => {
-                    if (hasRidesOnDate(date)) return false;
-                    // Impact Europe : 29 avril – 3 mai 2026
                     const d = new Date(date);
                     d.setHours(0, 0, 0, 0);
-                    const start = new Date(2026, 3, 29);
-                    const end = new Date(2026, 4, 3);
-                    return d >= start && d <= end;
+
+                    // NT 2026 : 31 décembre 2025
+                    const isNt2026 = d.getFullYear() === 2025 && d.getMonth() === 11 && d.getDate() === 31;
+
+                    // Camp : 13 – 15 mai 2026
+                    const campStart = new Date(2026, 4, 13);
+                    const campEnd = new Date(2026, 4, 15);
+                    const isCamp = d >= campStart && d <= campEnd;
+
+                    return isNt2026 || isCamp;
                   },
                   selected: (date) =>
                     date.getDate() === searchParams.date.getDate() &&
@@ -753,16 +757,10 @@ const RideSearch = () => {
                     color: "white",
                     borderRadius: "9999px",
                   },
-                  nt2026: {
+                  specialEvent: {
                     backgroundColor: "#bae6fd",
                     color: "#0369a1",
                     borderRadius: "9999px",
-                  },
-                  impacteurope: {
-                    backgroundColor: "#1d4ed8",
-                    color: "white",
-                    borderRadius: "9999px",
-                    fontWeight: "bold",
                   },
                   selected: {
                     backgroundColor: "#1e293b",
@@ -864,6 +862,18 @@ const RideSearch = () => {
             <Image
               src="/images/impacteurope.png"
               alt="Impact Europe 2026 - 29 avril au 3 mai 2026"
+              width={1200}
+              height={630}
+              className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
+            />
+          </div>
+        )}
+
+        {showCampImage && hasSearched && (
+          <div className="my-4 w-full flex justify-center col-span-full">
+            <Image
+              src="/images/camp.png"
+              alt="Camp 2026 - 13 au 15 mai 2026"
               width={1200}
               height={630}
               className="w-full h-auto md:w-auto md:max-w-2xl rounded-lg shadow-md"
