@@ -291,7 +291,13 @@ const UserProfile = ({
           });
         }
       } else {
-        toast.error("Impossible d'activer les notifications. Vérifiez vos paramètres de navigateur.");
+        if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+          toast.error("Les notifications sont bloquées dans votre navigateur. Cliquez sur l'icône de cadenas à gauche de l'URL pour les autoriser.");
+        } else if (typeof Notification !== "undefined" && Notification.permission === "default") {
+          toast.info("La demande de notification a été fermée ou ignorée. Cliquez à nouveau et sélectionnez 'Autoriser'.");
+        } else {
+          toast.error("Impossible d'activer les notifications. Vérifiez vos paramètres de navigateur.");
+        }
       }
     } catch (error) {
       console.error("Erreur notifications:", error);

@@ -138,13 +138,13 @@ const RideSearch = () => {
   }, [availableDatesSet]);
 
   // Memoized rides for map view
-  const ridesWithLocation = useMemo(() => 
+  const ridesWithLocation = useMemo(() =>
     allAvailableRides.filter(ride => ride.departureLocation?.lat && ride.departureLocation?.lng),
     [allAvailableRides]
   );
 
   // Memoized markers for map
-  const mapMarkers = useMemo(() => 
+  const mapMarkers = useMemo(() =>
     ridesWithLocation.map(ride => ({
       longitude: ride.departureLocation.lng,
       latitude: ride.departureLocation.lat,
@@ -273,8 +273,14 @@ const RideSearch = () => {
 
   useEffect(() => {
     if (showMapView) {
+      document.body.style.overflow = "hidden";
       fetchAllRidesForMap();
+    } else {
+      document.body.style.overflow = "unset";
     }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [showMapView]);
 
   const handleDepartureChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -311,7 +317,7 @@ const RideSearch = () => {
     setHasSearched(true);
 
     const searchDate = currentSearchParams.date;
-    const nt2026Date = new Date(2025, 11, 31); 
+    const nt2026Date = new Date(2025, 11, 31);
 
     const normalizeDate = (date: Date) => {
       const newDate = new Date(date);
@@ -526,31 +532,32 @@ const RideSearch = () => {
 
   const renderMapView = () => {
     return (
-      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-          
-          <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] max-h-[85vh] flex flex-col overflow-hidden my-auto">
+
+          <div className="flex-shrink-0 flex items-center justify-between p-4 border-b dark:border-slate-700 bg-white dark:bg-slate-900">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <FaMap className="text-orange-500" />
-                Tous les trajets disponibles
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <FaMap className="text-orange-500 shrink-0" />
+                <span>Tous les trajets disponibles</span>
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                 {ridesWithLocation.length} trajet{ridesWithLocation.length > 1 ? 's' : ''} disponible{ridesWithLocation.length > 1 ? 's' : ''}
               </p>
             </div>
             <button
               onClick={handleCloseMapView}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              aria-label="Fermer"
             >
-              <FaTimes className="w-5 h-5 text-gray-500" />
+              <FaTimes className="w-5 h-5" />
             </button>
           </div>
 
-          
-          <div className="flex flex-col lg:flex-row h-[calc(90vh-80px)]">
+
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
             {/* Map */}
-            <div className="flex-1 h-[300px] lg:h-full">
+            <div className="flex-1 h-[300px] lg:h-full relative">
               {ridesWithLocation.length > 0 ? (
                 <MapboxMap
                   initialViewState={{
@@ -579,17 +586,16 @@ const RideSearch = () => {
             </div>
 
             {/* Rides List Sidebar */}
-            <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l dark:border-slate-700 overflow-y-auto bg-gray-50 dark:bg-slate-800">
+            <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l dark:border-slate-700 overflow-y-auto bg-gray-50 dark:bg-slate-800 h-full">
               <div className="p-4 space-y-3">
                 {ridesWithLocation.length > 0 ? (
                   ridesWithLocation.map((ride) => (
                     <Card
                       key={ride.id}
-                      className={`p-3 cursor-pointer transition-all hover:shadow-md ${
-                        selectedRide?.id === ride.id 
-                          ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                      className={`p-3 cursor-pointer transition-all hover:shadow-md ${selectedRide?.id === ride.id
+                          ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-900/20'
                           : 'hover:bg-white dark:hover:bg-slate-700'
-                      }`}
+                        }`}
                       onClick={() => setSelectedRide(ride)}
                     >
                       <div className="flex items-start gap-3">
@@ -607,12 +613,12 @@ const RideSearch = () => {
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
-                              {(ride.departureTime as Timestamp).toDate().toLocaleDateString('fr-FR', { 
+                              {(ride.departureTime as Timestamp).toDate().toLocaleDateString('fr-FR', {
                                 day: '2-digit',
                                 month: 'short'
-                              })} à {(ride.departureTime as Timestamp).toDate().toLocaleTimeString('fr-FR', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
+                              })} à {(ride.departureTime as Timestamp).toDate().toLocaleTimeString('fr-FR', {
+                                hour: '2-digit',
+                                minute: '2-digit'
                               })}
                             </span>
                             <span className="text-xs text-gray-400">•</span>
@@ -622,7 +628,7 @@ const RideSearch = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {selectedRide?.id === ride.id && (
                         <div className="mt-3 pt-3 border-t dark:border-slate-600">
                           <Button
@@ -795,7 +801,7 @@ const RideSearch = () => {
                 <FaList className="mr-2" />
                 {loading ? "Recherche en cours..." : "Rechercher"}
               </Button>
-              
+
               <Button
                 type="button"
                 variant="outline"
@@ -807,7 +813,7 @@ const RideSearch = () => {
                 Voir sur la carte
               </Button>
             </div>
-            
+
             {!user && (
               <p className="text-center text-sm text-muted-foreground mt-2">
                 <span className="flex flex-wrap items-center justify-center gap-2">

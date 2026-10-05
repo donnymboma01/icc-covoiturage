@@ -48,9 +48,7 @@ import {
   getDocs,
   updateDoc,
 } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { uploadImageToFirebase } from "@/utils/custom-functions";
-import { cleanupFailedRegistration } from "@/utils/custom-functions";
+import { uploadImageToUploadThing, cleanupFailedRegistration } from "@/utils/custom-functions";
 import { storage } from "../../app/config/firebase-config";
 import { resend } from "@/lib/resend";
 
@@ -159,13 +157,8 @@ const RegisterForm = () => {
 
 
 
-  const uploadImage = async (file: File, userId: string) => {
-    const storage = getStorage(app, "icc-covoitturage.firebasestorage.app");
-    console.log("Starting upload with storage bucket:", storage?.app?.options?.storageBucket);
-    const storageRef = ref(storage, `profile-pictures/${userId}/${file.name}`);
-    const snapshot = await uploadBytes(storageRef, file);
-    console.log("Storage bucket:", storage.app.options.storageBucket);
-    return await getDownloadURL(snapshot.ref);
+  const uploadImage = async (file: File, _userId?: string) => {
+    return await uploadImageToUploadThing(file);
   };
 
   const onSubmit = async (values: z.infer<typeof RegisterSchema>) => {
@@ -248,18 +241,18 @@ const RegisterForm = () => {
 
         console.log("Email verification response:", await emailResponse.json());
       } else {
-       
+
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        
+
         await setDoc(doc(db, "passengerVerifications", userCredential.user.uid), {
           userId: userCredential.user.uid,
           verificationCode,
           isVerified: false,
           createdAt: new Date()
         });
-        
+
         document.cookie = `pendingPassengerId=${userCredential.user.uid}; path=/; max-age=86400; SameSite=Strict`;
-        
+
         const emailResponse = await fetch("/api/send-verification", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -269,7 +262,7 @@ const RegisterForm = () => {
             isPassenger: true
           }),
         });
-        
+
         if (!emailResponse.ok) {
           throw new Error("Erreur lors de l'envoi de l'email de vérification");
         }

@@ -58,10 +58,12 @@ export const useNotifications = () => {
           setIsEnabled(true);
           return currentToken;
         } else {
-          console.error("Aucun token FCM généré");
+          console.warn("Aucun token FCM généré");
         }
+      } else if (permission === "denied") {
+        console.warn("Permission de notification refusée par l'utilisateur.");
       } else {
-        console.error("Permission de notification refusée:", permission);
+        console.info("Demande de notification ignorée ou fermée (statut: default).");
       }
 
       return null;

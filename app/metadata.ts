@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     title: "ICC Covoiturage",
   },
   icons: {
+    icon: '/images/image.png',
     apple: '/icon-192x192.png',
   }
 }

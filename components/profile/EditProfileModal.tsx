@@ -22,8 +22,7 @@ import {
 } from "../ui/select";
 import { toast } from "sonner";
 import { MdClose, MdAddAPhoto } from "react-icons/md";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/app/config/firebase-config";
+import { uploadImageToUploadThing } from "@/utils/custom-functions";
 import { doc, getFirestore, setDoc } from "firebase/firestore";
 import { app } from "@/app/config/firebase-config";
 
@@ -196,24 +195,13 @@ export function EditProfileModal({
     if (!file) return;
 
     try {
-      if (!storage) {
-        throw new Error("Storage not initialized");
-      }
-
       const loadingToast = toast.loading("Téléchargement en cours...");
 
       const compressedImage = await compressImage(file);
       const previewUrl = URL.createObjectURL(compressedImage);
       setImagePreview(previewUrl);
 
-      const fileName = `${Date.now()}_${file.name}`;
-      const storageRef = ref(
-        storage,
-        `profile-pictures/${currentUser.uid}/${fileName}`
-      );
-
-      await uploadBytes(storageRef, compressedImage);
-      const downloadURL = await getDownloadURL(storageRef);
+      const downloadURL = await uploadImageToUploadThing(compressedImage, file.name);
 
       setUserData((prev) => ({
         ...prev,
